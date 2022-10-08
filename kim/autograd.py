@@ -51,9 +51,8 @@ class Tensor:
     def __del__(self):
         State.TENSOR_COUNT -= 1
     
-    grad: "Tensor"
-    # Optional[...] is a shorthand notation for Union[..., None]
     cached_data: Optional[NDArray]
+    grad: "Tensor" # lưu out_grad gradient của node
     requires_grad: bool
 
     op: TensorOp
@@ -110,7 +109,8 @@ class Tensor:
         tensor = Tensor.__new__(Tensor) # dùng __new__(cls, ..) để bỏ qua __init__
         tensor.assign_params_and_record_creation(op=op, inputs=inputs)
         if not State.LAZY_MODE:
-            if not tensor.requires_grad: tensor.detach() # tách khỏi đồ thị tính toán 
+            if not tensor.requires_grad:
+                return tensor.detach() # tách tensor khỏi đồ thị tính toán
             tensor.realize_cached_data()
         return tensor
 
@@ -129,7 +129,7 @@ class Tensor:
         return tensor
     
     
-    def detached(self):
+    def detach(self):
         return Tensor.make_const(self.realize_cached_data())
 
     @property
@@ -177,13 +177,15 @@ class Tensor:
     def sum(self, axes=None):
         return kim.ops.Summation(axes)(self)
 
+    def reshape(self, shape):
+        return kim.ops.Reshape(shape)(self)
+
     __radd__ = __add__
     __rmul__ = __mul__
-    __rsub__ = __sub__
 
-    def backward(self, out_grad=Optional["Tensor"]):
+    def backward(self, out_grad: Optional["Tensor"] = None):
         if out_grad is None: out_grad = Tensor(numpy.ones(self.shape))
-        compute_gradient_of_backward_graph_variables(self, out_grad)
+        compute_gradient_of(self, out_grad)
 
 ##############################
 ####### Helper Methods #######
@@ -194,25 +196,18 @@ def get_array_from_numpy(numpy_array, device, dtype):
     else: return array_api.array(numpy_array, device=device, dtype=dtype)
 
 
-def compute_gradient_of_backward_graph_variables(output_tensor, out_grad):
+def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
     output_grads: Dict[Tensor, List[Tensor]] = {}
     output_grads[output_tensor] = [out_grad]
     reverse_topo_order = reversed(find_topo_sort([output_tensor]))
 
     for node in reverse_topo_order:
-        # tính node.grad
-        out_grads = output_grads[node]
-        node.grad = out_grads[0]
-        for i in range(len(out_grads) - 1):
-            node.grad = kim.add(node.grad, out_grads[i + 1])
-        # 
+        node.grad = sum(output_grads[node])
         if node.op:
-            input_grads = node.op.gradient(node.grad, node)
+            grads = node.op.gradient(node.grad, node)
             for k in range(len(node.inputs)):
-                input_k_tensor = node.inputs[k]
-                input_k_grad = input_grads[k]
-                try: output_grads[input_k_tensor].append(input_k_grad)
-                except KeyError: output_grads[input_k_tensor] = [input_k_grad]
+                try: output_grads[node.inputs[k]].append(grads[k])
+                except KeyError: output_grads[node.inputs[k]] = [grads[k]]
 
 
 def find_topo_sort(nodes: List[Tensor]) -> List[Tensor]:
@@ -221,6 +216,6 @@ def find_topo_sort(nodes: List[Tensor]) -> List[Tensor]:
         topo_sort_dfs(node, topo_order)
     return topo_order
 
-def topo_sort_dfs(node, topo_order):
+def topo_sort_dfs(node: Tensor, topo_order: List[Tensor]):
     for input_node in node.inputs: topo_sort_dfs(input_node, topo_order)
     if node not in topo_order: topo_order.append(node)

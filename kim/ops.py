@@ -2,7 +2,67 @@ from numbers import Number
 from typing import Optional, List
 from .autograd import NDArray # Tạm thời NDArray = numpy.ndarray
 from .autograd import Tensor, TensorOp
+from .autograd import TensorTuple, TensorTupleOp
 import numpy as array_api
+
+
+class MakeTensorTuple(TensorTupleOp):
+    def compute(self, *args) -> tuple:
+        return tuple(args)
+
+    def gradient(self, out_grad, node):
+        assert isinstance(out_grad, TensorTuple)
+        return tuple(*[out_grad[i] for i in range(len(out_grad))])
+
+
+def make_tuple(*args):
+    return MakeTensorTuple()(*args)
+
+
+class TupleGetItem(TensorOp):
+    def __init__(self, index):
+        self.index = index
+
+    def __call__(self, a: TensorTuple, fold_const=True) -> Tensor:
+        assert isinstance(a, TensorTuple)
+        # constant folding
+        if fold_const and isinstance(a.op, MakeTensorTuple):
+            return a.inputs[self.index]
+        return Tensor.make_from_op(self, [a])
+
+    def compute(self, a):
+        return a[self.index]
+
+    def gradient(self, out_grad, node):
+        index = self.index
+        in_grad = []
+        for i, value in enumerate(node.inputs[0]):
+            if i != index:
+                in_grad.append(zeros_like(value))
+            else:
+                in_grad.append(out_grad)
+        return MakeTensorTuple()(*in_grad)
+
+
+def tuple_get_item(value, index):
+    return TupleGetItem(index)(value)
+
+
+class FusedAddScalars(TensorTupleOp):
+    def __init__(self, c0: float, c1: float):
+        self.c0 = c0
+        self.c1 = c1
+
+    def compute(self, a):
+        return a + self.c0, a + self.c1
+
+    def gradient(self, out_grad, node):
+        return out_grad[0] + out_grad[1]
+
+
+def fused_add_scalars(x, c0, c1):
+    return FusedAddScalars(c0, c1)(x)
+
 
 '''Lưu ý: các hàm tính gradient() của các TensorOp được định nghĩa dưới đây
 dùng ngay chính các toán tử TensorOp để tạo ra một đồ thị tính toán ngược để có thể 
@@ -279,3 +339,40 @@ class ReLU(TensorOp):
 
 def relu(a):
     return ReLU()(a)
+
+
+class LogSumExp(TensorOp):
+    def __init__(self, axes: Optional[tuple] = None):
+        self.axes = axes
+
+    def compute(self, Z):
+        Z_max = array_api.max(Z, axis=self.axes)
+        Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
+        Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
+        exp_ZZ = array_api.exp(Z - Z_max_broadcast)
+        sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
+        return array_api.log(sum_exp_ZZ) + Z_max
+
+    def gradient(self, out_grad, node):
+        a = node.inputs[0]
+        exp_a = exp(a)
+
+        new_shape = self.new_shape(a.shape)
+        sum_exp_a = summation(exp_a, self.axes)
+        sum_exp_a = reshape(sum_exp_a, new_shape)
+        sum_exp_a = broadcast_to(sum_exp_a, a.shape)
+
+        normalize = divide(exp_a, sum_exp_a)
+        return (reshape(out_grad, new_shape) * normalize,)
+
+    def new_shape(self, shape):
+        new_shape = list(shape)
+        if self.axes:
+            axes = self.axes
+        else:
+            axes = range(len(shape))
+        for i in axes: new_shape[i] = 1
+        return tuple(new_shape)
+
+def logsumexp(a, axes=None):
+    return LogSumExp(axes=axes)(a)

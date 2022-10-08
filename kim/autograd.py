@@ -20,8 +20,24 @@ class Device:
 class CpuDevice(Device):
     def __repr__(self):
         return "kim.cpu()"
+
     def enabled(self):
         return True
+
+    def zeros(self, *shape, dtype="float32"):
+        return numpy.zeros(shape, dtype=dtype)
+
+    def ones(self, *shape, dtype="float32"):
+        return numpy.ones(shape, dtype=dtype)
+
+    def randn(self, *shape):
+        return numpy.random.randn(*shape)
+
+    def rand(self, *shape):
+        return numpy.random.rand(*shape)
+
+    def one_hot(self, n: int, i: NDArray, dtype="float32"):
+        return numpy.eye(n, dtype=dtype)[i]
 
 def cpu():
     return CpuDevice() # một instant mới của class CpuDevice
@@ -40,6 +56,10 @@ class TensorOp:
         raise NotImplementedError()
     def gradient(self, out_grad: "Tensor", node: "Tensor") -> Tuple["Tensor"]:
         raise NotImplementedError()
+
+class TensorTupleOp(TensorOp):
+    def __call__(self, *args):
+        return TensorTuple.make_from_op(self, args)
 
 class Tensor:
     def __repr__(self):
@@ -186,6 +206,31 @@ class Tensor:
     def backward(self, out_grad: Optional["Tensor"] = None):
         if out_grad is None: out_grad = Tensor(numpy.ones(self.shape))
         compute_gradient_of(self, out_grad)
+
+
+class TensorTuple(Tensor):
+    def __len__(self):
+        return len(self.realize_cached_data())
+
+    def __getitem__(self, index: int):
+        return kim.ops.tuple_get_item(self, index)
+
+    def tuple(self):
+        return tuple([x for x in self])
+
+    def __repr__(self):
+        return "kim.TensorTuple" + str(self.tuple())
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __add__(self, other):
+        assert isinstance(other, TensorTuple)
+        assert len(self) == len(other)
+        return needle.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
+
+    def detach(self):
+        return Tuple.make_const(self.realize_cached_data())
 
 ##############################
 ####### Helper Methods #######

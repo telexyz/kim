@@ -1,0 +1,40 @@
+import numpy as np
+import kim
+
+def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
+    eps = 1e-4 # = 1^(-4)
+    # Khởi tạo mảng numerical_grads = [0..] có shapes tương ứng với 
+    # từng args đầu vào của hàm `f`
+    numerical_grads = [np.zeros(a.shape) for a in args]
+
+    for i in range(len(args)): # Với từng arg đầu vào của f
+        # Với từng phần tử trong numpy array `args[i].realize_cached_data()`
+        for j in range(args[i].realize_cached_data().size):
+            # Cộng phần tử thứ j của args[i] thêm epsilon
+            args[i].realize_cached_data().flat[j] += eps
+            f1 = float(f(*args, **kwargs).numpy().sum())
+            # Trừ phần tử thứ j của args[i] đi epsilon
+            args[i].realize_cached_data().flat[j] -= 2 * eps
+            f2 = float(f(*args, **kwargs).numpy().sum())
+            # Trả lại giá trị nguyên bản của phần tử thứ j của args[i]
+            args[i].realize_cached_data().flat[j] += eps
+            # Tính numerical_grad của phần tử thứ j của args[i]
+            numerical_grads[i].flat[j] = (f1 - f2) / (2 * eps)
+    
+    if not backward: # `backward` mặc định là False => Sử dụng hàm `gradient()`
+        # kim.broadcast_to và kim.summation rơi vào trường hợp này
+        out = f(*args, **kwargs)
+        computed_grads = [x.numpy() 
+            for x in out.op.gradient_as_tuple(kim.Tensor(np.ones(out.shape)), out)]
+        # Dùng gradient_as_tuple để computed_grads luôn là mảng 2 thành phần
+    else:
+        out = f(*args, **kwargs).sum()
+        out.backward()
+        computed_grads = [a.grad.numpy() for a in args]
+
+    error = sum(
+        np.linalg.norm(computed_grads[i] - numerical_grads[i])
+        for i in range(len(args))
+    )
+    assert error < tol
+    return computed_grads

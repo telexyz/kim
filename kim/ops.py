@@ -28,7 +28,7 @@ class AddScalar(TensorOp):
         return a + self.scalar
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        return out_grad
+        return out_grad,
 
 def add_scalar(a, scalar):
     return AddScalar(scalar)(a)
@@ -54,7 +54,7 @@ class MulScalar(TensorOp):
         return a * self.scalar
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        return mul_scalar(out_grad, self.scalar)
+        return mul_scalar(out_grad, self.scalar),
 
 def mul_scalar(a, scalar):
     return MulScalar(scalar)(a)
@@ -76,7 +76,7 @@ class PowerScalar(TensorOp):
         a = node.inputs[0]
         grad = power_scalar(a, self.scalar - 1)
         grad = mul_scalar(grad, self.scalar)
-        return multiply(out_grad, grad)
+        return multiply(out_grad, grad),
 
 def power_scalar(a, scalar):
     return PowerScalar(scalar)(a)
@@ -94,14 +94,13 @@ class EWiseDiv(TensorOp):
     vì gradient(1/b) = gradient(b^-1)
     mà gradient(b^n) =  n * b^(n - 1)
     => gradient(1/b) = -1 * b^(-2) = -power(b, -2)
+    => gradient_b(a / b) = -power(b, -2) * a
     '''
     def gradient(self, out_grad: Tensor, node: Tensor):
         a, b = node.inputs
         return (
             divide(out_grad, b), 
-            out_grad * (-power_scalar(b, -2) * a)
-            # sử dụng toán tử * thay cho `multiple`
-            #                 - thay cho `negate`
+            multiply(out_grad, multiply(negate(power_scalar(b, -2)), a))
         )
 
 def divide(a, b):
@@ -116,11 +115,10 @@ class DivScalar(TensorOp):
         return a / self.scalar
 
     def gradient(self, out_grad, node):
-        return divide_scalar(out_grad, self.scalar)
+        return divide_scalar(out_grad, self.scalar),
 
 def divide_scalar(a, scalar):
     return DivScalar(scalar)(a)
-
 
 
 class Transpose(TensorOp):
@@ -135,7 +133,7 @@ class Transpose(TensorOp):
         	return array_api.swapaxes(a, n-1, n-2)
 
     def gradient(self, out_grad, node):
-        return transpose(out_grad, self.axes)
+        return transpose(out_grad, self.axes),
 
 def transpose(a, axes=None):
     return Transpose(axes)(a)
@@ -149,7 +147,7 @@ class Reshape(TensorOp):
         return array_api.reshape(a, self.shape)
 
     def gradient(self, out_grad, node):
-        return reshape(out_grad, node.inputs[0].shape)
+        return reshape(out_grad, node.inputs[0].shape),
 
 def reshape(a, shape):
 	return Reshape(shape)(a)
@@ -171,7 +169,7 @@ class BroadcastTo(TensorOp):
                 axes += (i,)
         
         accum_grads = summation(out_grad, axes=axes)
-        return reshape(accum_grads, a.shape)
+        return reshape(accum_grads, a.shape),
 
 def broadcast_to(a, shape):
     return BroadcastTo(shape)(a)
@@ -198,7 +196,7 @@ class Summation(TensorOp):
             new_shape = new_shape[0:idx] + (1,) + new_shape[idx:]        
         # Các thao tác trên chỉ để tính new_shape
 
-        return broadcast_to(reshape(out_grad, new_shape), a.shape)
+        return broadcast_to(reshape(out_grad, new_shape), a.shape),
 
 def summation(a, axes=None):
     return Summation(axes)(a)
@@ -242,7 +240,7 @@ class Negate(TensorOp):
         return array_api.negative(a)
 
     def gradient(self, out_grad, node):
-        return negate(out_grad)
+        return negate(out_grad),
 
 def negate(a):
     return Negate()(a)
@@ -253,7 +251,7 @@ class Log(TensorOp):
         return array_api.log(a)
 
     def gradient(self, out_grad, node):
-        return out_grad / node.inputs[0]
+        return divide(out_grad, node.inputs[0]),
 
 def log(a):
     return Log()(a)
@@ -265,7 +263,7 @@ class Exp(TensorOp):
 
     def gradient(self, out_grad, node):
         # đạo hàm e^x là e^x
-        return out_grad * exp(node.inputs[0])
+        return multiply(out_grad, exp(node.inputs[0])),
 
 def exp(a):
     return Exp()(a)
@@ -277,7 +275,7 @@ class ReLU(TensorOp):
 
     def gradient(self, out_grad, node):
         a = node.inputs[0].numpy()
-        return out_grad * array_api.where(a <= 0, 0, 1)
+        return multiply(out_grad, Tensor(array_api.where(a <= 0, 0, 1))),
 
 def relu(a):
     return ReLU()(a)

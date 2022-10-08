@@ -25,8 +25,7 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
         # kim.broadcast_to và kim.summation rơi vào trường hợp này
         out = f(*args, **kwargs)
         computed_grads = [x.numpy() 
-            for x in out.op.gradient_as_tuple(kim.Tensor(np.ones(out.shape)), out)]
-        # Dùng gradient_as_tuple để computed_grads luôn là mảng 2 thành phần
+            for x in out.op.gradient(kim.Tensor(np.ones(out.shape)), out)]
     else:
         out = f(*args, **kwargs).sum()
         out.backward()

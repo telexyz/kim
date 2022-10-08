@@ -229,3 +229,16 @@ def test_transpose_forward():
        [[0.95, 1.4 , 0.8 ],
         [1.85, 2.5 , 4.8 ],
         [4.35, 4.25, 3.05]]]))
+
+def test_log_forward():
+    # test forward pass for log
+    np.testing.assert_allclose(kim.log(kim.Tensor([[4.  ],
+       [4.55]])).numpy(), np.array([[1.38629436112 ],
+       [1.515127232963]]))
+
+def test_relu_forward():
+    np.testing.assert_allclose(kim.relu(kim.Tensor([[-46.9 , -48.8 , -45.45, -49.  ],
+       [-49.75, -48.75, -45.8 , -49.25],
+       [-45.65, -45.25, -49.3 , -47.65]])).numpy(), np.array([[0., 0., 0., 0.],
+       [0., 0., 0., 0.],
+       [0., 0., 0., 0.]]))

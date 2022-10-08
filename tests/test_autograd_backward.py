@@ -4,6 +4,28 @@ import kim
 
 from gradient_check import *
 
+def test_add_backward():
+    gradient_check(kim.add, kim.Tensor(np.random.randn(5, 4)),
+        kim.Tensor(5 + np.random.randn(5, 4)))
+
+
+def test_add_scalar_backward():
+    gradient_check(kim.add_scalar, kim.Tensor(np.random.randn(5, 4)), scalar=3)
+
+
+def test_multiply_backward():
+    gradient_check(kim.multiply, kim.Tensor(np.random.randn(5, 4)),
+        kim.Tensor(5 + np.random.randn(5, 4)))
+
+
+def test_mul_scalar_backward():
+    gradient_check(kim.mul_scalar, kim.Tensor(np.random.randn(5, 4)), scalar=3)
+
+
+def test_power_scalar_backward():
+    gradient_check(kim.power_scalar, kim.Tensor(np.random.randn(5, 4)), scalar=3)
+
+
 def test_divide_backward():
     gradient_check(kim.divide, kim.Tensor(np.random.randn(5, 4)),
         kim.Tensor(5 + np.random.randn(5, 4)))
@@ -90,21 +112,9 @@ def test_backward():
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4,5)), axes=(0,1,2))
 
 
-def test_log_forward_backward(): 
-    # test forward pass for log
-    np.testing.assert_allclose(kim.log(kim.Tensor([[4.  ],
-       [4.55]])).numpy(), np.array([[1.38629436112 ],
-       [1.515127232963]]))
-
-    # test backward pass for log
+def test_log_backward():
     gradient_check(kim.log, kim.Tensor(1 + np.random.rand(5,4)))
 
 
-def test_relu_forward_backward(): 
-    # test forward/backward pass for relu
-    np.testing.assert_allclose(kim.relu(kim.Tensor([[-46.9 , -48.8 , -45.45, -49.  ],
-       [-49.75, -48.75, -45.8 , -49.25],
-       [-45.65, -45.25, -49.3 , -47.65]])).numpy(), np.array([[0., 0., 0., 0.],
-       [0., 0., 0., 0.],
-       [0., 0., 0., 0.]]))
+def test_relu_backward():
     gradient_check(kim.relu, kim.Tensor(np.random.randn(5,4)))

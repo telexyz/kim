@@ -143,7 +143,8 @@ class Tensor:
         State.TENSOR_COUNTER -= 1
 
 
-    def assign_params_n_record_creation(self, op: Optional[TensorOp], 
+    def assign_params_n_record_creation(
+        self, op: Optional[TensorOp],
         inputs: List["Tensor"], *,
     	cached_data: List[object] = None,
         requires_grad: Optional[bool] = None
@@ -208,7 +209,8 @@ class Tensor:
     '''
     @staticmethod
     def make_from_op(op: TensorOp, inputs: List["Tensor"]):
-        tensor = Tensor(None) # Tạo một tensor mới
+        # tensor = Tensor(None) # Tạo một tensor mới
+        tensor = Tensor.__new__(Tensor) # Tạo một tensor mới
         tensor.assign_params_n_record_creation(op=op, inputs=inputs)
         if not State.LAZY_MODE:
             if not tensor.requires_grad:
@@ -218,7 +220,8 @@ class Tensor:
 
     @staticmethod
     def make_const(data, requires_grad=False):
-        tensor = Tensor.__new__(None) # Tạo một tensor mới
+        # tensor = Tensor(None) # Tạo một tensor mới
+        tensor = Tensor.__new__(Tensor) # Tạo một tensor mới
         tensor.assign_params_n_record_creation(
             op=None,
             inputs=[],
@@ -265,9 +268,8 @@ class Tensor:
 
 
     def backward(self, out_grad=None):
-        if out_grad is None: # Khởi tạo out_grad nếu chưa có
-            out_grad = Tensor(numpy.ones(self.shape))
-        compute_gradient_of_variables(self, out_grad)
+        if out_grad is None: out_grad = Tensor(numpy.ones(self.shape))
+        compute_gradient_of_backward_graph_variables(self, out_grad)
 
 
     def __repr__(self):
@@ -281,7 +283,8 @@ class Tensor:
         data = self.realize_cached_data()
         if array_api is numpy:
             return data
-        return data.numpy()
+        else:
+            return data.numpy()
 
 
     def __add__(self, other):
@@ -352,35 +355,57 @@ def get_array_from_numpy(numpy_array, device, dtype):
         return numpy.array(numpy_array, dtype=dtype)
     return array_api.array(numpy_array, device=device, dtype=dtype)
 
-def compute_gradient_of_variables(output_tensor, out_grad):
-    """Take gradient of output node with respect to each node in node_list.
-    Store the computed result in the grad field of each Variable.
+
+def compute_gradient_of_backward_graph_variables(output_tensor, out_grad):
+    """Đầu vào: gradient (out_grad) của một output nốt (output_tensor)
+    Đầu ra: lưu trữ gradient ngược (backward) vào các trường `grad` 
+    của các biến tương ứng trong đồ thị tính toán (các biến ở đây chính là 
+    các tensors).
+
+    Quá trình này sẽ tạo ra đồ thị tính toán ngược cho backward bắt đầu từ 
+    `output_tensor` node. Bằng việc gọi hàm `gradient()` của từng op của node theo
+    thứ tự topo ngược của đồ thị tính toán xuôi, và các toán tử trong `gradient()`
+    tạo ra các node mới liên kết `out_grad` và các `node.inputs` để tạo nên `.grad`
+    của từng node của cả đồ thị tính toán ngược và xuôi.
     """
 
-    # ánh xạ từ 1 nút đến danh sách các đóng góp gradient từ mỗi nút đầu ra
-    node_to_output_grads_list: Dict[Tensor, List[Tensor]] = {}
+    # Ánh xạ tới các đóng góp gradient của một nốt trong trong đồ thị tính toán
+    # Một node có thể là đầu vào (toán hạng) của nhiều toán tử nên backward gradient 
+    # nó là tổng gradient được đóng góp từ các ops có sử dụng nó.
+    output_grads: Dict[Tensor, List[Tensor]] = {}
 
     # Lưu ý đặc biệt về khởi tạo gradient
     # Chúng ta thực sự đang lấy một đạo hàm của vô hướng reduce_sum(output_node)
-    # thay vì vector output_node. Nhưng đây là trường hợp phổ biến đối với hàm mất mát 
-    node_to_output_grads_list[output_tensor] = [out_grad]
+    # thay vì vector output_node. Đây là trường hợp phổ biến đối với hàm mất mát 
+    output_grads[output_tensor] = [out_grad]
 
-    # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
-    reverse_topo_order = list(reversed(find_topo_sort([output_tensor])))
+    # Duyệt đồ thị tính toán theo chiều ngược, bắt đầu từ `output_tensor` để tính
+    # gradient lan truyền ngược trở lại các input nodes. Trong quá trình đó,
+    # đồ thị tính toán ngược sẽ được hình thành từ `out_grad` và `node.inputs`
+    # của các node tương ứng được duyệt
+    reverse_topo_order = reversed(find_topo_sort([output_tensor]))
 
     for node in reverse_topo_order:
-        out_grads = node_to_output_grads_list[node]
-        node.grad = sum(out_grads)
+        out_grads = output_grads[node]
+        # print(">>>", len(out_grads), out_grads)
+
+        node.grad = out_grads[0]
+        for i in range(len(out_grads) - 1):
+            node.grad = kim.add(node.grad, out_grads[i + 1])
+        # print(">>>", node.grad)
 
         if node.op:
-            grads = node.op.gradient_as_tuple(node.grad, node)
+            input_grads = node.op.gradient_as_tuple(node.grad, node)
 
             for k in range(len(node.inputs)):
-                inp = node.inputs[k]
+                input_k_tensor = node.inputs[k]
+                input_k_grad = input_grads[k]
                 try:
-                    node_to_output_grads_list[inp].append(grads[k])
+                    output_grads[input_k_tensor].append( input_k_grad )
                 except KeyError:
-                    node_to_output_grads_list[inp] = [ grads[k] ]
+                    # nếu output_grads của `input_tensor` chưa được
+                    # khởi tạo thì khởi tạo lần đầu
+                    output_grads[input_k_tensor] = [ input_k_grad ]
 
 
 def find_topo_sort(node_list: List[Tensor]) -> List[Tensor]:

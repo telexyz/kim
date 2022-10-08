@@ -4,6 +4,11 @@ from .autograd import NDArray # Tạm thời NDArray = numpy.ndarray
 from .autograd import Tensor, TensorOp
 import numpy as array_api
 
+'''Lưu ý: các hàm tính gradient() của các TensorOp được định nghĩa dưới đây
+dùng ngay chính các toán tử TensorOp để tạo ra một đồ thị tính toán ngược để có thể 
+bắt đầu quy trình backward.
+'''
+
 class EWiseAdd(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
         return a + b
@@ -35,7 +40,7 @@ class EWiseMul(TensorOp):
 
     def gradient(self, out_grad: Tensor, node: Tensor):
         a, b = node.inputs
-        return multiply(out_grad, rhs), multiply(out_grad, lhs)
+        return multiply(out_grad, b), multiply(out_grad, a)
 
 def multiply(a, b):
     return EWiseMul()(a, b)
@@ -68,7 +73,10 @@ class PowerScalar(TensorOp):
     def gradient(self, out_grad: Tensor, node: Tensor):
         # adjoin w.r.t a = out_grad * grad(a^scalar)
         #                = out_grad * scalar * a ^ (scalar - a)
-        return out_grad * power_scalar(node.inputs[0], 1 - self.scalar)
+        a = node.inputs[0]
+        grad = power_scalar(a, self.scalar - 1)
+        grad = mul_scalar(grad, self.scalar)
+        return multiply(out_grad, grad)
 
 def power_scalar(a, scalar):
     return PowerScalar(scalar)(a)

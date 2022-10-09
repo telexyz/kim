@@ -1,5 +1,5 @@
 """Optimization module"""
-import kim as ndl
+import kim
 import numpy as np
 
 
@@ -20,12 +20,15 @@ class SGD(Optimizer):
         super().__init__(params)
         self.lr = lr
         self.momentum = momentum
-        self.u = {}
         self.weight_decay = weight_decay
+        self.u = {}
+        for w in self.params:
+            self.u[w] = kim.cpu().zeros(*w.shape)
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for w in self.params:
+            w.data = w.data + (-self.lr ) * w.grad.data
         ### END YOUR SOLUTION
 
 

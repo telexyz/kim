@@ -6,10 +6,8 @@ from kim import ops
 import kim.init as init
 import numpy as np
 
-
 class Parameter(Tensor):
     """A special kind of tensor that represents parameters."""
-
 
 def _unpack_params(value: object) -> List[Tensor]:
     if isinstance(value, Parameter):
@@ -84,11 +82,12 @@ class Linear(Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = init.kaiming_uniform(in_features, out_features, dtype=dtype)
-        # 
+        self.weight = Parameter(
+            init.kaiming_uniform(in_features, out_features, dtype=dtype)
+        )
         if bias is True:
             bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype)
-            self.bias = ops.transpose(bias_init)
+            self.bias = Parameter(ops.transpose(bias_init))
         else:
             self.bias = None
 
@@ -127,13 +126,15 @@ class Sequential(Module):
 
 class SoftmaxLoss(Module):
     def forward(self, logits: Tensor, y: Tensor):
-        y_one_hot = init.one_hot(logits.shape[1], y)
+        y_one_hot = init.one_hot(logits.shape[1], y, dtype=logits.dtype)
 
         logsum = ops.logsumexp(logits, axes=(1,))
         logits_y = ops.summation(logits * y_one_hot, axes=(1,))
 
         x = ops.add(logsum, ops.negate(logits_y))
-        return ops.summation(x) / logits.shape[0]
+        # workaround to convert logits.shape[0] to logits.dtype
+        n = np.array([logits.shape[0]], dtype=logits.dtype)[0]
+        return ops.summation(x) / n
 
 
 class Dropout(Module):
@@ -143,7 +144,7 @@ class Dropout(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         if self.training:
-            mask = init.randb(x.shape[0], x.shape[1], p=self.p, dtype="float32")
+            mask = init.randb(x.shape[0], x.shape[1], p=self.p, dtype=x.dtype)
             y = x * mask
             return y / (1-self.p)
         return x

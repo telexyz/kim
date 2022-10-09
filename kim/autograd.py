@@ -21,6 +21,9 @@ class CpuDevice(Device):
     def __repr__(self):
         return "kim.cpu()"
 
+    def __eq__(self, other): # để xác định 2 instances của CpuDevice là = nhau
+        return isinstance(other, CpuDevice)
+
     def enabled(self):
         return True
 
@@ -115,7 +118,7 @@ class Tensor:
             if device is None: device = array.device
             if dtype is None: dtype = array.dtype
             if device == array.device and dtype == array.dtype:
-                cached_data = array.realize_cache_data()
+                cached_data = array.realize_cached_data()
         else:
             if device is None: device = cpu()
             cached_data = get_array_from_numpy(array, device=device, dtype=dtype)
@@ -154,11 +157,17 @@ class Tensor:
     def detach(self):
         return Tensor.make_const(self.realize_cached_data())
 
+    def backward(self, out_grad: Optional["Tensor"] = None):
+        if out_grad is None:
+            out_grad = Tensor(cpu().ones(*self.shape, dtype="float32"))
+        compute_gradient_of(self, out_grad)
+
     @property
-    def data(self): return self.detached()    
+    def data(self): return self.detach()
 
     @data.setter
     def data(self, value):
+        # print(">>>", value)
         assert isinstance(value, Tensor)
         assert value.dtype == self.dtype, "%s %s" % (value.dtype, self.dtype)
         self.cached_data = value.realize_cached_data()
@@ -174,6 +183,8 @@ class Tensor:
         if array_api is numpy: return cpu()
         else: return self.realize_cached_data().device
 
+    """ Syntax sugar, không có không sao
+    """
     def __add__(self, other):
         if isinstance(other, Tensor): return kim.ops.EWiseAdd()(self, other)
         else: return kim.ops.AddScalar(other)(self)
@@ -210,10 +221,6 @@ class Tensor:
 
     __radd__ = __add__
     __rmul__ = __mul__
-
-    def backward(self, out_grad: Optional["Tensor"] = None):
-        if out_grad is None: out_grad = Tensor(numpy.ones(self.shape))
-        compute_gradient_of(self, out_grad)
 
 
 ################################
@@ -261,7 +268,12 @@ def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
     reverse_topo_order = reversed(find_topo_sort([output_tensor]))
 
     for node in reverse_topo_order:
-        node.grad = sum(output_grads[node])
+        my_grads = output_grads[node]
+        node.grad = my_grads[0]
+        for i in range(len(my_grads)-1): node.grad += my_grads[i+1]
+        # print(">>>", node.op) # bắt lỗi grad không phải float32
+        assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node)
+
         if node.op:
             grads = node.op.gradient(node.grad, node)
             for k in range(len(node.inputs)):
@@ -274,6 +286,7 @@ def find_topo_sort(nodes: List[Tensor]) -> List[Tensor]:
     for node in nodes:
         topo_sort_dfs(node, topo_order)
     return topo_order
+
 
 def topo_sort_dfs(node: Tensor, topo_order: List[Tensor]):
     for input_node in node.inputs: topo_sort_dfs(input_node, topo_order)

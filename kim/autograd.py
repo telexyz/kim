@@ -45,9 +45,10 @@ def cpu():
 def all_devices():
     return [cpu()]
 
-##################################
-####### Tensor và TensorOp #######
-##################################
+####################################
+####### Tensor và TensorOp   #######
+####### Cốt tủy của AutoGrad #######
+####################################
 
 class TensorOp:
     def __call__(self, *args):
@@ -60,6 +61,7 @@ class TensorOp:
 class TensorTupleOp(TensorOp):
     def __call__(self, *args):
         return TensorTuple.make_from_op(self, args)
+
 
 class Tensor:
     def __repr__(self):
@@ -155,6 +157,12 @@ class Tensor:
     @property
     def data(self): return self.detached()    
 
+    @data.setter
+    def data(self, value):
+        assert isinstance(value, Tensor)
+        assert value.dtype == self.dtype, "%s %s" % (value.dtype, self.dtype)
+        self.cached_data = value.realize_cached_data()
+
     @property
     def shape(self): return self.realize_cached_data().shape
 
@@ -208,6 +216,11 @@ class Tensor:
         compute_gradient_of(self, out_grad)
 
 
+################################
+####### Cấu trúc dữ liệu #######
+####### trên Tensor      #######
+################################
+
 class TensorTuple(Tensor):
     def __len__(self):
         return len(self.realize_cached_data())
@@ -231,6 +244,7 @@ class TensorTuple(Tensor):
 
     def detach(self):
         return Tuple.make_const(self.realize_cached_data())
+
 
 ##############################
 ####### Helper Methods #######

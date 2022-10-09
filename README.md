@@ -24,3 +24,6 @@ Thư viện học sâu triển khai theo khóa học https://dlsyscourse.org
 
 ## Các modules của mạng nơ-ron
 ![](files/modules.png)
+*Kiến trúc của một mạng nơ-ron (multi-layer residual)*
+
+Note: hình tròn là tensor, hình chữ nhật là module. Module đơn vị được cấu thành từ các tensors và các phép toán trên tensors. Các module kết hợp với nhau tạo nên module mức cao hơn (phức tạp hơn).

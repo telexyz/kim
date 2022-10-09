@@ -1,13 +1,6 @@
-import sys
-sys.path.append("./python")
 import numpy as np
 import kim as ndl
 import kim.nn as nn
-
-sys.path.append("./apps")
-from mlp_resnet import *
-
-import mugrade
 
 """Deterministically generate a matrix"""
 def get_tensor(*shape, entropy=1):
@@ -155,68 +148,11 @@ def residual_backward(shape=(5,5)):
     f(x).sum().backward()
     return x.grad.cached_data
 
-def learn_model_1d(feature_size, nclasses, _model, optimizer, epochs=1, **kwargs):
-    np.random.seed(42)
-    model = _model([])
-    X = get_tensor(1024, feature_size).cached_data
-    y = get_int_tensor(1024, low=0, high=nclasses).cached_data.astype(np.uint8)
-    m = X.shape[0]
-    batch = 32
-
-    loss_func = nn.SoftmaxLoss()
-    opt = optimizer(model.parameters(), **kwargs)
-
-    for _ in range(epochs):
-        for i, (X0, y0) in enumerate(zip(np.array_split(X, m//batch), np.array_split(y, m//batch))):
-            opt.reset_grad()
-            X0, y0 = ndl.Tensor(X0, dtype="float32"), ndl.Tensor(y0)
-            out = model(X0)
-            loss = loss_func(out, y0)
-            loss.backward()
-            # Opt should not change gradients.
-            grad_before = model.parameters()[0].grad.detach().cached_data
-            opt.step()
-            grad_after = model.parameters()[0].grad.detach().cached_data
-            np.testing.assert_allclose(grad_before, grad_after, rtol=1e-5, atol=1e-5, \
-                                       err_msg="Optim should not modify gradients in place")
-
-
-    return np.array(loss.cached_data)
-
-def learn_model_1d_eval(feature_size, nclasses, _model, optimizer, epochs=1, **kwargs):
-    np.random.seed(42)
-    model = _model([])
-    X = get_tensor(1024, feature_size).cached_data
-    y = get_int_tensor(1024, low=0, high=nclasses).cached_data.astype(np.uint8)
-    m = X.shape[0]
-    batch = 32
-
-    loss_func = nn.SoftmaxLoss()
-    opt = optimizer(model.parameters(), **kwargs)
-
-    for i, (X0, y0) in enumerate(zip(np.array_split(X, m//batch), np.array_split(y, m//batch))):
-        opt.reset_grad()
-        X0, y0 = ndl.Tensor(X0, dtype="float32"), ndl.Tensor(y0)
-        out = model(X0)
-        loss = loss_func(out, y0)
-        loss.backward()
-        opt.step()
-
-    X_test = ndl.Tensor(get_tensor(batch, feature_size).cached_data)
-    y_test = ndl.Tensor(get_int_tensor(batch, low=0, high=nclasses).cached_data.astype(np.uint8))
-
-    model.eval()
-
-    return np.array(loss_func(model(X_test), y_test).cached_data)
-
 def init_a_tensor_of_shape(shape, init_fn):
     x = get_tensor(*shape)
     np.random.seed(42)
     init_fn(x)
     return x.cached_data
-
-def global_tensor_count():
-    return np.array(ndl.autograd.TENSOR_COUNTER)
 
 def nn_linear_weight_init():
     np.random.seed(1337)
@@ -232,8 +168,10 @@ def nn_linear_bias_init():
 class UselessModule(ndl.nn.Module):
     def __init__(self):
         super().__init__()
-        self.stuff = {'layer1': nn.Linear(4, 4),
-                      'layer2': [nn.Dropout(0.1), nn.Sequential(nn.Linear(4, 4))]}
+        self.stuff = {
+            'layer1':   nn.Linear(4, 4),
+            'layer2': [ nn.Dropout(0.1), nn.Sequential(nn.Linear(4, 4)) ]
+        }
 
     def forward(self, x):
         raise NotImplementedError()
@@ -297,50 +235,6 @@ def residual_block_forward(dim, hidden_dim, norm, drop_prob):
     input_tensor = ndl.Tensor(np.random.randn(1, dim))
     output_tensor = ResidualBlock(dim, hidden_dim, norm, drop_prob)(input_tensor)
     return output_tensor.numpy()
-
-def mlp_resnet_num_params(dim, hidden_dim, num_blocks, num_classes, norm):
-    model = MLPResNet(dim, hidden_dim, num_blocks, num_classes, norm)
-    return np.array(num_params(model))
-
-def mlp_resnet_forward(dim, hidden_dim, num_blocks, num_classes, norm, drop_prob):
-    np.random.seed(4)
-    input_tensor = ndl.Tensor(np.random.randn(2, dim), dtype=np.float32)
-    output_tensor = MLPResNet(dim, hidden_dim, num_blocks, num_classes, norm, drop_prob)(input_tensor)
-    return output_tensor.numpy()
-
-def train_epoch_1(hidden_dim, batch_size, optimizer, **kwargs):
-    np.random.seed(1)
-    train_dataset = ndl.data.MNISTDataset(\
-            "./data/train-images-idx3-ubyte.gz",
-            "./data/train-labels-idx1-ubyte.gz")
-    train_dataloader = ndl.data.DataLoader(\
-             dataset=train_dataset,
-             batch_size=batch_size)
-
-    model = MLPResNet(784, hidden_dim)
-    opt = optimizer(model.parameters(), **kwargs)
-    model.eval()
-    return np.array(epoch(train_dataloader, model, opt))
-
-def eval_epoch_1(hidden_dim, batch_size):
-    np.random.seed(1)
-    test_dataset = ndl.data.MNISTDataset(\
-            "./data/t10k-images-idx3-ubyte.gz",
-            "./data/t10k-labels-idx1-ubyte.gz")
-    test_dataloader = ndl.data.DataLoader(\
-             dataset=test_dataset,
-             batch_size=batch_size,
-             shuffle=False)
-
-    model = MLPResNet(784, hidden_dim)
-    model.train()
-    return np.array(epoch(test_dataloader, model))
-
-def train_mnist_1(batch_size, epochs, optimizer, lr, weight_decay, hidden_dim):
-    np.random.seed(1)
-    out = train_mnist(batch_size, epochs, optimizer, lr, weight_decay, hidden_dim, data_dir="./data")
-    return np.array(out)
-
 
 def test_check_prng_contact_us_if_this_fails_1():
     np.testing.assert_allclose(check_prng(3, 3),
@@ -707,128 +601,3 @@ def test_nn_flatten_backward_5():
          [6. , 0. , 0.3],
          [2. , 0.1, 2.7],
          [2.1, 0.1, 6.7]]]], dtype=np.float32), rtol=1e-5, atol=1e-5)
-
-
-def test_optim_sgd_vanilla_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.SGD, lr=0.01, momentum=0.0),
-        np.array(3.207009), rtol=1e-5, atol=1e-5)
-
-def test_optim_sgd_momentum_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.SGD, lr=0.01, momentum=0.9),
-        np.array(3.311805), rtol=1e-5, atol=1e-5)
-
-def test_optim_sgd_weight_decay_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.SGD, lr=0.01, momentum=0.0, weight_decay=0.01),
-        np.array(3.202637), rtol=1e-5, atol=1e-5)
-
-def test_optim_sgd_momentum_weight_decay_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.SGD, lr=0.01, momentum=0.9, weight_decay=0.01),
-        np.array(3.306993), rtol=1e-5, atol=1e-5)
-
-def test_optim_sgd_layernorm_residual_1():
-    nn.LayerNorm1d(8)
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 8), nn.ReLU(), nn.Residual(nn.Linear(8, 8)), nn.Linear(8, 16)), ndl.optim.SGD, epochs=3, lr=0.01, weight_decay=0.001),
-        np.array(2.852236), rtol=1e-5, atol=1e-5)
-
-# We're checking that you have not allocated too many tensors;
-# if this fails, make sure you're using .detach()/.data whenever possible.
-def test_optim_sgd_z_memory_check_1():
-    np.testing.assert_allclose(global_tensor_count(),
-        np.array(387), rtol=1e-5, atol=1000)
-
-
-def test_optim_adam_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001),
-        np.array(3.703999), rtol=1e-5, atol=1e-5)
-
-def test_optim_adam_weight_decay_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.01),
-        np.array(3.705134), rtol=1e-5, atol=1e-5)
-
-def test_optim_adam_batchnorm_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.001),
-        np.array(3.296256, dtype=np.float32), rtol=1e-5, atol=1e-5)
-
-def test_optim_adam_batchnorm_eval_mode_1():
-    np.testing.assert_allclose(learn_model_1d_eval(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.001),
-        np.array(3.192054, dtype=np.float32), rtol=1e-5, atol=1e-5)
-
-def test_optim_adam_layernorm_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.LayerNorm1d(32), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.01, weight_decay=0.01),
-        np.array(2.82192, dtype=np.float32), rtol=1e-5, atol=1e-5)
-
-def test_optim_adam_weight_decay_bias_correction_1():
-    np.testing.assert_allclose(learn_model_1d(64, 16, lambda z: nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.01),
-        np.array(3.705134), rtol=1e-5, atol=1e-5)
-
-# We're checking that you have not allocated too many tensors;
-# if this fails, make sure you're using .detach()/.data whenever possible.
-def test_optim_adam_z_memory_check_1():
-    np.testing.assert_allclose(global_tensor_count(),
-        np.array(1132), rtol=1e-5, atol=1000)
-
-def test_mlp_residual_block_num_params_1():
-    np.testing.assert_allclose(residual_block_num_params(15, 2, nn.BatchNorm1d),
-        np.array(111), rtol=1e-5, atol=1e-5)
-
-def test_mlp_residual_block_num_params_2():
-    np.testing.assert_allclose(residual_block_num_params(784, 100, nn.LayerNorm1d),
-        np.array(159452), rtol=1e-5, atol=1e-5)
-
-def test_mlp_residual_block_forward_1():
-    np.testing.assert_allclose(
-        residual_block_forward(15, 10, nn.LayerNorm1d, 0.5),
-        np.array([[
-            0., 1.358399, 0., 1.384224, 0., 0., 0.255451, 0.077662, 0.,
-            0.939582, 0.525591, 1.99213, 0., 0., 1.012827
-        ]],
-        dtype=np.float32),
-        rtol=1e-5,
-        atol=1e-5,
-    )
-
-def test_mlp_resnet_num_params_1():
-    np.testing.assert_allclose(mlp_resnet_num_params(150, 100, 5, 10, nn.LayerNorm1d),
-        np.array(68360), rtol=1e-5, atol=1e-5)
-
-def test_mlp_resnet_num_params_2():
-    np.testing.assert_allclose(mlp_resnet_num_params(10, 100, 1, 100, nn.BatchNorm1d),
-        np.array(21650), rtol=1e-5, atol=1e-5)
-
-def test_mlp_resnet_forward_1():
-    np.testing.assert_allclose(
-        mlp_resnet_forward(10, 5, 2, 5, nn.LayerNorm1d, 0.5),
-        np.array([[3.046162, 1.44972, -1.921363, 0.021816, -0.433953],
-                  [3.489114, 1.820994, -2.111306, 0.226388, -1.029428]],
-                 dtype=np.float32),
-        rtol=1e-5,
-        atol=1e-5)
-
-def test_mlp_resnet_forward_2():
-    np.testing.assert_allclose(
-        mlp_resnet_forward(15, 25, 5, 14, nn.BatchNorm1d, 0.0),
-        np.array([[
-            0.92448235, -2.745743, -1.5077105, 1.130784, -1.2078242,
-            -0.09833566, -0.69301605, 2.8945382, 1.259397, 0.13866742,
-            -2.963875, -4.8566914, 1.7062538, -4.846424
-        ],
-        [
-            0.6653336, -2.4708004, 2.0572243, -1.0791507, 4.3489094,
-            3.1086435, 0.0304327, -1.9227124, -1.416201, -7.2151937,
-            -1.4858506, 7.1039696, -2.1589825, -0.7593413
-        ]],
-        dtype=np.float32),
-        rtol=1e-5,
-        atol=1e-5)
-
-def test_mlp_train_epoch_1():
-    np.testing.assert_allclose(train_epoch_1(5, 250, ndl.optim.Adam, lr=0.01, weight_decay=0.1),
-        np.array([0.675267, 1.84043]), rtol=0.0001, atol=0.0001)
-
-def test_mlp_eval_epoch_1():
-    np.testing.assert_allclose(eval_epoch_1(10, 150),
-        np.array([0.9164 , 4.137814]), rtol=1e-5, atol=1e-5)
-
-def test_mlp_train_mnist_1():
-    np.testing.assert_allclose(train_mnist_1(250, 2, ndl.optim.SGD, 0.001, 0.01, 100),
-        np.array([0.4875 , 1.462595, 0.3245 , 1.049429]), rtol=0.001, atol=0.001)

@@ -23,12 +23,17 @@ class SGD(Optimizer):
         self.weight_decay = weight_decay
         self.u = {}
         for w in self.params:
-            self.u[w] = kim.cpu().zeros(*w.shape)
+            self.u[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
 
     def step(self):
+        # https://stats.stackexchange.com/questions/259752/sgd-l2-penalty-weights
         ### BEGIN YOUR SOLUTION
         for w in self.params:
-            w.data = w.data + (-self.lr ) * w.grad.data
+            l2 = (2 * self.weight_decay) * w.data
+            beta = self.momentum # update momentum of w
+            self.u[w] = beta * self.u[w] + (1 - beta) * w.grad.data
+            w.data = w.data + ( -self.lr ) * (self.u[w] + l2)
+            # w.data = w.data + (-self.lr ) * w.grad.data # vanilla
         ### END YOUR SOLUTION
 
 

@@ -272,7 +272,7 @@ def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
         node.grad = my_grads[0]
         for i in range(len(my_grads)-1): node.grad += my_grads[i+1]
         # print(">>>", node.op) # bắt lỗi grad không phải float32
-        assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node)
+        # assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node.dtype)
 
         if node.op:
             grads = node.op.gradient(node.grad, node)

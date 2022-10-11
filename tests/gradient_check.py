@@ -23,9 +23,10 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
     
     if not backward: # `backward` mặc định là False => Sử dụng hàm `gradient()`
         # kim.broadcast_to và kim.summation rơi vào trường hợp này
-        out = f(*args, **kwargs)
-        computed_grads = [x.numpy() 
-            for x in out.op.gradient(kim.Tensor(np.ones(out.shape)), out)]
+        out_node = f(*args, **kwargs)
+        out_grad = kim.Tensor(np.ones(out_node.shape))
+        computed_grads = [ x.numpy()
+            for x in out_node.op.gradient(out_grad, out_node) ]
     else:
         out = f(*args, **kwargs).sum()
         out.backward()

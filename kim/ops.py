@@ -336,7 +336,7 @@ class ReLU(TensorOp):
     def gradient(self, out_grad, node):
         a = node.inputs[0].numpy()
         relu_a = array_api.where(a <= 0, 0, 1).astype(dtype=a.dtype)
-        return multiply(out_grad, Tensor(relu_a)),
+        return Tensor(out_grad.numpy() * relu_a),
 
 def relu(a):
     return ReLU()(a)

@@ -222,12 +222,24 @@ class BroadcastTo(TensorOp):
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]
+        # broadcasted from `a.shape` to `self.shape`
+
         axes = ()
         n = len(a.shape)
-        for i in range(len(self.shape)):
-            if i >= n or self.shape[i] != a.shape[i]:
-                axes += (i,)
+        if n == len(self.shape):
+            for i in range(len(self.shape)):
+                if i >= n or self.shape[i] != a.shape[i]:
+                    axes += (i,)
+        else:
+            k = 0
+            for i in range(len(self.shape)):
+                # print("@", i, k, self.shape[i], a.shape[k])
+                if n == 0 or self.shape[i] != a.shape[k]:
+                    axes += (i,)
+                else:
+                    k += 1
         
+        print(">>> broadcasted from", a.shape, "to", self.shape, "=>", axes)
         accum_grads = summation(out_grad, axes=axes)
         return reshape(accum_grads, a.shape),
 
@@ -256,7 +268,8 @@ class Summation(TensorOp):
             new_shape = new_shape[0:idx] + (1,) + new_shape[idx:]        
         # Các thao tác trên chỉ để tính new_shape
 
-        return broadcast_to(reshape(out_grad, new_shape), a.shape),
+        x = reshape(out_grad, new_shape)
+        return broadcast_to(x, a.shape),
 
 def summation(a, axes=None):
     return Summation(axes)(a)

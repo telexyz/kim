@@ -239,7 +239,7 @@ class BroadcastTo(TensorOp):
                 else:
                     k += 1
         
-        print(">>> broadcasted from", a.shape, "to", self.shape, "=>", axes)
+        # print(">>> broadcasted from", a.shape, "to", self.shape, "=>", axes)
         accum_grads = summation(out_grad, axes=axes)
         return reshape(accum_grads, a.shape),
 

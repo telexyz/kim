@@ -1,6 +1,7 @@
 # pip3 install pytest numpy numdifftools pybind11 requests
 
-# https://colab.research.google.com/github/dlsyscourse/lecture14/blob/main/14_hardware_acceleration_architecture_overview.ipynb
+# https://colab.research.google.com/drive/1dnXj1U2DWtnaHanFoYa7XODKUDIjcl_6
+
 
 # https://colab.research.google.com/github/dlsyscourse/hw2/blob/master/hw2.ipynb
 # https://www.youtube.com/watch?v=uB81vGRrH0c

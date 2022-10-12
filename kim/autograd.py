@@ -6,6 +6,10 @@ import numpy as array_api
 import numpy
 NDArray = numpy.ndarray
 
+# from . import backend_ndarray as array_api
+# from .backend_ndarray import all_devices, cuda, cpu, cpu_numpy, BackendDevice as Device
+# NDArray = array_api.NDArray
+
 class State:
     LAZY_MODE = False
     TENSOR_COUNT = 0

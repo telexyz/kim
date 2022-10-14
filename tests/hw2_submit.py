@@ -2,6 +2,9 @@ import kim as ndl
 import numpy as np
 import mugrade
 
+from test_ops import *
+from test_nn import *
+
 def submit_flip_horizontal():
     tform = ndl.data.RandomFlipHorizontal(0.5)
     np.random.seed(0)

@@ -1,6 +1,7 @@
 # pip3 install pytest numpy numdifftools pybind11 requests
 
 # https://colab.research.google.com/drive/1dnXj1U2DWtnaHanFoYa7XODKUDIjcl_6
+# https://colab.research.google.com/github/dlsyscourse/hw3/blob/master/hw3.ipynb
 
 
 # https://colab.research.google.com/github/dlsyscourse/hw2/blob/master/hw2.ipynb

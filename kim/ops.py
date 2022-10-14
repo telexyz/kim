@@ -238,7 +238,7 @@ class BroadcastTo(TensorOp):
                     axes += (i,)
                 else:
                     k += 1
-        
+
         # print(">>> broadcasted from", a.shape, "to", self.shape, "=>", axes)
         accum_grads = summation(out_grad, axes=axes)
         return reshape(accum_grads, a.shape),
@@ -370,12 +370,12 @@ class LogSumExp(TensorOp):
     def gradient(self, out_grad, node):
         a = node.inputs[0]
         exp_a = exp(a)
-
+        # 
         new_shape = self.new_shape(a.shape)
         sum_exp_a = summation(exp_a, self.axes)
         sum_exp_a = reshape(sum_exp_a, new_shape)
         sum_exp_a = broadcast_to(sum_exp_a, a.shape)
-
+        # 
         normalize = divide(exp_a, sum_exp_a)
         return (reshape(out_grad, new_shape) * normalize,)
 

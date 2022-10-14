@@ -107,25 +107,22 @@ class DataLoader:
         self.batch_size = batch_size
         if not self.shuffle:
             self.ordering = np.array_split(np.arange(len(dataset)), 
-                                           range(batch_size, len(dataset), batch_size))
+                range(batch_size, len(dataset), batch_size))
         # print(">>>", self.ordering)
 
     def __iter__(self):
-        ### BEGIN YOUR SOLUTION
         self.n = 0
-        ### END YOUR SOLUTION
         return self
 
     def __next__(self):
         ### BEGIN YOUR SOLUTION
-        if self.n >= len(self.dataset): raise StopIteration
-        curr = self.n
+        if self.n >= len(self.ordering): raise StopIteration
+        order = self.ordering[self.n]
         self.n += 1
 
-        order = self.ordering[curr]
-        batch = [Tensor(self.dataset[i]) for i in order]
+        batch = Tensor([self.dataset[i] for i in order])
         # batch = [self.dataset[i] for i in order]
-        print(">>>", order, len(batch))
+        print(">>>", order, batch.shape)
         return batch
         ### END YOUR SOLUTION
 

@@ -140,13 +140,12 @@ class SoftmaxLoss(Module):
 class Dropout(Module):
     def __init__(self, p = 0.5):
         super().__init__()
-        self.p = p
+        self.p = 1 - p
 
     def forward(self, x: Tensor) -> Tensor:
         if self.training:
             mask = init.randb(x.shape[0], x.shape[1], p=self.p, dtype=x.dtype)
-            y = x * mask
-            return y / (1-self.p)
+            return (x * mask) / self.p
         return x
 
 

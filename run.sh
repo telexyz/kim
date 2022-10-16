@@ -9,7 +9,7 @@
 # 
 # python3 -m pytest tests/test_init.py
 # python3 -m pytest tests/test_ops.py -k "op_logsumexp_backward_5"
-python3 -m pytest tests/test_data.py
+# python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py -k "submit_mnist_dataset"
 python3 -m pytest tests/test_optim.py
 python3 -m pytest tests/test_nn.py
 python3 -m pytest tests/test_mlp_resnet.py

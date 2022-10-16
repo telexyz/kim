@@ -75,9 +75,7 @@ class Dataset:
 
     def apply_transforms(self, x):
         if self.transforms is not None:
-            # apply the transforms
-            for tform in self.transforms:
-                x = tform(x)
+            for tform in self.transforms: x = tform(x) # apply the transforms
         return x
 
 
@@ -105,10 +103,14 @@ class DataLoader:
         self.dataset = dataset
         self.shuffle = shuffle
         self.batch_size = batch_size
-        if not self.shuffle:
+        if not shuffle:
             self.ordering = np.array_split(np.arange(len(dataset)), 
                 range(batch_size, len(dataset), batch_size))
-        # print(">>>", self.ordering)
+        else:
+            n = len(dataset)
+            a = np.arange(n)
+            np.random.shuffle(a)
+            self.ordering = np.array_split(a, range(batch_size, n, batch_size))
 
     def __iter__(self):
         self.n = 0
@@ -120,10 +122,12 @@ class DataLoader:
         order = self.ordering[self.n]
         self.n += 1
 
-        batch = Tensor([self.dataset[i] for i in order])
-        # batch = [self.dataset[i] for i in order]
-        print(">>>", order, batch.shape)
-        return batch
+        batch_xy = [self.dataset[i] for i in order]
+        batch_x = Tensor([xy[0] for xy in batch_xy])
+        if len(batch_xy[0]) == 1:
+            return (batch_x,)
+        batch_y = Tensor([xy[1] for xy in batch_xy])
+        return (batch_x, batch_y)
         ### END YOUR SOLUTION
 
 
@@ -150,18 +154,14 @@ class MNISTDataset(Dataset):
         ### END YOUR SOLUTION
 
     def __getitem__(self, index) -> object:
-        ### BEGIN YOUR SOLUTION
         img = self.images[index]
         if self.transforms:
             img = img.reshape((28, 28, 1))
             img = self.apply_transforms(img)
         return (img, self.labels[index])
-        ### END YOUR SOLUTION
 
     def __len__(self) -> int:
-        ### BEGIN YOUR SOLUTION
         return self.cached_len
-        ### END YOUR SOLUTION
 
 class NDArrayDataset(Dataset):
     def __init__(self, *arrays):

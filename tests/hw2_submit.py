@@ -191,3 +191,52 @@ def submit_mlp_resnet():
     mugrade.submit(train_epoch_1(7, 256, ndl.optim.Adam, lr=0.01, weight_decay=0.01))
     mugrade.submit(eval_epoch_1(12, 154))
     mugrade.submit(train_mnist_1(554, 1, ndl.optim.SGD, 0.01, 0.01, 7))
+
+
+def submit_dataloader():
+    batch_size = 1
+    mnist_train_dataset = ndl.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
+                                                "data/train-labels-idx1-ubyte.gz")
+    mnist_train_dataloader = ndl.data.DataLoader(dataset=mnist_train_dataset,
+                                                 batch_size=batch_size,
+                                                 shuffle=False)
+    subl = []
+    for i, batch in enumerate(mnist_train_dataloader):
+        batch_x, batch_y = batch[0].numpy(), batch[1].numpy()
+        subl.append(np.sum(batch_x[10:15,10:15]))
+        subl.append(np.sum(batch_y))
+        if i > 2:
+            break
+    mugrade.submit(subl)
+
+    batch_size = 5
+    mnist_test_dataset = ndl.data.MNISTDataset("data/t10k-images-idx3-ubyte.gz",
+                                               "data/t10k-labels-idx1-ubyte.gz")
+    mnist_test_dataloader = ndl.data.DataLoader(dataset=mnist_test_dataset,
+                                                batch_size=batch_size,
+                                                shuffle=False)
+
+    subl_x = []
+    subl_y = []
+    for i, batch in enumerate(mnist_test_dataloader):
+        batch_x, batch_y = batch[0].numpy(), batch[1].numpy()
+        subl_x.append(batch_x[10:15,10:15])
+        subl_y.append(batch_y)
+
+    mugrade.submit(subl_x[-2:])
+    mugrade.submit(subl_y[-2:])
+
+    np.random.seed(0)
+    shuf = ndl.data.DataLoader(dataset=mnist_test_dataset,
+                               batch_size=10,
+                               shuffle=True)
+    subl_x = []
+    subl_y = []
+    for i, batch in enumerate(mnist_test_dataloader):
+        batch_x, batch_y = batch[0].numpy(), batch[1].numpy()
+        subl_x.append(batch_x[10:15,10:15])
+        subl_y.append(batch_y)
+        if i > 2:
+            break
+    mugrade.submit(subl_x)
+    mugrade.submit(subl_y)

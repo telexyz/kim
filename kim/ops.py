@@ -360,10 +360,14 @@ class LogSumExp(TensorOp):
         self.axes = axes
 
     def compute(self, Z):
+        '''https://youtu.be/uB81vGRrH0c?t=1162
+        stable softmax lec video'''
         Z_max = array_api.max(Z, axis=self.axes)
         Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
         Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
-        exp_ZZ = array_api.exp(Z - Z_max_broadcast)
+        ZZ = Z - Z_max_broadcast
+        # print(">>>", ZZ.shape, ZZ); print(">>>", Z.shape, Z)
+        exp_ZZ = array_api.exp(ZZ)
         sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
         return array_api.log(sum_exp_ZZ) + Z_max
 

@@ -26,15 +26,9 @@ class SGD(Optimizer):
             self.u[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
 
     def step(self):
-        # https://stats.stackexchange.com/questions/259752/sgd-l2-penalty-weights
-        ### BEGIN YOUR SOLUTION
         for w in self.params:
-            l2 = (2 * self.weight_decay) * w.data
-            beta = self.momentum # update momentum of w
-            self.u[w] = beta * self.u[w] + (1 - beta) * w.grad.data
-            w.data = w.data + ( -self.lr ) * (self.u[w] + l2)
-            # w.data = w.data + (-self.lr ) * w.grad.data # vanilla
-        ### END YOUR SOLUTION
+            self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*w.grad.data
+            w.data = (1 - self.lr*self.weight_decay)*w.data + (-self.lr)*self.u[w]
 
 
 class Adam(Optimizer):
@@ -55,10 +49,25 @@ class Adam(Optimizer):
         self.weight_decay = weight_decay
         self.t = 0
 
-        self.m = {}
         self.v = {}
+        self.u = {}
+        for w in self.params:
+            self.u[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
+            self.v[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
 
     def step(self):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.t += 1
+
+        for w in self.params:
+            grad = w.grad.data
+            self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
+            self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*pow(grad,2)
+
+            if self.t != 0:
+                u_hat = self.u[w] / (1 - pow(self.beta1, self.t))
+                v_hat = self.v[w] / (1 - pow(self.beta2, self.t))
+            else:
+                u_hat = self.u[w]
+                v_hat = self.v[w]
+
+            w.data = (1 - self.lr*self.weight_decay)*w.data + (-self.lr)*u_hat / (kim.power_scalar(v_hat, 0.5) + self.eps)

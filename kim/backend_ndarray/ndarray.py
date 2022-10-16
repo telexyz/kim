@@ -98,12 +98,11 @@ class NDArray:
         """ Create by copying another NDArray, or from numpy """
         if isinstance(other, NDArray):
             # create a copy of existing NDArray
-            if device is None:
-                device = other.device
+            if device is None: device = other.device
             self._init(other.to(device) + 0.0)  # this creates a copy
         elif isinstance(other, np.ndarray):
             # create copy from numpy array
-            device = device if device is not None else default_device()
+            if device is None: device = default_device()
             array = self.make(other.shape, device=device)
             array.device.from_numpy(np.ascontiguousarray(other), array._handle)
             self._init(array)
@@ -228,7 +227,7 @@ class NDArray:
 
     def reshape(self, new_shape):
         """
-        Reshape the matrix without copying memory.  This will return a matrix
+        Reshape the matrix without copying memory. This will return a matrix
         that corresponds to a reshaped array but points to the same memory as
         the original array.
         Raises:

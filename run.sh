@@ -1,16 +1,16 @@
 # pip3 install pytest numpy numdifftools pybind11 requests
 
 # https://colab.research.google.com/drive/1dnXj1U2DWtnaHanFoYa7XODKUDIjcl_6
-# https://colab.research.google.com/github/dlsyscourse/hw3/blob/master/hw3.ipynb
+# https://colab.research.google.com/drive/1DjW7RRF3chDfkp8LcDJCyQB8Bd11nCZ0
 
 
 # https://colab.research.google.com/github/dlsyscourse/hw2/blob/master/hw2.ipynb
 # https://www.youtube.com/watch?v=uB81vGRrH0c
 # 
 # python3 -m pytest tests/test_init.py
+# python3 -m pytest tests/test_ops.py -k "op_logsumexp_backward_5"
 python3 -m pytest tests/test_data.py
 python3 -m pytest tests/test_optim.py
-python3 -m pytest tests/test_ops.py -k "op_logsumexp_backward_5"
 python3 -m pytest tests/test_nn.py
 python3 -m pytest tests/test_mlp_resnet.py
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py

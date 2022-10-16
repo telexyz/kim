@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 import mugrade
-import needle as ndl
-from needle import backend_ndarray as nd
+import kim as ndl
+from kim import backend_ndarray as nd
 
 
 _DEVICES = [nd.cpu(), pytest.param(nd.cuda(), 

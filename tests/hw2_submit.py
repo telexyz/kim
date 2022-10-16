@@ -4,6 +4,7 @@ import mugrade
 
 from test_ops import *
 from test_nn import *
+from test_optim import *
 
 def submit_flip_horizontal():
     tform = ndl.data.RandomFlipHorizontal(0.5)

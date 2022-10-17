@@ -181,8 +181,8 @@ class LayerNorm1d(Module):
         super().__init__()
         self.dim = dim
         self.eps = eps
-        self.weight = Parameter(init.ones(1, 1, dtype=dtype))
-        self.bias = Parameter(init.zeros(1, 1, dtype=dtype))
+        self.weight = Parameter(init.ones(1, dim, dtype=dtype))
+        self.bias = Parameter(init.zeros(1, dim, dtype=dtype))
 
     def forward(self, x: Tensor) -> Tensor:
         assert x.shape[1] == self.dim

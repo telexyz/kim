@@ -82,12 +82,13 @@ class Linear(Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = Parameter(
-            init.kaiming_uniform(in_features, out_features, dtype=dtype)
-        )
+        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype)
+        self.weight = Parameter(weight_init)
         if bias is True:
             bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype)
             self.bias = Parameter(ops.transpose(bias_init))
+            # bias_init = init.kaiming_uniform(1, out_features, dtype=dtype)
+            # self.bias = Parameter(bias_init)
         else:
             self.bias = None
 
@@ -180,11 +181,32 @@ class LayerNorm1d(Module):
         super().__init__()
         self.dim = dim
         self.eps = eps
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.weight = Parameter(init.ones(1, 1, dtype=dtype))
+        self.bias = Parameter(init.zeros(1, 1, dtype=dtype))
 
     def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        assert x.shape[1] == self.dim
+        n = x.shape[0]
+        # print(">>>", x.shape, n, self.dim)
+        mean = ops.summation(x, axes=1)
+        mean = ops.divide_scalar(mean, self.dim)
+        mean = ops.reshape(mean, (n, 1))
+        mean = ops.broadcast_to(mean, x.shape)
+
+        x2 = ops.power_scalar(x, 2)
+        mean_x2 = ops.summation(x2, axes=1)
+        mean_x2 = ops.divide_scalar(mean_x2, self.dim)
+        mean_x2 = ops.reshape(mean_x2, (n, 1))
+        mean_x2 = ops.broadcast_to(mean_x2, x.shape)
+
+        var = mean_x2 - ops.power_scalar(mean, 2)
+        var = ops.add_scalar(var, self.eps)
+        var = ops.power_scalar(var, 1/2)
+
+        x = x + (-1)*mean
+        x = x / var
+
+        w = ops.broadcast_to(self.weight, x.shape)
+        b = ops.broadcast_to(self.bias, x.shape)
+        y = ops.multiply(w, x) + b
+        return y

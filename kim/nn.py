@@ -166,14 +166,34 @@ class BatchNorm1d(Module):
         self.dim = dim
         self.eps = eps
         self.momentum = momentum
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.weight = Parameter(init.ones(1, 1, dtype=dtype))
+        self.bias = Parameter(init.zeros(1, 1, dtype=dtype))
 
     def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        assert x.shape[1] == self.dim
+        n = x.shape[0]
+        mean = ops.summation(x, axes=0)
+        mean = ops.divide_scalar(mean, n)
+        mean = ops.reshape(mean, (1, self.dim))
+        mean = ops.broadcast_to(mean, x.shape)
+
+        x2 = ops.power_scalar(x, 2)
+        mean_x2 = ops.summation(x2, axes=0)
+        mean_x2 = ops.divide_scalar(mean_x2, n)
+        mean_x2 = ops.reshape(mean_x2, (1, self.dim))
+        mean_x2 = ops.broadcast_to(mean_x2, x.shape)
+
+        var = mean_x2 - ops.power_scalar(mean, 2)
+        var = ops.add_scalar(var, self.eps)
+        var = ops.power_scalar(var, 1/2)
+
+        x = x + (-1)*mean
+        x = x / var
+
+        w = ops.broadcast_to(self.weight, x.shape)
+        b = ops.broadcast_to(self.bias, x.shape)
+        y = ops.multiply(w, x) + b
+        return y
 
 
 class LayerNorm1d(Module):

@@ -175,6 +175,7 @@ class DivScalar(TensorOp):
         self.scalar = scalar
 
     def compute(self, a: NDArray):
+        # workaround to convert scalar to tensor dtype
         scalar = array_api.array([self.scalar], dtype=a.dtype)[0]
         return a / scalar
 

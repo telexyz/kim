@@ -49,8 +49,8 @@ class Adam(Optimizer):
         self.weight_decay = weight_decay
         self.t = 0
 
-        self.v = {}
         self.u = {}
+        self.v = {}
         for w in self.params:
             self.u[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
             self.v[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
@@ -61,14 +61,10 @@ class Adam(Optimizer):
             grad = w.grad.data
             # print(">>>", pow(grad,2))
             self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
-            self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*np.power(grad,2)
+            self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*grad*grad
 
-            if self.t != 0:
-                u_hat = self.u[w] / (1 - np.power(self.beta1, self.t))
-                v_hat = self.v[w] / (1 - np.power(self.beta2, self.t))
+            u_hat = self.u[w] / (1 - np.power(self.beta1, self.t))
+            v_hat = self.v[w] / (1 - np.power(self.beta2, self.t))
 
-                update = u_hat / (np.power(v_hat, 0.5) + self.eps)
-                w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*update
-
-            else:
-                w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
+            update = u_hat / (np.power(v_hat, 0.5) + self.eps)
+            w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*update

@@ -28,7 +28,7 @@ class SGD(Optimizer):
     def step(self):
         for w in self.params:
             self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*w.grad.data
-            w.data = (1 - self.lr*self.weight_decay)*w.data + (-self.lr)*self.u[w]
+            w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
 
 
 class Adam(Optimizer):
@@ -57,17 +57,18 @@ class Adam(Optimizer):
 
     def step(self):
         self.t += 1
-
         for w in self.params:
             grad = w.grad.data
+            # print(">>>", pow(grad,2))
             self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
-            self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*pow(grad,2)
+            self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*np.power(grad,2)
 
             if self.t != 0:
-                u_hat = self.u[w] / (1 - pow(self.beta1, self.t))
-                v_hat = self.v[w] / (1 - pow(self.beta2, self.t))
-            else:
-                u_hat = self.u[w]
-                v_hat = self.v[w]
+                u_hat = self.u[w] / (1 - np.power(self.beta1, self.t))
+                v_hat = self.v[w] / (1 - np.power(self.beta2, self.t))
 
-            w.data = (1 - self.lr*self.weight_decay)*w.data + (-self.lr)*u_hat / (kim.power_scalar(v_hat, 0.5) + self.eps)
+                update = u_hat / (np.power(v_hat, 0.5) + self.eps)
+                w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*update
+
+            else:
+                w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]

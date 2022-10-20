@@ -7,16 +7,12 @@
 # https://colab.research.google.com/github/dlsyscourse/hw2/blob/master/hw2.ipynb
 # https://www.youtube.com/watch?v=uB81vGRrH0c
 # 
-# python3 -m pytest tests/test_init.py
 # python3 -m pytest tests/test_ops.py -k "op_logsumexp_backward_5"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py -k "submit_mnist_dataset"
 # python3 -m pytest tests/test_optim.py -v -k "test_optim_adam_weight_decay_1"
-# python3 -m pytest tests/test_nn.py -v -k "layernorm_backward_1"
 python3 -m pytest tests/test_optim.py
-python3 -m pytest tests/test_nn.py
 python3 -m pytest tests/test_mlp_resnet.py
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py
-
 
 # https://colab.research.google.com/github/dlsyscourse/hw1/blob/master/hw1.ipynb
 # https://www.youtube.com/watch?v=cNADlHfHQHg

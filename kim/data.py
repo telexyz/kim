@@ -157,8 +157,8 @@ class MNISTDataset(Dataset):
 
     def __getitem__(self, index) -> object:
         img = self.images[index]
+        img = img.reshape((28, 28, 1))
         if self.transforms:
-            img = img.reshape((28, 28, 1))
             img = self.apply_transforms(img)
         return (img, self.labels[index])
 

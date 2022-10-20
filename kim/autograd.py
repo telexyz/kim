@@ -276,9 +276,6 @@ def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
 
     for node in reverse_topo_order:
         if not node.requires_grad: continue
-        # my_grads = output_grads[node]
-        # node.grad = my_grads[0]
-        # for i in range(len(my_grads)-1): node.grad += my_grads[i+1]
         node.grad = sum(x.detach() for x in output_grads[node])
         # print(">>>", node.op) # bắt lỗi grad không phải float32
         # assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node.dtype)

@@ -164,10 +164,8 @@ class BatchNorm1d(Module):
         self.dim = dim
         self.eps = eps
         self.momentum = momentum
-        # self.weight = Parameter(init.ones(self.dim, dtype=dtype))
-        # self.bias = Parameter(init.zeros(self.dim, dtype=dtype))
-        self.weight = Parameter(1, dtype=dtype)
-        self.bias = Parameter(0, dtype=dtype)
+        self.weight = Parameter(init.ones(1, self.dim, dtype=dtype))
+        self.bias = Parameter(init.zeros(1, self.dim, dtype=dtype))
         self.running_mean = init.zeros(self.dim, dtype=dtype)
         self.running_var = init.ones(self.dim, dtype=dtype)
 
@@ -205,8 +203,8 @@ class LayerNorm1d(Module):
         super().__init__()
         self.dim = dim
         self.eps = eps
-        self.weight = Parameter(1, dtype=dtype)
-        self.bias = Parameter(0, dtype=dtype)
+        self.weight = Parameter(init.ones(1, self.dim, dtype=dtype))
+        self.bias = Parameter(init.zeros(1, self.dim, dtype=dtype))
 
     def forward(self, x: Tensor) -> Tensor:
         batch, dim = x.shape
@@ -220,7 +218,7 @@ class LayerNorm1d(Module):
 
         std = ops.power_scalar(var + self.eps, 0.5)
         std = std.reshape((batch, 1)).broadcast_to(x.shape)
-        # print(">>>", x.shape, mean.shape, var.shape)
+        # print(">>>", x.shape, mean.shape, std.shape)
         norm = (x - mean) / std
         w = ops.broadcast_to(self.weight, x.shape)
         b = ops.broadcast_to(self.bias, x.shape)

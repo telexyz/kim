@@ -157,9 +157,11 @@ class MNISTDataset(Dataset):
 
     def __getitem__(self, index) -> object:
         img = self.images[index]
-        img = img.reshape((28, 28, 1))
+        # print(">>> img.shape:", img.shape)
         if self.transforms:
+            img = img.reshape((28, 28, 1))
             img = self.apply_transforms(img)
+            img = img.reshape((28*28))
         return (img, self.labels[index])
 
     def __len__(self) -> int:

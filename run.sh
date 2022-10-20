@@ -4,13 +4,12 @@
 # https://colab.research.google.com/drive/1DjW7RRF3chDfkp8LcDJCyQB8Bd11nCZ0
 
 
-# https://colab.research.google.com/github/dlsyscourse/hw2/blob/master/hw2.ipynb
+# https://github.com/dlsyscourse/hw2/blob/main/hw2.ipynb
 # https://www.youtube.com/watch?v=uB81vGRrH0c
 # 
 # python3 -m pytest tests/test_ops.py -k "op_logsumexp_backward_5"
-# python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py -k "submit_mnist_dataset"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py -k "submit_optim_sgd"
-python3 -m pytest tests/test_mlp_resnet.py
+python3 -m pytest tests/test_resnet.py -v
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py
 
 # https://colab.research.google.com/github/dlsyscourse/hw1/blob/master/hw1.ipynb

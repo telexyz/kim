@@ -228,6 +228,7 @@ class BroadcastTo(TensorOp):
     def gradient(self, out_grad, node):
         a = node.inputs[0]
         # broadcasted from `a.shape` to `self.shape`
+        # print(">>>", a.shape, "to", self.shape)
 
         axes = ()
         n = len(a.shape)

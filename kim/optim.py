@@ -27,8 +27,11 @@ class SGD(Optimizer):
 
     def step(self):
         for w in self.params:
-            self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*w.grad.data
-            w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
+            # self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*w.grad.data
+            # w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
+            self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*(w.grad.data + self.weight_decay*w.data)
+            w.data = w.data - self.lr * self.u[w]
+
 
 
 class Adam(Optimizer):
@@ -63,8 +66,10 @@ class Adam(Optimizer):
             self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
             self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*grad*grad
 
-            u_hat = self.u[w] / (1 - np.power(self.beta1, self.t))
-            v_hat = self.v[w] / (1 - np.power(self.beta2, self.t))
+            # u_hat = self.u[w] / (1 - np.power(self.beta1, self.t))
+            # v_hat = self.v[w] / (1 - np.power(self.beta2, self.t))
+            u_hat = self.u[w] / (1 - pow(self.beta1, self.t))
+            v_hat = self.v[w] / (1 - pow(self.beta2, self.t))
 
             update = u_hat / (np.power(v_hat, 0.5) + self.eps)
             w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*update

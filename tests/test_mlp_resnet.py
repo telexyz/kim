@@ -1,9 +1,8 @@
-import sys
-sys.path.append("./python")
 import numpy as np
 import kim as ndl
 import kim.nn as nn
 
+import sys
 sys.path.append("./apps")
 from mlp_resnet import *
 

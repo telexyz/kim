@@ -5,10 +5,7 @@ import mugrade
 from test_ops import *
 from test_nn import *
 from test_optim import *
-
-import sys
-sys.path.append("./apps")
-from mlp_resnet import *
+from test_mlp_resnet import *
 
 def submit_flip_horizontal():
     tform = ndl.data.RandomFlipHorizontal(0.5)

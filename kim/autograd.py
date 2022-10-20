@@ -223,6 +223,9 @@ class Tensor:
     def reshape(self, shape):
         return kim.ops.Reshape(shape)(self)
 
+    def broadcast_to(self, shape):
+        return kim.ops.BroadcastTo(shape)(self)
+
     __radd__ = __add__
     __rmul__ = __mul__
 

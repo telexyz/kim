@@ -164,38 +164,42 @@ class BatchNorm1d(Module):
         self.dim = dim
         self.eps = eps
         self.momentum = momentum
+        # self.weight = Parameter(init.ones(self.dim, dtype=dtype))
+        # self.bias = Parameter(init.zeros(self.dim, dtype=dtype))
         self.weight = Parameter(1, dtype=dtype)
         self.bias = Parameter(0, dtype=dtype)
-        # self.weight = Parameter(init.ones(1, 1, dtype=dtype))
-        # self.bias = Parameter(init.zeros(1, 1, dtype=dtype))
+        self.running_mean = init.zeros(self.dim, dtype=dtype)
+        self.running_var = init.ones(self.dim, dtype=dtype)
 
     def forward(self, x: Tensor) -> Tensor:
-        assert x.shape[1] == self.dim
-        n = x.shape[0]
-        mean = ops.summation(x, axes=0)
-        mean = ops.divide_scalar(mean, n)
-        mean = ops.reshape(mean, (1, self.dim))
-        mean = ops.broadcast_to(mean, x.shape)
+        batch, dim = x.shape
+        # print(">>>", x.shape, batch, dim)
+        assert dim == self.dim
 
-        x2 = ops.power_scalar(x, 2)
-        mean_x2 = ops.summation(x2, axes=0)
-        mean_x2 = ops.divide_scalar(mean_x2, n)
-        mean_x2 = ops.reshape(mean_x2, (1, self.dim))
-        mean_x2 = ops.broadcast_to(mean_x2, x.shape)
+        mean = ops.summation(x, axes=0) / batch
+        self.running_mean = (1-self.momentum)*self.running_mean + self.momentum*mean
+        mean = mean.reshape((1, dim)).broadcast_to(x.shape)
 
-        var = mean_x2 - ops.power_scalar(mean, 2)
-        var = ops.add_scalar(var, self.eps)
-        var = ops.power_scalar(var, 1/2)
+        var = ops.power_scalar(x - mean, 2)
+        var = ops.summation(var, axes=0) / batch
+        self.running_var = (1-self.momentum)*self.running_var + self.momentum*var
 
-        x = x + (-1)*mean
-        x = x / var
+        std = ops.power_scalar((var + self.eps), 1./2)
+        std = std.reshape((1, dim)).broadcast_to(x.shape)
+        
+        if self.training:
+            norm = (x - mean) / std
+            w = self.weight.broadcast_to(x.shape)
+            b = self.bias.broadcast_to(x.shape)
+            return w * norm + b
+        else:            
+            mean = self.running_mean.reshape((1, dim)).broadcast_to(x.shape)
+            std = ops.power_scalar((self.running_var + self.eps), 1./2)
+            std = std.reshape((1, dim)).broadcast_to(x.shape)
+            return (x - mean) / std
 
-        w = ops.broadcast_to(self.weight, x.shape)
-        b = ops.broadcast_to(self.bias, x.shape)
-        y = ops.multiply(w, x) + b
-        return y
-
-
+'''https://www.geeksforgeeks.org/expression-for-mean-and-variance-in-a-running-stream
+'''
 class LayerNorm1d(Module):
     def __init__(self, dim, eps=1e-5, device=None, dtype="float32"):
         super().__init__()
@@ -205,29 +209,19 @@ class LayerNorm1d(Module):
         self.bias = Parameter(0, dtype=dtype)
 
     def forward(self, x: Tensor) -> Tensor:
-        assert x.shape[1] == self.dim
-        n = x.shape[0]
-        # print(">>>", x.shape, n, self.dim)
-        mean = ops.summation(x, axes=1)
-        mean = ops.divide_scalar(mean, self.dim)
+        batch, dim = x.shape
+        # print(">>>", x.shape, batch, dim)
+        assert dim == self.dim
+        mean = ops.summation(x, axes=1) / dim
+        mean = mean.reshape((batch, 1)).broadcast_to(x.shape)
 
-        x2 = ops.power_scalar(x, 2)
-        mean_x2 = ops.summation(x2, axes=1)
-        mean_x2 = ops.divide_scalar(mean_x2, self.dim)
+        var = ops.power_scalar(x - mean, 2)
+        var = ops.summation(var, axes=1) / dim
 
-        var = mean_x2 - ops.power_scalar(mean, 2)
-        var = ops.add_scalar(var, self.eps)
-        var = ops.power_scalar(var, 1/2)
-
-        mean = ops.reshape(mean, (n, 1))
-        mean = ops.broadcast_to(mean, x.shape)
-        var = ops.reshape(var, (n, 1))
-        var = ops.broadcast_to(var, x.shape)
+        std = ops.power_scalar(var + self.eps, 0.5)
+        std = std.reshape((batch, 1)).broadcast_to(x.shape)
         # print(">>>", x.shape, mean.shape, var.shape)
-        x = x + (-1)*mean
-        x = x / var
-
+        norm = (x - mean) / std
         w = ops.broadcast_to(self.weight, x.shape)
         b = ops.broadcast_to(self.bias, x.shape)
-        y = (x * w) + b
-        return y
+        return w*norm + b

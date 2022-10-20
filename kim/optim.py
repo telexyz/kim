@@ -58,16 +58,14 @@ class Adam(Optimizer):
             self.u[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
             self.v[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
 
+
     def step(self):
         self.t += 1
         for w in self.params:
             grad = w.grad.data
-            # print(">>>", pow(grad,2))
             self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
             self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*grad*grad
 
-            # u_hat = self.u[w] / (1 - np.power(self.beta1, self.t))
-            # v_hat = self.v[w] / (1 - np.power(self.beta2, self.t))
             u_hat = self.u[w] / (1 - pow(self.beta1, self.t))
             v_hat = self.v[w] / (1 - pow(self.beta2, self.t))
 

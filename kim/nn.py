@@ -91,7 +91,7 @@ class Linear(Module):
             self.bias = None
 
     def forward(self, X: Tensor) -> Tensor:
-        mm = X @ self.weight
+        mm = ops.matmul(X, self.weight)
         if self.bias is None:
             return mm
         else:

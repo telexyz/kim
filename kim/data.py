@@ -46,12 +46,14 @@ class RandomCrop(Transform):
         shift_x, shift_y = np.random.randint(low=-self.padding, 
             high=self.padding+1, size=2)
         ### BEGIN YOUR SOLUTION
-        min_x = shift_x + self.padding
-        min_y = shift_y + self.padding
-        return np.pad(img, self.padding)[
-            min_x : min_x + img.shape[0],
-            min_y : min_y + img.shape[1],
-            self.padding : self.padding + img.shape[2],
+        start_x = shift_x + self.padding
+        start_y = shift_y + self.padding
+        start_z = self.padding
+        pad_img = np.pad(img, self.padding)
+        return pad_img[
+            start_x : start_x + img.shape[0],
+            start_y : start_y + img.shape[1],
+            start_z : start_z + img.shape[2], # same as before padding
         ]
         ### END YOUR SOLUTION
 

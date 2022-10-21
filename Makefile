@@ -13,4 +13,4 @@ format:
 	clang-format -i src/*.cc src/*.cu
 
 clean:
-	rm -rf build python/needle/backend_ndarray/ndarray_backend*.so
+	rm -rf build kim/backend_ndarray/ndarray_backend*.so

@@ -3,6 +3,7 @@
 # https://colab.research.google.com/drive/1dnXj1U2DWtnaHanFoYa7XODKUDIjcl_6
 # https://colab.research.google.com/drive/1DjW7RRF3chDfkp8LcDJCyQB8Bd11nCZ0
 
+python3 -m pytest tests/test_ndarray.py -v -k "(permute or reshape or broadcast or getitem) and cpu and not compact"
 
 # https://github.com/dlsyscourse/hw2/blob/main/hw2.ipynb
 # https://www.youtube.com/watch?v=uB81vGRrH0c

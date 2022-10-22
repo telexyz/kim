@@ -238,10 +238,12 @@ class NDArray:
         Returns:
             NDArray : reshaped array; this will point to the same memory as the original NDArray.
         """
-
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        if prod(self.shape) != prod(new_shape): raise ValueError
+        if not self.is_compact(): raise ValueError
+        # compact_strides có stride cuối là 1, stride đầu prod(shape)
+        # A[i, j] => Adata[i * A.strides[0] + j * A.strides[1]]
+        new_strides = self.compact_strides(new_shape)
+        return self.as_strided(new_shape, new_strides)
 
     def permute(self, new_axes):
         """

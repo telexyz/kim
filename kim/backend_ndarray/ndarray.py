@@ -284,10 +284,16 @@ class NDArray:
             NDArray: the new NDArray object with the new broadcast shape; should
             point to the same memory as the original array.
         """
-
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        if len(self.shape) != len(new_shape): raise ValueError
+        new_strides = []
+        for i in range(len(self.shape)):
+            if self.shape[i] != 1 and self.shape[i] != new_shape[i]:
+                raise ValueError
+            if self.shape[i] == 1:
+                new_strides.append(0)
+            else:
+                new_strides.append(self.strides[i])
+        return self.as_strided(new_shape, tuple(new_strides))
 
     ### Get and set elements
 

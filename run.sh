@@ -11,6 +11,7 @@ python3 -m pytest tests/test_ndarray.py -v -k "(permute or reshape or broadcast 
 # 
 # python3 -m pytest tests/test_ops.py -k "op_logsumexp_backward_5"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py -k "submit_optim_sgd"
+# python3 -m pytest tests/test_optim.py -k "adam"
 python3 -m pytest tests/test_resnet.py -v
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py
 

@@ -196,7 +196,9 @@ class BatchNorm1d(Module):
             std = std.reshape((1, dim)).broadcast_to(x.shape)
             return (x - mean) / std
 
-'''https://www.geeksforgeeks.org/expression-for-mean-and-variance-in-a-running-stream
+'''
+https://www.geeksforgeeks.org/expression-for-mean-and-variance-in-a-running-stream
+https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
 '''
 class LayerNorm1d(Module):
     def __init__(self, dim, eps=1e-5, device=None, dtype="float32"):

@@ -240,7 +240,7 @@ class NDArray:
         """
         if prod(self.shape) != prod(new_shape): raise ValueError
         if not self.is_compact(): raise ValueError
-        # compact_strides có stride cuối là 1, stride đầu prod(shape)
+        # compact_strides có stride cuối là 1, stride đầu prod(shape[1:])
         # A[i, j] => Adata[i * A.strides[0] + j * A.strides[1]]
         new_strides = self.compact_strides(new_shape)
         return self.as_strided(new_shape, new_strides)
@@ -263,10 +263,10 @@ class NDArray:
             to the same memory as the original NDArray (i.e., just shape and
             strides changed).
         """
+        new_shape = [self.shape[i] for i in new_axes]
+        new_strides = tuple([self.strides[i] for i in new_axes])
+        return self.as_strided(new_shape, new_strides)
 
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
 
     def broadcast_to(self, new_shape):
         """

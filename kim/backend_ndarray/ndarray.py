@@ -344,11 +344,10 @@ class NDArray:
         """
 
         # handle singleton as tuple, everything as slices
-        if not isinstance(idxs, tuple):
-            idxs = (idxs,)
+        if not isinstance(idxs, tuple): idxs = (idxs,)
         idxs = tuple(
             [
-                self.process_slice(s, i) if isinstance(s, slice) else slice(s, s + 1, 1)
+                self.process_slice(s, i) if isinstance(s, slice) else slice(s, s+1, 1)
                 for i, s in enumerate(idxs)
             ]
         )

@@ -5,6 +5,11 @@
 
 python3 -m pytest tests/test_ndarray.py -v -k "(permute or reshape or broadcast or getitem) and cpu and not compact"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k "python_ops"
+make && python3 -m pytest -k "compact[cpu-transpose]"
+make && python3 -m pytest -k "compact[cpu-broadcast_to]"
+make && python3 -m pytest -v -k "(compact or setitem) and cpu"
+# python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k "cpu_compact_setitem"
+
 
 # https://github.com/dlsyscourse/hw2/blob/main/hw2.ipynb
 # https://www.youtube.com/watch?v=uB81vGRrH0c

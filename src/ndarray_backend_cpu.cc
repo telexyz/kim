@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+using namespace std;
 
 namespace needle {
 namespace cpu {
@@ -16,9 +17,9 @@ const size_t ELEM_SIZE = sizeof(scalar_t);
 
 
 /**
- * This is a utility structure for maintaining an array aligned to ALIGNMENT boundaries in
- * memory.  This alignment should be at least TILE * ELEM_SIZE, though we make it even larger
- * here by default.
+ * This is a utility structure for maintaining an array aligned to ALIGNMENT 
+ * boundaries in memory. This alignment should be at least TILE * ELEM_SIZE,
+ * though we make it even larger here by default.
  */
 struct AlignedArray {
   AlignedArray(const size_t size) {
@@ -63,7 +64,37 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN YOUR SOLUTION
-  
+  assert(shape.size() == strides.size());
+  // 
+  out = new AlignedArray(a.size);
+  // 
+  for (size_t out_idx = 0; out_idx < out->size; out_idx++) {
+    //
+    size_t a_idx = 0; 
+    uint32_t remain = out_idx;
+    uint32_t stride = out->size;
+    uint32_t indexx = 0;
+    // out is compacted array so it's strides are:
+    // strides[0]:   shape[1]*shape[2]..shape[n-1]
+    // strides[1]:   shape[2]*shape[3]..shape[n-1]
+    //               ...
+    // strides[n-2]: shape[n-1]
+    // strides[n-1]: 1
+    for(uint32_t i = 0; i < shape.size(); i++) {
+      stride = stride / shape[i];
+      indexx = remain / stride;
+      remain = remain % stride;
+      a_idx += strides[i] * indexx; // = strides[0]*i + strides[1]*j + strides[2]*k
+      // cout << "\n indexx: " << indexx << ", stride: " << strides[i]; // OK
+    }
+    // cout << "\n[ out_idx ] " << out_idx << " -> " << a_idx; // OK
+    out->ptr[out_idx] = a.ptr[offset + a_idx];
+  }
+  // cnt = 0;
+  // for (size_t i = 0; i < shape[0]; i++)
+  //     for (size_t j = 0; j < shape[1]; j++)
+  //         for (size_t k = 0; k < shape[2]; k++)
+  //             out[cnt++] = in[strides[0]*i + strides[1]*j + strides[2]*k];
   /// END YOUR SOLUTION
 }
 

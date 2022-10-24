@@ -65,8 +65,7 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
    */
   /// BEGIN YOUR SOLUTION
   assert(shape.size() == strides.size());
-  // 
-  out = new AlignedArray(a.size);
+  assert(a.size == out->size);
   // 
   for (size_t out_idx = 0; out_idx < out->size; out_idx++) {
     //
@@ -87,7 +86,7 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
       a_idx += strides[i] * indexx; // = strides[0]*i + strides[1]*j + strides[2]*k
       // cout << "\n indexx: " << indexx << ", stride: " << strides[i]; // OK
     }
-    // cout << "\n[ out_idx ] " << out_idx << " -> " << a_idx; // OK
+    // cout << "\n[ out_idx ] " << out_idx << " -> " << a_idx << " offset: " << offset; // OK
     out->ptr[out_idx] = a.ptr[offset + a_idx];
   }
   // cnt = 0;

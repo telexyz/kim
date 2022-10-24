@@ -366,8 +366,7 @@ class LogSumExp(TensorOp):
         self.axes = axes
 
     def compute(self, Z):
-        '''https://youtu.be/uB81vGRrH0c?t=1162
-        stable softmax lec video'''
+        '''https://youtu.be/uB81vGRrH0c?t=1162 stable softmax lec video'''
         Z_max = array_api.max(Z, axis=self.axes)
         Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
         Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
@@ -379,7 +378,8 @@ class LogSumExp(TensorOp):
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]
-        exp_a = exp(a)
+        m = array_api.max(a.numpy(), axis=self.axes, keepdims=True)
+        exp_a = exp(a - m)
         # 
         new_shape = self.new_shape(a.shape)
         sum_exp_a = summation(exp_a, self.axes)
@@ -387,7 +387,9 @@ class LogSumExp(TensorOp):
         sum_exp_a = broadcast_to(sum_exp_a, a.shape)
         # 
         normalize = divide(exp_a, sum_exp_a)
-        return (reshape(out_grad, new_shape) * normalize,)
+        y = reshape(out_grad, new_shape)
+        y = broadcast_to(y, a.shape)
+        return (y * normalize,)
 
     def new_shape(self, shape):
         new_shape = list(shape)

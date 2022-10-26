@@ -1,3 +1,56 @@
+## Register tiled matmul
+
+https://youtu.be/es6s6T1bTtI?t=1482
+
+Compute one sub-matrix at once instead of one-element at once.
+- Dividing big matrix into v1 by v2 region.
+- Load v1 by v3 and v2 by v3 tiled
+- Internal dot product
+
+
+```c
+dram float C[n/v1][n/v2][v1][v2];
+dram float A[n/v1][n/v3][v1][v3]; 
+dram float B[n/v2][n/v3][v2][v3]; 
+
+for (int i = 0; i < n/v1; ++i) { 
+	for (int j = 0; j < n/v2; ++j) { 
+
+		register float c[v1][v2] = 0; // output sub-matrix
+
+		for (int k = 0; k < n/v3; ++k) { 
+			register float a[v1][v3] = A[i][k]; // lhs input sub-matrix
+			register float b[v2][v3] = B[j][k]; // rhs input sub-matrix
+			c += dot(a, b.T);
+		}
+
+		C[i][j] = c; 
+	}
+}
+```
+
+## Cache line aware tiling
+
+https://youtu.be/es6s6T1bTtI?t=1918
+
+Trước khi load data vào register, ta load data vào L1 cache trước ...
+
+```c
+dram float C[n/b1][n/b2][b1][b2]; 
+dram float A[n/b1][b1][n];
+dram float B[n/b2][b2][n];
+
+for (int i = 0; i < n/b1; ++i) {
+	l1cache float a[b1][n] = A[i]; 
+	for (int j = 0; j < n/b2; ++j) {
+		l1cache b[b2][n] = B[j];
+		C[i][j] = dot(a, b.T); // <= apply register tiling
+	}
+}
+```
+
+- - -
+
 The philosophy behind the NDArray class is that we want _all_ the logic for handling this structure of the array to be written in Python.  Only the "true" low level code that actually performs the raw underlying operations on the flat vector (as well as the code to manage these flat vectors, as they might need to e.g., be allocated on GPUs), is written in C++.  The precise nature of this separation will likely start to make more sense to you as you work through the assignment, but generally speaking everything that can be done in Python, is done in Python; often e.g., at the cost of some inefficiencies ... we call `.compact()` (which copies memory) liberally in order to make the underlying C++ implementations simpler.
 
 

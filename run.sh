@@ -19,7 +19,10 @@ make && python3 -m pytest -v -k "(ewise_fn or ewise_max or log or exp or tanh or
 make && python3 -m pytest -v -k "reduce and cpu"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k "ndarray_cpu_reductions"
 
+make && python3 -m pytest -v -k "matmul and cpu"
+# python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k "ndarray_cpu_matmul"
 
+# python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k 
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k 
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k 
 

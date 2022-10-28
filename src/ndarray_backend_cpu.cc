@@ -295,11 +295,10 @@ void ScalarPower(const AlignedArray& a, scalar_t val, AlignedArray* out) {
 }
 /// END YOUR SOLUTION
 
-void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m, uint32_t n,
-            uint32_t p) {
+void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m, uint32_t n, uint32_t p) {
   /**
-   * Multiply two (compact) matrices into an output (also compact) matrix.  For this implementation
-   * you can use the "naive" three-loop algorithm.
+   * Multiply two (compact) matrices into an output (also compact) matrix.  
+   * For this implementation you can use the "naive" three-loop algorithm.
    *
    * Args:
    *   a: compact 2D array of size m x n
@@ -309,9 +308,19 @@ void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uin
    *   n: columns of a / rows of b
    *   p: columns of b / out
    */
-
   /// BEGIN YOUR SOLUTION
-  
+  for (size_t i = 0; i < m; i++) {
+    for (size_t j = 0; j < p; j++) {
+      size_t out_idx = i * p + j;
+      scalar_t x = 0;
+      for (size_t k = 0; k < n; k++) {
+        size_t a_idx = i * n + k;
+        size_t b_idx = k * p + j;
+        x += a.ptr[a_idx] * b.ptr[b_idx];
+      }
+      out->ptr[out_idx] = x;
+    }
+  }
   /// END YOUR SOLUTION
 }
 
@@ -320,54 +329,92 @@ inline void AlignedDot(const float* __restrict__ a,
                        float* __restrict__ out) {
 
   /**
-   * Multiply together two TILE x TILE matrices, and _add _the result to out (it is important to add
-   * the result to the existing out, which you should not set to zero beforehand).  We are including
-   * the compiler flags here that enable the compile to properly use vector operators to implement
-   * this function.  Specifically, the __restrict__ keyword indicates to the compile that a, b, and
-   * out don't have any overlapping memory (which is necessary in order for vector operations to be
-   * equivalent to their non-vectorized counterparts (imagine what could happen otherwise if a, b,
-   * and out had overlapping memory).  Similarly the __builtin_assume_aligned keyword tells the
-   * compiler that the input array will be aligned to the appropriate blocks in memory, which also
+   * Multiply together two TILE x TILE matrices, and _add _the result to out 
+   * (it is important to add the result to the existing out, which you should 
+   * not set to zero beforehand). We are including the compiler flags here that
+   * enable the compile to properly use vector operators to implement
+   * this function.
+   * 
+   * Specifically, the __restrict__ keyword indicates to the compile that a, b, and
+   * out don't have any overlapping memory (which is necessary in order for vector
+   * operations to be equivalent to their non-vectorized counterparts (imagine what
+   * could happen otherwise if a, b, and out had overlapping memory).
+   * 
+   * Similarly the __builtin_assume_aligned keyword tells the compiler that 
+   * the input array will be aligned to the appropriate blocks in memory, which also
    * helps the compiler vectorize the code.
    *
    * Args:
-   *   a: compact 2D array of size TILE x TILE
-   *   b: compact 2D array of size TILE x TILE
+   *     a: compact 2D array of size TILE x TILE
+   *     b: compact 2D array of size TILE x TILE
    *   out: compact 2D array of size TILE x TILE to write to
    */
 
-  a = (const float*)__builtin_assume_aligned(a, TILE * ELEM_SIZE);
-  b = (const float*)__builtin_assume_aligned(b, TILE * ELEM_SIZE);
-  out = (float*)__builtin_assume_aligned(out, TILE * ELEM_SIZE);
-
+  // a = (const float*)__builtin_assume_aligned(  a, TILE * ELEM_SIZE);
+  // b = (const float*)__builtin_assume_aligned(  b, TILE * ELEM_SIZE);
+  // out = (    float*)__builtin_assume_aligned(out, TILE * ELEM_SIZE);
   /// BEGIN YOUR SOLUTION
-  
+  for (size_t i = 0; i < TILE; i++) {
+    for (size_t j = 0; j < TILE; j++) {
+      size_t out_idx = i * TILE + j;
+      scalar_t x = 0;
+      for (size_t k = 0; k < TILE; k++) {
+        size_t a_idx = i * TILE + k;
+        size_t b_idx = k * TILE + j;
+        x += a[a_idx] * b[b_idx];
+      }
+      out[out_idx] = x;
+    }
+  }
   /// END YOUR SOLUTION
 }
 
-void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m,
-                 uint32_t n, uint32_t p) {
+void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m, uint32_t n, uint32_t p) {
   /**
-   * Matrix multiplication on tiled representations of array.  In this setting, a, b, and out
-   * are all *4D* compact arrays of the appropriate size, e.g. a is an array of size
+   * Matrix multiplication on tiled representations of array.  
+   * In this setting, a, b, and out are all *4D* compact arrays of the 
+   * appropriate size, e.g. a is an array of size
    *   a[m/TILE][n/TILE][TILE][TILE]
-   * You should do the multiplication tile-by-tile to improve performance of the array (i.e., this
-   * function should call `AlignedDot()` implemented above).
+   * You should do the multiplication tile-by-tile to improve performance of the array
+   * (i.e., this function should call `AlignedDot()` implemented above).
    *
-   * Note that this function will only be called when m, n, p are all multiples of TILE, so you can
-   * assume that this division happens without any remainder.
+   * Note that this function will only be called when m, n, p are all multiples of 
+   * TILE, so you can assume that this division happens without any remainder.
    *
    * Args:
-   *   a: compact 4D array of size m/TILE x n/TILE x TILE x TILE
-   *   b: compact 4D array of size n/TILE x p/TILE x TILE x TILE
+   *   a:   compact 4D array of size m/TILE x n/TILE x TILE x TILE
+   *   b:   compact 4D array of size n/TILE x p/TILE x TILE x TILE
    *   out: compact 4D array of size m/TILE x p/TILE x TILE x TILE to write to
    *   m: rows of a / out
    *   n: columns of a / rows of b
    *   p: columns of b / out
-   *
    */
   /// BEGIN YOUR SOLUTION
-  
+  const size_t m_t = m / TILE;
+  const size_t n_t = n / TILE;
+  const size_t p_t = p / TILE;
+  const size_t total = TILE * TILE;
+
+  float* tmp = new float[total];
+
+  for (size_t i = 0; i < m_t; i++) {
+    for (size_t j = 0; j < p_t; j++) {
+      // 
+      size_t out_idx = i * p_t + j;
+      float* out_ptr = out->ptr + (out_idx * total);
+      for (size_t o = 0; o < total; o++) { out_ptr[o] = 0; } // set elements to 0
+      // 
+      for (size_t k = 0; k < n_t; k++) {
+        size_t a_idx = i * n_t + k;
+        size_t b_idx = k * p_t + j;        
+        float* a_ptr = a.ptr + (a_idx * total);
+        float* b_ptr = b.ptr + (b_idx * total);
+        AlignedDot(a_ptr, b_ptr, tmp);
+        for (size_t o = 0; o < total; o++) { out_ptr[o] += tmp[o]; }
+      }
+    }
+  }
+  delete[] tmp;
   /// END YOUR SOLUTION
 }
 

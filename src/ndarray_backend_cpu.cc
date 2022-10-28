@@ -97,7 +97,8 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
   /// END YOUR SOLUTION
 }
 
-void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> shape,
+void EwiseSetitem(const AlignedArray& a, AlignedArray* out, 
+                  std::vector<uint32_t> shape,
                   std::vector<uint32_t> strides, size_t offset) {
   /**
    * Set items in a (non-compact) array
@@ -110,7 +111,27 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN YOUR SOLUTION
-  
+  for (size_t a_idx = 0; a_idx < a.size; a_idx++) {
+    //
+    size_t out_idx = 0; 
+    uint32_t remain = a_idx;
+    uint32_t stride = a.size;
+    uint32_t indexx = 0;
+    // 
+    for(uint32_t i = 0; i < shape.size(); i++) {
+      stride = stride / shape[i];
+      indexx = remain / stride;
+      remain = remain % stride;
+      out_idx += strides[i] * indexx;
+    }
+    out->ptr[out_idx + offset] = a.ptr[a_idx];
+  }
+  // cnt = 0;
+  // for (size_t i = 0; i < shape[0]; i++)
+  //     for (size_t j = 0; j < shape[1]; j++)
+  //         for (size_t k = 0; k < shape[2]; k++)
+  //             out[strides[0]*i + strides[1]*j + strides[2]*k] = in[cnt++]; 
+  //                                                         or "= val;"
   /// END YOUR SOLUTION
 }
 
@@ -131,7 +152,21 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
    */
 
   /// BEGIN YOUR SOLUTION
-  
+  for (size_t a_idx = 0; a_idx < size; a_idx++) {
+    //
+    size_t out_idx = 0; 
+    uint32_t remain = a_idx;
+    uint32_t stride = size;
+    uint32_t indexx = 0;
+    // 
+    for(uint32_t i = 0; i < shape.size(); i++) {
+      stride = stride / shape[i];
+      indexx = remain / stride;
+      remain = remain % stride;
+      out_idx += strides[i] * indexx;
+    }
+    out->ptr[out_idx + offset] = val;
+  }  
   /// END YOUR SOLUTION
 }
 

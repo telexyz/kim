@@ -49,6 +49,28 @@ for (int i = 0; i < n/b1; ++i) {
 }
 ```
 
+## Kết hợp cả 2
+
+```c
+dram float A[n/b1][b1/v1][n][v1]; 
+dram float B[n/b2][b2/v2][n][v2];
+for (int i = 0; i < n/b1; ++i) { 
+	l1cache float a[b1/v1][n][v1] = A[i]; 
+	for (int j = 0; j < n/b2; ++j) {
+		l1cache b[b2/v2][n][v2] = B[j]; 
+		for (int x = 0; x < b/v1; ++x)
+		for (int y = 0; y < b/v2; ++y) { 
+			register float c[v1][v2] = 0; 
+			for (int k = 0; k < n; ++k) {
+				register float ar[v1] = a[x][k]; 
+				register float br[v2] = b[y][k];
+            	C += dot(ar, br.T)
+         	}
+		} 
+	}
+}
+```
+
 - - -
 
 The philosophy behind the NDArray class is that we want _all_ the logic for handling this structure of the array to be written in Python.  Only the "true" low level code that actually performs the raw underlying operations on the flat vector (as well as the code to manage these flat vectors, as they might need to e.g., be allocated on GPUs), is written in C++.  The precise nature of this separation will likely start to make more sense to you as you work through the assignment, but generally speaking everything that can be done in Python, is done in Python; often e.g., at the cost of some inefficiencies ... we call `.compact()` (which copies memory) liberally in order to make the underlying C++ implementations simpler.

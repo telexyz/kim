@@ -42,18 +42,18 @@ def epoch(dataloader, model, optimizer=None):
     else:
         model.eval()
 
-    losses = []
-    errors = []
+    losses = 0
+    errors = 0
+    totals = 0
     for i, batch in enumerate(dataloader):
         batch_x, batch_y = batch[0], batch[1]
 
         out = model(batch_x)
         loss = loss_func(out, batch_y)
         error = np.mean(out.numpy().argmax(axis=1) != batch_y.numpy())
-
-        # print("loss: {}, error: {}".format(loss.numpy(), error))
-        losses.append(loss.numpy())
-        errors.append(error)
+        losses += loss.numpy()
+        errors += error
+        totals += batch_y.shape[0]
 
         if optimizer: # adjust params
             optimizer.reset_grad()
@@ -62,7 +62,7 @@ def epoch(dataloader, model, optimizer=None):
 
     '''Returns the average error rate (as a float) and
     the average loss over all samples (as a float).'''
-    r = (np.mean(errors), np.mean(losses))
+    r = (errors / totals, losses / totals)
     print(r)
     return r
 

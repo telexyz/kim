@@ -169,28 +169,27 @@ class BatchNorm1d(Module):
         batch, dim = x.shape
         # print(">>>", x.shape, batch, dim)
         assert dim == self.dim
+        alpha = (1-self.momentum)
 
         mean = ops.summation(x, axes=0) / batch
-        self.running_mean = (1-self.momentum)*self.running_mean + self.momentum*mean
+        self.running_mean = alpha*self.running_mean + self.momentum*mean
         mean = mean.reshape((1, dim)).broadcast_to(x.shape)
 
         var = ops.power_scalar(x - mean, 2)
         var = ops.summation(var, axes=0) / batch
-        self.running_var = (1-self.momentum)*self.running_var + self.momentum*var
-
-        std = ops.power_scalar((var + self.eps), 1./2)
-        std = std.reshape((1, dim)).broadcast_to(x.shape)
+        self.running_var = alpha*self.running_var + self.momentum*var
         
-        if self.training:
-            norm = (x - mean) / std
-            w = self.weight.broadcast_to(x.shape)
-            b = self.bias.broadcast_to(x.shape)
-            return w * norm + b
-        else:            
+        if not self.training:
             mean = self.running_mean.reshape((1, dim)).broadcast_to(x.shape)
-            std = ops.power_scalar((self.running_var + self.eps), 1./2)
-            std = std.reshape((1, dim)).broadcast_to(x.shape)
-            return (x - mean) / std
+            var = self.running_var
+
+        std = ops.power_scalar((var + self.eps), 0.5)
+        std = std.reshape((1, dim)).broadcast_to(x.shape)
+
+        norm = (x - mean) / std
+        w = self.weight.broadcast_to(x.shape)
+        b = self.bias.broadcast_to(x.shape)
+        return w * norm + b
 
 '''
 https://www.geeksforgeeks.org/expression-for-mean-and-variance-in-a-running-stream

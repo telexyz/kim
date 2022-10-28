@@ -30,7 +30,6 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
     return f
 # https://raw.githubusercontent.com/dlsyscourse/hw2/32490e61fbae67d2b77eb48187824ca87ed1a95c/figures/mlp_resnet.png
 
-
 def epoch(dataloader, model, optimizer=None):
     np.random.seed(4)
     # print(">>>", model, optimizer)
@@ -42,18 +41,18 @@ def epoch(dataloader, model, optimizer=None):
     else:
         model.eval()
 
-    losses = 0
-    errors = 0
-    totals = 0
+    losses = []
+    errors = []
     for i, batch in enumerate(dataloader):
         batch_x, batch_y = batch[0], batch[1]
 
         out = model(batch_x)
         loss = loss_func(out, batch_y)
         error = np.mean(out.numpy().argmax(axis=1) != batch_y.numpy())
-        losses += loss.numpy()
-        errors += error
-        totals += batch_y.shape[0]
+
+        # print("loss: {}, error: {}".format(loss.numpy(), error))
+        losses.append(loss.numpy())
+        errors.append(error)
 
         if optimizer: # adjust params
             optimizer.reset_grad()
@@ -62,12 +61,15 @@ def epoch(dataloader, model, optimizer=None):
 
     '''Returns the average error rate (as a float) and
     the average loss over all samples (as a float).'''
-    r = (errors / totals, losses / totals)
+    r = (np.mean(errors), np.mean(losses))
     print(r)
     return r
 
-# https://forum.dlsyscourse.org/t/q5-how-were-the-average-error-rate-and-the-average-loss-over-all-samples-computed/2295
+'''
+https://forum.dlsyscourse.org/t/q5-how-were-the-average-error-rate-and-the-average-loss-over-all-samples-computed/2295
 
+https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279/16
+'''
 
 def train_mnist(batch_size=100, epochs=10, optimizer=kim.optim.Adam,
                 lr=0.001, weight_decay=0.001, hidden_dim=100, data_dir="data"):

@@ -62,7 +62,8 @@ class Adam(Optimizer):
     def step(self):
         self.t += 1
         for w in self.params:
-            grad = w.grad.data
+            if w.grad is None: continue
+            grad = w.grad.data + w.data * self.weight_decay
             self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
             self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*grad*grad
 
@@ -70,4 +71,4 @@ class Adam(Optimizer):
             v_hat = self.v[w] / (1 - pow(self.beta2, self.t))
 
             update = u_hat / (np.power(v_hat, 0.5) + self.eps)
-            w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*update
+            w.data = w.data - self.lr*update

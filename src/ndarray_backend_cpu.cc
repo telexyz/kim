@@ -64,9 +64,9 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN YOUR SOLUTION
+  cout << "\n Compact"<<shape.size()<<"-"<<strides.size()<<";"<<a.size<<"-"<<out->size;
+  // out->size có thể khác a.size do a đã được broadcast VD: (4,1,4) => (4, 5, 4)
   assert(shape.size() == strides.size());
-  assert(a.size == out->size);
-  // 
   for (size_t out_idx = 0; out_idx < out->size; out_idx++) {
     //
     size_t a_idx = 0; 
@@ -83,11 +83,11 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
       stride = stride / shape[i];
       indexx = remain / stride;
       remain = remain % stride;
-      a_idx += strides[i] * indexx; // = strides[0]*i + strides[1]*j + strides[2]*k
+      a_idx += strides[i] * indexx;
       // cout << "\n indexx: " << indexx << ", stride: " << strides[i]; // OK
     }
     // cout << "\n[ out_idx ] " << out_idx << " -> " << a_idx << " offset: " << offset; // OK
-    out->ptr[out_idx] = a.ptr[offset + a_idx];
+    out->ptr[out_idx] = a.ptr[a_idx + offset];
   }
   // cnt = 0;
   // for (size_t i = 0; i < shape[0]; i++)

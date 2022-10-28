@@ -28,16 +28,16 @@ def check_same_memory(original, view):
     {
      "shape": (4, 1, 4),
      "np_fn": lambda X: np.broadcast_to(X, shape=(4, 5, 4)),
-     "nd_fn": lambda X: X.broadcast_to((4, 5, 4))
+     "nd_fn": lambda X:  X.broadcast_to(         (4, 5, 4))
     },
     {
      "shape": (4, 3),
-     "np_fn": lambda X: X.reshape(2, 2, 3),
+     "np_fn": lambda X: X.reshape( 2, 2, 3),
      "nd_fn": lambda X: X.reshape((2, 2, 3))
     },
     {
      "shape": (16, 16), # testing for compaction of large ndims array
-     "np_fn": lambda X: X.reshape(2, 4, 2, 2, 2, 2, 2),
+     "np_fn": lambda X: X.reshape( 2, 4, 2, 2, 2, 2, 2),
      "nd_fn": lambda X: X.reshape((2, 4, 2, 2, 2, 2, 2))
     },
     {

@@ -209,6 +209,7 @@ class NDArray:
             return self
         else:
             out = NDArray.make(self.shape, device=self.device)
+            # print(">>> Compact", self.shape, self.strides, self._offset);raise ValueError
             self.device.compact(
                 self._handle, out._handle, self.shape, self.strides, self._offset
             )

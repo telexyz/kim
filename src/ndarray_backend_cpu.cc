@@ -70,16 +70,16 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
   for (size_t out_idx = 0; out_idx < out->size; out_idx++) {
     //
     size_t a_idx = 0; 
-    uint32_t remain = out_idx;
-    uint32_t stride = out->size;
-    uint32_t indexx = 0;
+    size_t remain = out_idx;
+    size_t stride = out->size;
+    size_t indexx = 0;
     // out is compacted array so it's strides are:
     // strides[0]:   shape[1]*shape[2]..shape[n-1]
     // strides[1]:   shape[2]*shape[3]..shape[n-1]
     //               ...
     // strides[n-2]: shape[n-1]
     // strides[n-1]: 1
-    for(uint32_t i = 0; i < shape.size(); i++) {
+    for(size_t i = 0; i < shape.size(); i++) {
       stride = stride / shape[i];
       indexx = remain / stride;
       remain = remain % stride;
@@ -113,12 +113,12 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out,
   /// BEGIN YOUR SOLUTION
   for (size_t a_idx = 0; a_idx < a.size; a_idx++) {
     //
-    size_t out_idx = 0; 
-    uint32_t remain = a_idx;
-    uint32_t stride = a.size;
-    uint32_t indexx = 0;
+    size_t out_idx = 0;
+    size_t remain = a_idx;
+    size_t stride = a.size;
+    size_t indexx = 0;
     // 
-    for(uint32_t i = 0; i < shape.size(); i++) {
+    for(size_t i = 0; i < shape.size(); i++) {
       stride = stride / shape[i];
       indexx = remain / stride;
       remain = remain % stride;
@@ -135,15 +135,15 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out,
   /// END YOUR SOLUTION
 }
 
-void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vector<uint32_t> shape,
-                   std::vector<uint32_t> strides, size_t offset) {
+void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vector<uint32_t> shape, std::vector<uint32_t> strides, size_t offset) {
   /**
    * Set items is a (non-compact) array
    *
    * Args:
-   *   size: number of elements to write in out array (note that this will note be the same as
-   *         out.size, because out is a non-compact subset array);  it _will_ be the same as the
-   *         product of items in shape, but convenient to just pass it here.
+   *   size: number of elements to write in out array (note that this will not be 
+   *       the same as out.size, because out is a non-compact subset array);
+   *       it _will_ be the same as the product of items in shape,
+   *       but convenient to just pass it here.
    *   val: scalar value to write to
    *   out: non-compact array whose items are to be written
    *   shape: shapes of each dimension of out
@@ -152,14 +152,14 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
    */
 
   /// BEGIN YOUR SOLUTION
-  for (size_t a_idx = 0; a_idx < size; a_idx++) {
+  for (size_t idx = 0; idx < size; idx++) {
     //
-    size_t out_idx = 0; 
-    uint32_t remain = a_idx;
-    uint32_t stride = size;
-    uint32_t indexx = 0;
+    size_t out_idx = 0;
+    size_t remain = idx;
+    size_t stride = size;
+    size_t indexx = 0;
     // 
-    for(uint32_t i = 0; i < shape.size(); i++) {
+    for(size_t i = 0; i < shape.size(); i++) {
       stride = stride / shape[i];
       indexx = remain / stride;
       remain = remain % stride;
@@ -350,9 +350,9 @@ inline void AlignedDot(const float* __restrict__ a,
    *   out: compact 2D array of size TILE x TILE to write to
    */
 
-  // a = (const float*)__builtin_assume_aligned(  a, TILE * ELEM_SIZE);
-  // b = (const float*)__builtin_assume_aligned(  b, TILE * ELEM_SIZE);
-  // out = (    float*)__builtin_assume_aligned(out, TILE * ELEM_SIZE);
+  a = (const float*)__builtin_assume_aligned(  a, TILE * ELEM_SIZE);
+  b = (const float*)__builtin_assume_aligned(  b, TILE * ELEM_SIZE);
+  out = (    float*)__builtin_assume_aligned(out, TILE * ELEM_SIZE);
   /// BEGIN YOUR SOLUTION
   for (size_t i = 0; i < TILE; i++) {
     for (size_t j = 0; j < TILE; j++) {

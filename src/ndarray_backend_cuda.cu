@@ -51,7 +51,9 @@ struct CudaVec {
 
 CudaVec VecToCuda(const std::vector<uint32_t>& x) {
   CudaVec shape;
-  if (x.size() > MAX_VEC_SIZE) throw std::runtime_error("Exceeded CUDA supported max dimesions");
+  if (x.size() > MAX_VEC_SIZE) {
+    throw std::runtime_error("Exceeded CUDA supported max dimesions");
+  }
   shape.size = x.size();
   for (size_t i = 0; i < x.size(); i++) {
     shape.data[i] = x[i];
@@ -82,10 +84,11 @@ void Fill(CudaArray* out, scalar_t val) {
 
 
 
-__global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, CudaVec shape,
-                              CudaVec strides, size_t offset) {
+__global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, 
+    CudaVec shape, CudaVec strides, size_t offset) {
   /**
-   * The CUDA kernel for the compact opeation.  This should effectively map a single entry in the 
+   * The CUDA kernel for the compact operation.
+   * This should effectively map a single entry in the 
    * non-compact input a, to the corresponding item (at location gid) in the compact array out.
    * 
    * Args:
@@ -97,10 +100,21 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, Cud
    *   offset: offset of out array
    */
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-
-  /// BEGIN YOUR SOLUTION
-  
-  /// END YOUR SOLUTION
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    size_t a_idx = 0; 
+    size_t remain = gid;
+    size_t stride = size;
+    size_t indexx = 0;
+    for(size_t i = 0; i < shape.size; i++) {
+      stride = stride / shape.data[i];
+      indexx = remain / stride;
+      remain = remain % stride;
+      a_idx += strides.data[i] * indexx;
+    }
+    out[gid] = a[a_idx + offset];
+    /// END YOUR SOLUTION
+  }
 }
 
 void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
@@ -122,18 +136,47 @@ void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
 
   // Nothing needs to be added here
   CudaDims dim = CudaOneDim(out->size);
-  CompactKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, VecToCuda(shape),
-                                         VecToCuda(strides), offset);
+  CompactKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, 
+    VecToCuda(shape), VecToCuda(strides), offset);
 }
 
 
+__global__ void MyKernel(const scalar_t* a, scalar_t* out, size_t size, 
+    CudaVec shape, CudaVec strides, size_t offset) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    /// END YOUR SOLUTION
+  }
+}
 
+__global__ void EwiseSetitemKernel(const scalar_t* a, scalar_t* out, size_t size, 
+    CudaVec shape, CudaVec strides, size_t offset) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    size_t out_idx = 0;
+    size_t remain = gid;
+    size_t stride = size;
+    size_t indexx = 0;
+    // 
+    for(size_t i = 0; i < shape.size; i++) {
+      stride = stride / shape.data[i];
+      indexx = remain / stride;
+      remain = remain % stride;
+      out_idx += strides.data[i] * indexx;
+    }
+    out[out_idx + offset] = a[gid];
+    /// END YOUR SOLUTION
+  }
+}
 
 void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
                   std::vector<uint32_t> strides, size_t offset) {
   /**
-   * Set items in a (non-compact) array using CUDA.  Yyou will most likely want to implement a
-   * EwiseSetitemKernel() function, similar to those above, that will do the actual work.
+   * Set items in a (non-compact) array using CUDA. 
+   * You will most likely want to implement a EwiseSetitemKernel() function, 
+   * similar to those above, that will do the actual work.
    * 
    * Args:
    *   a: _compact_ array whose items will be written to out
@@ -143,11 +186,33 @@ void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shap
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN YOUR SOLUTION
-  
+  CudaDims dim = CudaOneDim(out->size);
+  EwiseSetitemKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, a.size, 
+    VecToCuda(shape), VecToCuda(strides), offset);  
   /// END YOUR SOLUTION
 }
 
 
+__global__ void ScalarSetitemKernel(const scalar_t val, scalar_t* out, size_t size, 
+    CudaVec shape, CudaVec strides, size_t offset) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    size_t out_idx = 0;
+    size_t remain = gid;
+    size_t stride = size;
+    size_t indexx = 0;
+    // 
+    for(size_t i = 0; i < shape.size; i++) {
+      stride = stride / shape.data[i];
+      indexx = remain / stride;
+      remain = remain % stride;
+      out_idx += strides.data[i] * indexx;
+    }
+    out[out_idx + offset] = val;
+    /// END YOUR SOLUTION
+  }
+}
 
 
 void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32_t> shape,
@@ -156,9 +221,10 @@ void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32
    * Set items is a (non-compact) array
    * 
    * Args:
-   *   size: number of elements to write in out array (note that this will note be the same as
-   *         out.size, because out is a non-compact subset array);  it _will_ be the same as the 
-   *         product of items in shape, but covenient to just pass it here.
+   *   size: number of elements to write in out array (note that this will not be 
+   *      the same as out.size, because out is a non-compact subset array);
+   *      it _will_ be the same as the product of items in shape, 
+   *      but covenient to just pass it here.
    *   val: scalar value to write to
    *   out: non-compact array whose items are to be written
    *   shape: shapes of each dimension of out
@@ -166,7 +232,9 @@ void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32
    *   offset: offset of the out array
    */
   /// BEGIN YOUR SOLUTION
-  
+  CudaDims dim = CudaOneDim(out->size);
+  ScalarSetitemKernel<<<dim.grid, dim.block>>>(val, out->ptr, out->size, 
+    VecToCuda(shape), VecToCuda(strides), offset);
   /// END YOUR SOLUTION
 }
 

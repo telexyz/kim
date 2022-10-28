@@ -326,9 +326,12 @@ class NDArray:
         entries, so for simplicity we wrote the code for you to convert these
         to always be a tuple of slices, one of each dimension.
         For this tuple of slices, return an array that subsets the desired
-        elements.  As before, this can be done entirely through compute a new
+        elements.  
+
+        ** As before, this can be done entirely through compute a new
         shape, stride, and offset for the new "view" into the original array,
-        pointing to the same memory
+        pointing to the same memory **
+
         Raises:
             AssertionError if a slice has negative size or step, or if number
             of slices is not equal to the number of dimension (the stub code
@@ -353,9 +356,35 @@ class NDArray:
         )
         assert len(idxs) == self.ndim, "Need indexes equal to number of dimensions"
 
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        '''Raises:
+            AssertionError if a slice has negative size or step, or if number
+            of slices is not equal to the number of dimension (the stub code
+            already raises all these errors.'''
+        new_offset = 0
+        new_shape = []
+        new_strides = []
+
+        for i in range(len(idxs)):
+            idx = idxs[i]
+            if idx.start > idx.stop or idx.step <= 0:
+                raise AssertionError
+            
+            new_shape.append(math.ceil((idx.stop - idx.start) / idx.step))
+            new_strides.append(self.strides[i] * idx.step)
+            new_offset += idx.start * self.strides[i]
+            print(">>>", i, idx, self.strides[i], new_offset, new_shape, new_strides)
+        print("__getitem__", idxs)
+        '''Returns:
+            NDArray: a new NDArray object corresponding to the selected
+            subset of elements.  As before, this should not copy memory but just
+            manipulate the shape/strides/offset of the new array, referencing
+            the same array as the original one.'''
+        assert len(new_shape) == len(new_strides)
+        return NDArray.make(
+            tuple(new_shape), strides=tuple(new_strides), device=self.device, 
+            handle=self._handle, offset=new_offset
+        )
+
 
     def __setitem__(self, idxs, other):
         """Set the values of a view into an array, using the same semantics

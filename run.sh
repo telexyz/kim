@@ -4,6 +4,7 @@
 # https://colab.research.google.com/drive/1DjW7RRF3chDfkp8LcDJCyQB8Bd11nCZ0
 
 python3 -m pytest tests/test_ndarray.py -v -k "(permute or reshape or broadcast or getitem) and cpu and not compact"
+python3 -m pytest tests/test_ndarray.py -v -k "(getitem) and cpu and not compact"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k "python_ops"
 make && python3 -m pytest -k "compact[cpu-transpose]"
 make && python3 -m pytest -k "compact[cpu-broadcast_to]"

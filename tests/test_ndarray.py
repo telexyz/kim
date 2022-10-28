@@ -252,20 +252,23 @@ def test_reshape(device, params):
 
 
 getitem_params = [
-    {"shape": (8, 16), "fn": lambda X: X[3:4, 3:4]},
-    {"shape": (8, 16), "fn": lambda X: X[1:2, 1:3]},
-    {"shape": (8, 16), "fn": lambda X: X[3:4, 1:4]},
-    {"shape": (8, 16), "fn": lambda X: X[1:4, 3:4]},
+    {"fn": lambda X: X[3:4, 3:4]},
+    {"fn": lambda X: X[1:2, 1:3]},
+    {"fn": lambda X: X[3:4, 1:4]},
+    {"fn": lambda X: X[1:4, 3:4]},
+    {"fn": lambda X: X[1:4:2, 3:4:1]},
+    {"fn": lambda X: X[1:4:2, 3:4:3]},
+    {"fn": lambda X: X[:4:2, 2:-2:3]},
 ]
 @pytest.mark.parametrize("params", getitem_params)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_getitem(device, params):
-    shape = params['shape']
     fn = params['fn']
     _A = np.random.randn(5, 5)
     A = nd.array(_A, device=device)
     lhs = fn(_A)
     rhs = fn(A)
+    print("TEST __getitem__", _A)
     np.testing.assert_allclose(lhs, rhs.numpy(), atol=1e-5, rtol=1e-5)
     compare_strides(lhs, rhs)
     check_same_memory(A, rhs)

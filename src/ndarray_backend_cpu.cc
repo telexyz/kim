@@ -380,9 +380,49 @@ void ReduceMax(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
    *   out: compact array to write into
    *   reduce_size: size of the dimension to reduce over
    */
-
   /// BEGIN YOUR SOLUTION
-  
+  /* numpy */
+  // def reduce_max(a, out, reduce_size):
+  //     out.array[:] = a.array[:].reshape(-1, reduce_size).max(axis=1)
+  // 
+  /* ndarray */
+  // def max(self, axis=None):
+  //     view, out = self.reduce_view_out(axis)
+  //     self.device.reduce_max(view.compact()._handle, out._handle, view.shape[-1])
+  //     return out
+  // 
+  // ### Reductions, i.e., sum/max over all element or over given axis
+  // def reduce_view_out(self, axis):
+  //     """ Return a view to the array set up for reduction functions and output array. """
+  //     if axis is None:
+  //         view = self.reshape((1,)*(self.ndim - 1) + (prod(self.shape),))
+  //         out = NDArray.make((1,)*self.ndim, device=self.device)
+  //     else:
+  //         view = self.permute(
+  //             tuple([a for a in range(self.ndim) if a != axis]) + (axis,)
+  //         )
+  //         out = NDArray.make(
+  //             tuple([1 if i == axis else s for i, s in enumerate(self.shape)]),
+  //             device=self.device,
+  //         )
+  //     return view, out
+  // 
+  // >>> (1,)*3
+  // (1, 1, 1)
+  // >>> (1,)*0
+  // ()
+  // 
+  for (size_t i = 0; i < out->size; i++) {
+    size_t offset = i*reduce_size;
+    scalar_t max = a.ptr[offset];
+    for (size_t k = 1; k < reduce_size; k++) {
+      scalar_t tmp = a.ptr[offset + k];
+      if (max < tmp) {
+        max = tmp;
+      }
+    }
+    out->ptr[i] = max;
+  }
   /// END YOUR SOLUTION
 }
 
@@ -397,7 +437,13 @@ void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
    */
 
   /// BEGIN YOUR SOLUTION
-  
+      for (size_t i = 0; i < out->size; i++) {
+    scalar_t sum = 0;
+    for (size_t k = 0; k < reduce_size; k++) {
+      sum += a.ptr[i*reduce_size + k];
+    }
+    out->ptr[i] = sum;
+  }
   /// END YOUR SOLUTION
 }
 

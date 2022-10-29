@@ -437,6 +437,7 @@ __global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out
 
     /// END YOUR SOLUTION
   // }
+  // https://youtu.be/jYCxVirq4d0?t=1775
   // int ybase = blockIdx.y * blockDim.y + threadIdx.y;
   // int xbase = blockIdx.x * blockDim.x + threadIdx.x;
   // float c[V][V] = {0};
@@ -451,6 +452,19 @@ __global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out
   //   }
   // }
   // C[ybase * V : ybase*V + V, xbase*V : xbase*V + V] = c[:];
+}
+
+__global__ void SimpleMatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, uint32_t M, uint32_t N, uint32_t P) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < M * P) {
+    const size_t i = gid / P; 
+    const size_t j = gid % P;
+    scalar_t tmp = 0;
+    for (size_t k = 0; k < N; k++) {
+      tmp += a[i * N + k] * b[k * P + j];
+    }
+    out[gid] = tmp;
+  }
 }
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N, uint32_t P) {
@@ -475,7 +489,12 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    *   P: columns of b / out
    */
   /// BEGIN YOUR SOLUTION
-  
+  /** 
+   * Trường hợp m,n,p chia hết cho TILE thì dùng tile matmul
+   * Nếu không thì dùng simple matmul mỗi thread tính 1 phần tử out[i,j]
+   */
+  CudaDims dim = CudaOneDim(out->size);
+  SimpleMatmulKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, M, N, P);
   /// END YOUR SOLUTION
 }
 
@@ -533,8 +552,8 @@ __global__ void ReduceSumKernel(const scalar_t* a, scalar_t* out, size_t reduce_
 
 void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
   /**
-   * Reduce by taking summation over `reduce_size` contiguous blocks.  Again, for simplicity you 
-   * can perform each reduction in a single CUDA thread.
+   * Reduce by taking summation over `reduce_size` contiguous blocks.
+   * Again, for simplicity you can perform each reduction in a single CUDA thread.
    * 
    * Args:
    *   a: compact array of size a.size = out.size * reduce_size to reduce over

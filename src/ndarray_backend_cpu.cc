@@ -163,6 +163,7 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
       stride = stride / shape[i];
       indexx = remain / stride;
       remain = remain % stride;
+      if (indexx >= shape[i]) { return; }
       out_idx += strides[i] * indexx;
     }
     out->ptr[out_idx + offset] = val;

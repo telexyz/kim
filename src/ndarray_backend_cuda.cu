@@ -207,6 +207,7 @@ __global__ void ScalarSetitemKernel(const scalar_t val, scalar_t* out, size_t si
       stride = stride / shape.data[i];
       indexx = remain / stride;
       remain = remain % stride;
+      if (indexx >= shape.data[i]) { return; }
       out_idx += strides.data[i] * indexx;
     }
     out[out_idx + offset] = val;

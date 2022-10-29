@@ -34,7 +34,6 @@ struct AlignedArray {
 };
 
 
-
 void Fill(AlignedArray* out, scalar_t val) {
   /**
    * Fill the values of an aligned array with val
@@ -43,8 +42,6 @@ void Fill(AlignedArray* out, scalar_t val) {
     out->ptr[i] = val;
   }
 }
-
-
 
 
 void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> shape,
@@ -64,7 +61,7 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN YOUR SOLUTION
-  cout << "\n Compact"<<shape.size()<<"-"<<strides.size()<<";"<<a.size<<"-"<<out->size;
+  // /* DEBUG */ cout << "\n Compact"<<shape.size()<<"-"<<strides.size()<<";"<<a.size<<"-"<<out->size;
   // out->size có thể khác a.size do a đã được broadcast VD: (4,1,4) => (4, 5, 4)
   assert(shape.size() == strides.size());
   for (size_t out_idx = 0; out_idx < out->size; out_idx++) {
@@ -84,9 +81,9 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
       indexx = remain / stride;
       remain = remain % stride;
       a_idx += strides[i] * indexx;
-      // cout << "\n indexx: " << indexx << ", stride: " << strides[i]; // OK
+       // /* DEBUG */ cout << "\n indexx: " << indexx << ", stride: " << strides[i]; // OK
     }
-    // cout << "\n[ out_idx ] " << out_idx << " -> " << a_idx << " offset: " << offset; // OK
+    //  /* DEBUG */ cout << "\n[ out_idx ] " << out_idx << " -> " << a_idx << " offset: " << offset; // OK
     out->ptr[out_idx] = a.ptr[a_idx + offset];
   }
   // cnt = 0;
@@ -313,13 +310,13 @@ void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uin
   for (size_t i = 0; i < m; i++) {
     for (size_t j = 0; j < p; j++) {
       size_t out_idx = i * p + j;
-      scalar_t x = 0;
+      scalar_t tmp = 0;
       for (size_t k = 0; k < n; k++) {
         size_t a_idx = i * n + k;
         size_t b_idx = k * p + j;
-        x += a.ptr[a_idx] * b.ptr[b_idx];
+        tmp += a.ptr[a_idx] * b.ptr[b_idx];
       }
-      out->ptr[out_idx] = x;
+      out->ptr[out_idx] = tmp;
     }
   }
   /// END YOUR SOLUTION
@@ -327,7 +324,7 @@ void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uin
 
 inline void AlignedDot(const float* __restrict__ a,
                        const float* __restrict__ b,
-                       float* __restrict__ out) {
+                             float* __restrict__ out) {
 
   /**
    * Multiply together two TILE x TILE matrices, and _add _the result to out 
@@ -357,14 +354,17 @@ inline void AlignedDot(const float* __restrict__ a,
   /// BEGIN YOUR SOLUTION
   for (size_t i = 0; i < TILE; i++) {
     for (size_t j = 0; j < TILE; j++) {
-      size_t out_idx = i * TILE + j;
-      scalar_t x = 0;
+      // 
+      const size_t out_idx = i * TILE + j;
+      scalar_t tmp = 0;
+      // 
       for (size_t k = 0; k < TILE; k++) {
-        size_t a_idx = i * TILE + k;
-        size_t b_idx = k * TILE + j;
-        x += a[a_idx] * b[b_idx];
+        const size_t a_idx = i * TILE + k;
+        const size_t b_idx = k * TILE + j;
+        tmp += a[a_idx] * b[b_idx];
       }
-      out[out_idx] = x;
+      // 
+      out[out_idx] = tmp;
     }
   }
   /// END YOUR SOLUTION
@@ -372,12 +372,13 @@ inline void AlignedDot(const float* __restrict__ a,
 
 void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m, uint32_t n, uint32_t p) {
   /**
-   * Matrix multiplication on tiled representations of array.  
-   * In this setting, a, b, and out are all *4D* compact arrays of the 
-   * appropriate size, e.g. a is an array of size
+   * Matrix multiplication on tiled representations of array.  In this setting, 
+   * a, b, and out are all *4D* compact arrays of the appropriate size, 
+   * e.g. a is an array of size
    *   a[m/TILE][n/TILE][TILE][TILE]
-   * You should do the multiplication tile-by-tile to improve performance of the array
-   * (i.e., this function should call `AlignedDot()` implemented above).
+   * 
+   * You should do the multiplication tile-by-tile to improve performance of 
+   * the array (i.e., this function should call `AlignedDot()` implemented above).
    *
    * Note that this function will only be called when m, n, p are all multiples of 
    * TILE, so you can assume that this division happens without any remainder.
@@ -406,10 +407,10 @@ void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out
       for (size_t o = 0; o < total; o++) { out_ptr[o] = 0; } // set elements to 0
       // 
       for (size_t k = 0; k < n_t; k++) {
-        size_t a_idx = i * n_t + k;
-        size_t b_idx = k * p_t + j;        
-        float* a_ptr = a.ptr + (a_idx * total);
-        float* b_ptr = b.ptr + (b_idx * total);
+        const size_t a_idx = i * n_t + k;
+        const size_t b_idx = k * p_t + j;        
+        const float* a_ptr = a.ptr + (a_idx * total);
+        const float* b_ptr = b.ptr + (b_idx * total);
         AlignedDot(a_ptr, b_ptr, tmp);
         for (size_t o = 0; o < total; o++) { out_ptr[o] += tmp[o]; }
       }

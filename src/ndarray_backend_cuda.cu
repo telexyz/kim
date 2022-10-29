@@ -81,9 +81,6 @@ void Fill(CudaArray* out, scalar_t val) {
 
 // Untility function to convert contiguous index i to memory location from strides
 
-
-
-
 __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, 
     CudaVec shape, CudaVec strides, size_t offset) {
   /**
@@ -120,10 +117,11 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size,
 void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
              std::vector<uint32_t> strides, size_t offset) {
   /**
-   * Compact an array in memory.  Unlike the C++ version, in CUDA this will primarily call the 
-   * relevant CUDA kernel.  In this case, we illustrate how you should set this up (i.e., we give 
-   * you the code for this fuction, and also the prototype for the CompactKernel() function).  For
-   * the functions after this, however, you'll need to define these kernels as you see fit to 
+   * Compact an array in memory. Unlike the C++ version, in CUDA this will 
+   * primarily call the relevant CUDA kernel. In this case, we illustrate 
+   * how you should set this up (i.e., we give you the code for this fuction, 
+   * and also the prototype for the CompactKernel() function).  For the functions 
+   * after this, however, you'll need to define these kernels as you see fit to 
    * execute the underlying function.
    * 
    * Args:
@@ -131,10 +129,8 @@ void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
    *   out: compact version of the array to be written
    *   shape: shapes of each dimension for a and out
    *   strides: strides of the *a* array (not out, which has compact strides)
-   *   offset: offset of the *a* array (not out, which has zero offset, being compact)
+   *   offset: offset of the *a* array (not out, which has zero offset)
    */
-
-  // Nothing needs to be added here
   CudaDims dim = CudaOneDim(out->size);
   CompactKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, 
     VecToCuda(shape), VecToCuda(strides), offset);
@@ -174,7 +170,7 @@ void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shap
    *   out: non-compact array whose items are to be written
    *   shape: shapes of each dimension for a and out
    *   strides: strides of the *out* array (not a, which has compact strides)
-   *   offset: offset of the *out* array (not a, which has zero offset, being compact)
+   *   offset: offset of the *out* array (not a, which has zero offset)
    */
   /// BEGIN YOUR SOLUTION
   CudaDims dim = CudaOneDim(out->size);
@@ -198,7 +194,6 @@ __global__ void ScalarSetitemKernel(const scalar_t val, scalar_t* out, size_t si
       stride = stride / shape.data[i];
       indexx = remain / stride;
       remain = remain % stride;
-      if (indexx >= shape.data[i]) { return; }
       out_idx += strides.data[i] * indexx;
     }
     out[out_idx + offset] = val;
@@ -207,8 +202,7 @@ __global__ void ScalarSetitemKernel(const scalar_t val, scalar_t* out, size_t si
 }
 
 
-void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32_t> shape,
-                   std::vector<uint32_t> strides, size_t offset) {
+void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32_t> shape, std::vector<uint32_t> strides, size_t offset) {
   /**
    * Set items is a (non-compact) array
    * 
@@ -225,7 +219,7 @@ void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32
    */
   /// BEGIN YOUR SOLUTION
   CudaDims dim = CudaOneDim(out->size);
-  ScalarSetitemKernel<<<dim.grid, dim.block>>>(val, out->ptr, out->size, 
+  ScalarSetitemKernel<<<dim.grid, dim.block>>>(val, out->ptr, size, 
     VecToCuda(shape), VecToCuda(strides), offset);
   /// END YOUR SOLUTION
 }
@@ -434,7 +428,30 @@ void ScalarDiv(const CudaArray& a, scalar_t val, CudaArray* out) {
 // Elementwise and scalar operations
 ////////////////////////////////////////////////////////////////////////////////
 
+__global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, 
+    uint32_t M, uint32_t N, uint32_t P) {
+  size_t ybase = blockIdx.y * blockDim.y + threadIdx.y;
+  size_t xbase = blockIdx.x * blockDim.x + threadIdx.x;
+  // if (ybase < size) {
+    /// BEGIN YOUR SOLUTION
 
+    /// END YOUR SOLUTION
+  // }
+  // int ybase = blockIdx.y * blockDim.y + threadIdx.y;
+  // int xbase = blockIdx.x * blockDim.x + threadIdx.x;
+  // float c[V][V] = {0};
+  // float a[V], b[V];
+  // for (int k = 0; k < N; ++k) {
+  //   a[:] = A[k, ybase*V : ybase*V + V];
+  //   b[:] = B[k, xbase*V : xbase*V + V];
+  //   for (int y = 0; y < V; ++y) {
+  //     for (int x = 0; x < V; ++x) {
+  //       c[y][x] += a[y] * b[x];
+  //     }
+  //   }
+  // }
+  // C[ybase * V : ybase*V + V, xbase*V : xbase*V + V] = c[:];
+}
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N, uint32_t P) {
   /**
@@ -451,7 +468,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    *
    * Args:
    *   a: compact 2D array of size m x n
-   *   b: comapct 2D array of size n x p
+   *   b: compact 2D array of size n x p
    *   out: compact 2D array of size m x p to write the output to
    *   M: rows of a / out
    *   N: columns of a / rows of b
@@ -465,15 +482,6 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
 ////////////////////////////////////////////////////////////////////////////////
 // Max and sum reductions
 ////////////////////////////////////////////////////////////////////////////////
-
-__global__ void MyKernel(const scalar_t* a, scalar_t* out, size_t size, 
-    CudaVec shape, CudaVec strides, size_t offset) {
-  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (gid < size) {
-    /// BEGIN YOUR SOLUTION
-    /// END YOUR SOLUTION
-  }
-}
 
 __global__ void ReduceMaxKernel(const scalar_t* a, scalar_t* out, size_t reduce_size, size_t size) {
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;

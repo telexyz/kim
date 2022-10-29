@@ -141,15 +141,6 @@ void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
 }
 
 
-__global__ void MyKernel(const scalar_t* a, scalar_t* out, size_t size, 
-    CudaVec shape, CudaVec strides, size_t offset) {
-  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (gid < size) {
-    /// BEGIN YOUR SOLUTION
-    /// END YOUR SOLUTION
-  }
-}
-
 __global__ void EwiseSetitemKernel(const scalar_t* a, scalar_t* out, size_t size, 
     CudaVec shape, CudaVec strides, size_t offset) {
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -445,20 +436,18 @@ void ScalarDiv(const CudaArray& a, scalar_t val, CudaArray* out) {
 
 
 
-void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N,
-            uint32_t P) {
+void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N, uint32_t P) {
   /**
-   * Multiply two (compact) matrices into an output (also comapct) matrix.  You will want to look
-   * at the lecture and notes on GPU-based linear algebra to see how to do this.  Since ultimately
-   * mugrade is just evaluating correctness, you _can_ implement a version that simply parallelizes
-   * over (i,j) entries in the output array.  However, to really get the full benefit of this
-   * problem, we would encourage you to use cooperative fetching, shared memory register tiling, 
-   * and other ideas covered in the class notes.  Note that unlike the tiled matmul function in
-   * the CPU backend, here you should implement a single function that works across all size
-   * matrices, whether or not they are a multiple of a tile size.  As with previous CUDA
-   * implementations, this function here will largely just set up the kernel call, and you should
-   * implement the logic in a separate MatmulKernel() call.
+   * Multiply two (compact) matrices into an output (also compact) matrix.
+   * You will want to look at the lecture and notes on GPU-based linear algebra
+   * to see how to do this. We would encourage you to use cooperative fetching, 
+   * shared memory register tiling, and other ideas covered in the class notes.
    * 
+   * Note that unlike the tiled matmul function in the CPU backend, here you should 
+   * implement a single function that works across all size matrices, 
+   * whether or not they are a multiple of a tile size. As with previous CUDA
+   * implementations, this function here will largely just set up the kernel call,
+   *  and you should implement the logic in a separate MatmulKernel() call.
    *
    * Args:
    *   a: compact 2D array of size m x n
@@ -468,7 +457,6 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    *   N: columns of a / rows of b
    *   P: columns of b / out
    */
-
   /// BEGIN YOUR SOLUTION
   
   /// END YOUR SOLUTION
@@ -478,12 +466,35 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
 // Max and sum reductions
 ////////////////////////////////////////////////////////////////////////////////
 
+__global__ void MyKernel(const scalar_t* a, scalar_t* out, size_t size, 
+    CudaVec shape, CudaVec strides, size_t offset) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    /// END YOUR SOLUTION
+  }
+}
 
+__global__ void ReduceMaxKernel(const scalar_t* a, scalar_t* out, size_t reduce_size, size_t size) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    size_t offset = gid*reduce_size;
+    scalar_t max = a[offset];
+    for (size_t k = 1; k < reduce_size; k++) {
+      const scalar_t tmp = a[offset + k];
+      if (max < tmp) { max = tmp; }
+    }
+    out[gid] = max;
+    /// END YOUR SOLUTION
+  }
+}
 
 void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
   /**
-   * Reduce by taking maximum over `reduce_size` contiguous blocks.  Even though it is inefficient,
-   * for simplicity you can perform each reduction in a single CUDA thread.
+   * Reduce by taking maximum over `reduce_size` contiguous blocks.
+   * Even though it is inefficient, for simplicity you can perform each reduction
+   * in a single CUDA thread.
    * 
    * Args:
    *   a: compact array of size a.size = out.size * reduce_size to reduce over
@@ -491,12 +502,26 @@ void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN YOUR SOLUTION
-  
+  CudaDims dim = CudaOneDim(out->size);
+  ReduceMaxKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, reduce_size, out->size);
   /// END YOUR SOLUTION
 }
 
 
 
+__global__ void ReduceSumKernel(const scalar_t* a, scalar_t* out, size_t reduce_size, size_t size) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    size_t offset = gid*reduce_size;
+    scalar_t sum = a[offset];
+    for (size_t k = 1; k < reduce_size; k++) {
+      sum += a[offset + k];
+    }
+    out[gid] = sum;
+    /// END YOUR SOLUTION
+  }
+}
 
 void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
   /**
@@ -509,7 +534,8 @@ void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   redice_size: size of the dimension to reduce over
    */
   /// BEGIN YOUR SOLUTION
-  
+  CudaDims dim = CudaOneDim(out->size);
+  ReduceSumKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, reduce_size, out->size);
   /// END YOUR SOLUTION
 }
 

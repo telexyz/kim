@@ -4,15 +4,7 @@ project(kim C CXX)
 # find correct version of Python
 execute_process(COMMAND python3-config --prefix
   OUTPUT_VARIABLE Python_ROOT_DIR)
-if (PYTHON_INCLUDE_DIR)
-  set(PYTHON_MAJOR $ENV{Python_VERSION_MAJOR})
-  set(PYTHON_MINOR $ENV{Python_VERSION_MINOR})
-  set(PYTHONLIBS_VERSION_STRING ${Python_VERSION})
-  set(PYTHON_INCLUDE_DIR ${Python_INCLUDE_DIRS})
-  set(PYTHON_LIBRARIES ${Python_LIBRARIES})
-else()
-  find_package(Python COMPONENTS Development Interpreter REQUIRED)
-endif()
+find_package(Python COMPONENTS Development Interpreter REQUIRED)
 include_directories(${Python_INCLUDE_DIRS})
 
 # find pybind

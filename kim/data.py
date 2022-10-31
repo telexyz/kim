@@ -75,10 +75,12 @@ class Dataset:
     def __len__(self) -> int:
         raise NotImplementedError
 
-    def apply_transforms(self, x):
-        if self.transforms is not None:
+    def apply_transforms(self, img):
+        if self.transforms:
+            x = img.reshape((28, 28, 1))
             for tform in self.transforms: x = tform(x) # apply the transforms
-        return x
+            img = x.reshape(img.shape)
+        return img
 
 
 class DataLoader:
@@ -126,10 +128,12 @@ class DataLoader:
 
         batch_xy = [self.dataset[i] for i in order]
         batch_x = Tensor([xy[0] for xy in batch_xy])
+
         if len(batch_xy[0]) == 1:
             return (batch_x,)
-        batch_y = Tensor([xy[1] for xy in batch_xy])
-        return (batch_x, batch_y)
+        else:
+            batch_y = Tensor([xy[1] for xy in batch_xy])
+            return (batch_x, batch_y)
         ### END YOUR SOLUTION
 
 
@@ -150,19 +154,22 @@ class MNISTDataset(Dataset):
             self.images = pixels.reshape(-1, 28*28).astype('float32') / 255
 
         with gzip.open(self.label_filename) as f:
-            self.labels = np.frombuffer(f.read(), 'B', offset=8) # skip first 8-bytes
+            self.labels = np.frombuffer(f.read(), 'B', offset=8) # skip 8-bytes
 
         self.cached_len = len(self.images)
         ### END YOUR SOLUTION
 
     def __getitem__(self, index) -> object:
-        img = self.images[index]
-        # print(">>> img.shape:", img.shape)
-        if self.transforms:
-            img = img.reshape((28, 28, 1))
-            img = self.apply_transforms(img)
-            img = img.reshape((28*28))
-        return (img, self.labels[index])
+        if isinstance(index, slice):
+            images = []
+            labels = []
+            for idx in range(index.start, index.stop):
+                images.append(self.apply_transforms(self.images[idx]))
+                labels.append(self.labels[idx])
+            return (np.array(images), np.array(labels))
+        else:
+            image = self.apply_transforms(self.images[index])
+            return (image, self.labels[index])
 
     def __len__(self) -> int:
         return self.cached_len

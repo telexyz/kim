@@ -32,37 +32,38 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
 
 def epoch(dataloader, model, optimizer=None):
     np.random.seed(4)
-    # print(">>>", model, optimizer)
-    # >>> <kim.nn.Sequential object> <kim.optim.Adam object>
     loss_func = nn.SoftmaxLoss()
 
     if optimizer:
         model.train()
-    else:
-        model.eval()
+        losses = []
+        errors = []
+        for i, batch in enumerate(dataloader):
+            x, y = batch[0], batch[1]
+            out = model(x)
+            loss = loss_func(out, y)
+            error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
+            losses.append(loss.numpy())
+            errors.append(error)
 
-    losses = []
-    errors = []
-    for i, batch in enumerate(dataloader):
-        batch_x, batch_y = batch[0], batch[1]
-
-        out = model(batch_x)
-        loss = loss_func(out, batch_y)
-        error = np.mean(out.numpy().argmax(axis=1) != batch_y.numpy())
-        # print("loss: {}, error: {}".format(loss.numpy(), error))
-        losses.append(loss.numpy())
-        errors.append(error)
-
-        if optimizer: # adjust params
             optimizer.reset_grad()
             loss.backward()
             optimizer.step()
+        result = (np.mean(errors), np.mean(losses))
 
-    '''Returns the average error rate (as a float) and
-    the average loss over all samples (as a float).'''
-    r = (np.mean(errors), np.mean(losses))
-    print(r)
-    return r
+    else:
+        model.eval()
+        dataset = dataloader.dataset
+        x, y = dataset[range(len(dataset))]
+        x = kim.Tensor(x)
+        y = kim.Tensor(y)
+        out = model(x)
+        loss = loss_func(out, y).numpy()
+        error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
+        result = (error, loss)
+
+    print(result)
+    return result
 
 '''
 https://forum.dlsyscourse.org/t/q5-how-were-the-average-error-rate-and-the-average-loss-over-all-samples-computed/2295

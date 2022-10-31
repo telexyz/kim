@@ -498,8 +498,8 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    */
 
   /// BEGIN YOUR SOLUTION
-  if (M % TILE == 0 && N % TILE == 0 && P % TILE == 0) {
-    // Trường hợp m,n,p chia hết cho TILE thì dùng tile matmul
+  if (M % TILE == 0 && P % TILE == 0) {
+    // Trường hợp M, P chia hết cho TILE thì dùng tile matmul
     size_t size = out->size / (TILE * TILE);
     CudaDims dim = CudaOneDim(size);
     MatmulTiledKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, 

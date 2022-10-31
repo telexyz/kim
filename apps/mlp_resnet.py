@@ -33,34 +33,42 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
 def epoch(dataloader, model, optimizer=None):
     np.random.seed(4)
     loss_func = nn.SoftmaxLoss()
+    training = not (optimizer == None)
 
-    if optimizer:
+    if training:
         model.train()
-        losses = []
-        errors = []
-        for i, batch in enumerate(dataloader):
-            x, y = batch[0], batch[1]
-            out = model(x)
-            loss = loss_func(out, y)
-            error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
-            losses.append(loss.numpy())
-            errors.append(error)
+    else:
+        model.eval()
 
+    losses = []
+    errors = []
+
+    for i, batch in enumerate(dataloader):
+        x, y = batch[0], batch[1]
+        out = model(x)
+        loss = loss_func(out, y)
+        error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
+        losses.append(loss.numpy())
+        errors.append(error)
+        
+        if training:
             optimizer.reset_grad()
             loss.backward()
             optimizer.step()
-        result = (np.mean(errors), np.mean(losses))
 
-    else:
-        model.eval()
-        dataset = dataloader.dataset
-        x, y = dataset[range(len(dataset))]
-        x = kim.Tensor(x)
-        y = kim.Tensor(y)
-        out = model(x)
-        loss = loss_func(out, y).numpy()
-        error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
-        result = (error, loss)
+    result = (np.mean(errors), np.mean(losses))
+    
+    '''Nếu eval toàn bộ dataset một lúc thì pass `test_mlp_eval_epoch_1`'''
+    # if not training:
+    #     model.eval()
+    #     dataset = dataloader.dataset
+    #     x, y = dataset[range(len(dataset))]
+    #     x = kim.Tensor(x)
+    #     y = kim.Tensor(y)
+    #     out = model(x)
+    #     loss = loss_func(out, y).numpy()
+    #     error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
+    #     result = (error, loss)
 
     print(result)
     return result

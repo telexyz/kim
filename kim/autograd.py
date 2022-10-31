@@ -217,6 +217,9 @@ class Tensor:
     def __matmul__(self, other):
         return kim.ops.MatMul()(self, other)
 
+    def matmul(self, other):
+        return kim.ops.MatMul()(self, other)
+
     def sum(self, axes=None):
         return kim.ops.Summation(axes)(self)
 

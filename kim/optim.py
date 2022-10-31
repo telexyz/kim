@@ -29,7 +29,8 @@ class SGD(Optimizer):
         for w in self.params:
             # self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*w.grad.data
             # w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
-            self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*(w.grad.data + self.weight_decay*w.data)
+            grad = w.grad.data + w.data * self.weight_decay
+            self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*grad
             w.data = w.data - self.lr * self.u[w]
 # https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279
 

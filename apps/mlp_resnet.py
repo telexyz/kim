@@ -30,35 +30,6 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
     return f
 # https://raw.githubusercontent.com/dlsyscourse/hw2/32490e61fbae67d2b77eb48187824ca87ed1a95c/figures/mlp_resnet.png
 
-def epoch0(dataloader, model, opt=None):
-    np.random.seed(4)
-    loss_func = nn.SoftmaxLoss()
-    training = not (opt == None)
-
-    if training:
-        model.train()
-    else:
-        model.eval()
-
-    losses = []
-    errors = []
-
-    for i, batch in enumerate(dataloader):
-        x, y = batch[0], batch[1]
-        out = model(x)
-        loss = loss_func(out, y)
-        error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
-        losses.append(loss.numpy())
-        errors.append(error)
-        
-        if training:
-            opt.reset_grad()
-            loss.backward()
-            opt.step()
-
-    return np.mean(errors), np.mean(losses)
-
-
 def epoch(dataloader, model, opt=None):
     np.random.seed(4)
     loss_func = nn.SoftmaxLoss()
@@ -66,42 +37,28 @@ def epoch(dataloader, model, opt=None):
 
     if training:
         model.train()
-        losses = []
-        errors = []
+    else:
+        model.eval()
 
-        for i, batch in enumerate(dataloader):
-            x, y = batch[0], batch[1]
+    losses = 0
+    errors = 0
+    counts = 0
+
+    for i, batch in enumerate(dataloader):
+        x, y = batch[0], batch[1]
+        out = model(x)
+        loss = loss_func(out, y)
+        errors += (out.numpy().argmax(axis=1) != y.numpy()).sum()
+        losses += loss.numpy()
+        counts += y.shape[0]
+        
+        if training:
             opt.reset_grad()
-            out = model(x)
-            loss = loss_func(out, y)
-            error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
-            losses.append(loss.numpy())
-            errors.append(error)
             loss.backward()
             opt.step()
 
-        return (np.mean(errors), np.mean(losses))
+    return errors / counts, losses / (i + 1)
 
-    else:
-        '''Nếu eval toàn bộ dataset một lúc thì pass `test_mlp_eval_epoch_1`'''
-        model.eval()
-        model.eval()
-        dataset = dataloader.dataset
-        x, y = dataset[range(len(dataset))]
-        x = kim.Tensor(x)
-        y = kim.Tensor(y)
-        out = model(x)
-        loss = loss_func(out, y).numpy()
-        error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
-        return (error, loss)
-
-'''
-https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279/17
-
-https://forum.dlsyscourse.org/t/q5-how-were-the-average-error-rate-and-the-average-loss-over-all-samples-computed/2295
-
-https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279/16
-'''
 
 def train_mnist(batch_size=100, epochs=10, optimizer=kim.optim.Adam,
                 lr=0.001, weight_decay=0.001, hidden_dim=100, data_dir="data"):

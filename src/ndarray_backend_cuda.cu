@@ -428,15 +428,51 @@ void ScalarDiv(const CudaArray& a, scalar_t val, CudaArray* out) {
 // Elementwise and scalar operations
 ////////////////////////////////////////////////////////////////////////////////
 
-__global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, 
-    uint32_t M, uint32_t N, uint32_t P) {
-  size_t ybase = blockIdx.y * blockDim.y + threadIdx.y;
-  size_t xbase = blockIdx.x * blockDim.x + threadIdx.x;
-  // if (ybase < size) {
-    /// BEGIN YOUR SOLUTION
+__global__ void SimpleMatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, uint32_t M, uint32_t N, uint32_t P) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < M * P) {
+    const size_t i = gid / P;
+    const size_t j = gid % P;
+    scalar_t tmp = 0;
+    for (size_t k = 0; k < N; k++) {
+      tmp += a[i * N + k] * b[k * P + j];
+    }
+    out[gid] = tmp;
+  }
+}
 
+
+__global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, size_t size, uint32_t M_T, uint32_t N_T, uint32_t P_T) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    const size_t ybase = gid / P_T;
+    const size_t xbase = gid % P_T;
+    const size_t total = TILE * TILE; 
+
+    float ct[total], at[TILE], bt[TILE];
+    for (size_t o = 0; o < total; ++o) { ct[o] = 0; }
+
+    for (size_t k = 0; k < N_T*TILE; ++k) {
+      for (size_t o = 0; o < TILE; ++o) { 
+        // at[o] = a[k*N_T*TILE + ybase*TILE + o];
+        at[o] = a[(ybase*TILE + o)*N_T*TILE + k];
+        bt[o] = b[k*P_T*TILE + xbase*TILE + o];
+      }
+
+      for (size_t y = 0; y < TILE; ++y) {
+        for (size_t x = 0; x < TILE; ++x) {
+          ct[y*TILE + x] += at[y] * bt[x];
+        }
+      }
+    }
+    for (size_t o = 0; o < total; ++o) {
+      // C[ybase*V : ybase*V + V, xbase*V : xbase*V + V] = c[:];
+      const size_t idx = (ybase*TILE + o/TILE)*P_T*TILE + xbase*TILE + o%TILE;
+      out[idx] = ct[o];
+    }
     /// END YOUR SOLUTION
-  // }
+  }
   // https://youtu.be/jYCxVirq4d0?t=1775
   // int ybase = blockIdx.y * blockDim.y + threadIdx.y;
   // int xbase = blockIdx.x * blockDim.x + threadIdx.x;
@@ -451,20 +487,7 @@ __global__ void MatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out
   //     }
   //   }
   // }
-  // C[ybase * V : ybase*V + V, xbase*V : xbase*V + V] = c[:];
-}
-
-__global__ void SimpleMatmulKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, uint32_t M, uint32_t N, uint32_t P) {
-  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (gid < M * P) {
-    const size_t i = gid / P; 
-    const size_t j = gid % P;
-    scalar_t tmp = 0;
-    for (size_t k = 0; k < N; k++) {
-      tmp += a[i * N + k] * b[k * P + j];
-    }
-    out[gid] = tmp;
-  }
+  // C[ybase*V : ybase*V + V, xbase*V : xbase*V + V] = c[:];
 }
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N, uint32_t P) {
@@ -493,8 +516,15 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    * Trường hợp m,n,p chia hết cho TILE thì dùng tile matmul
    * Nếu không thì dùng simple matmul mỗi thread tính 1 phần tử out[i,j]
    */
-  CudaDims dim = CudaOneDim(out->size);
-  SimpleMatmulKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, M, N, P);
+  if (M % TILE == 0 && N % TILE == 0 && P % TILE == 0) {
+    size_t size = out->size / (TILE * TILE);
+    CudaDims dim = CudaOneDim(size);
+    MatmulTiledKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, 
+      size, M / TILE, N / TILE, P / TILE);
+  } else {
+    CudaDims dim = CudaOneDim(out->size);
+    SimpleMatmulKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, M, N, P);
+  }
   /// END YOUR SOLUTION
 }
 

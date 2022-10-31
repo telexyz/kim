@@ -173,8 +173,8 @@ class BatchNorm1d(Module):
 
         mean = ops.summation(x, axes=0) / batch
         self.running_mean = alpha*self.running_mean + self.momentum*mean
-        mean = mean.reshape((1, dim)).broadcast_to(x.shape)
 
+        mean = mean.reshape((1, dim)).broadcast_to(x.shape)
         var = ops.power_scalar(x - mean, 2)
         var = ops.summation(var, axes=0) / batch
         self.running_var = alpha*self.running_var + self.momentum*var
@@ -187,12 +187,11 @@ class BatchNorm1d(Module):
         std = std.reshape((1, dim)).broadcast_to(x.shape)
         norm = (x - mean) / std
 
-        if not self.training:
-            return norm
-        else:
-            w = self.weight.broadcast_to(x.shape)
-            b = self.bias.broadcast_to(x.shape)
-            return w * norm + b
+        if not self.training: return norm
+
+        w = self.weight.broadcast_to(x.shape)
+        b = self.bias.broadcast_to(x.shape)
+        return w * norm + b
 
 '''
 https://www.geeksforgeeks.org/expression-for-mean-and-variance-in-a-running-stream

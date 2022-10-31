@@ -49,7 +49,6 @@ def epoch(dataloader, model, optimizer=None):
         out = model(batch_x)
         loss = loss_func(out, batch_y)
         error = np.mean(out.numpy().argmax(axis=1) != batch_y.numpy())
-
         # print("loss: {}, error: {}".format(loss.numpy(), error))
         losses.append(loss.numpy())
         errors.append(error)
@@ -93,14 +92,13 @@ def train_mnist(batch_size=100, epochs=10, optimizer=kim.optim.Adam,
     model = MLPResNet(784, hidden_dim)
     opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay)
 
-    for e in range(epochs):
-        r = epoch(train_dataloader, model, opt)
-        # print(r)
+    for _ in range(epochs):
+        train_err, train_loss = epoch(train_dataloader, model, opt)
 
-    t = epoch(test_dataloader, model)
-    '''Returns a tuple of the training accuracy, training loss,
-    test accuracy, test loss computed in the last epoch of training.'''
-    return (1-r[0], r[0], 1-t[0], t[1])
+    test_err, test_loss = epoch(test_dataloader, model)
+
+    return (train_err, train_loss, test_err, test_loss)
+
 
 if __name__ == "__main__":
     train_mnist(data_dir="../data")

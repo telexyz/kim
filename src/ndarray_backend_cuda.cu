@@ -475,6 +475,60 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
 }
 
 // https://youtu.be/jYCxVirq4d0?t=1775
+
+__global__ void MatmulSharedMemTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, size_t size, size_t L, size_t S, 
+  uint32_t N, uint32_t P, uint32_t P_T) {
+
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    /// BEGIN YOUR SOLUTION
+    const size_t ybase = (gid / P_T) * TILE;
+    const size_t xbase = (gid % P_T) * TILE;
+    const size_t yblock = (ybase / L) * L;
+    const size_t xblock = (xbase / L) * L;
+    const size_t total  = TILE * TILE;
+    
+    float c_t[total], a_t[TILE], b_t[TILE];
+    for (size_t o = 0; o < total; ++o) { c_t[o] = 0; }
+
+    __shared__ float a_s[S*L], b_s[S*L];
+    // 
+    for (size_t k = 0; k < N; k += S) {
+      __syncthreads();
+      // sA[:, :] = A[yblock : yblock + L, k : k + S];
+      // sB[:, :] = B[k : k + S, xblock : xblock + L];
+      for (size_t l = 0; l < L; ++l)
+        for (size_t s = 0; s < S; ++s) {
+        const size_t o = l * s;
+        a_s[o] = a[(yblock+l)*N + (k+s)]; // a: M*N
+        b_s[o] = a[(k+s)*P + (xblock+l)]; // b: N*P
+      }
+      __syncthreads();
+
+      for (int ki = 0; ki < S; ++ ki) {
+        // Khởi tạo mảng a_t, b_t
+        for (size_t o = 0; o < TILE; ++o) { 
+          // a[:] = sA[ki, threadIdx.y * V : threadIdx.y * V + V];
+          // b[:] = sA[ki, threadIdx.x * V : threadIdx.x * V + V];
+          a_t[o] = a_s[ki*L + ];
+          b_t[o] = b_s[ki*L + ];
+        }
+        // Tính toán trên local vars
+        for (size_t i = 0; i < TILE; ++i)
+          for (size_t j = 0; j < TILE; ++j)
+            c_t[i*TILE + j] += a_t[i] * b_t[j];
+      }
+    }
+    // Update kết quả
+    for (size_t o = 0; o < total; ++o) {
+      const size_t y = ybase + o / TILE;
+      const size_t x = xbase + o % TILE;
+      out[y*P + x] = c_t[o];
+    }
+    /// END YOUR SOLUTION
+  }
+}
+
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N, uint32_t P) {
   /**
    * Multiply two (compact) matrices into an output (also compact) matrix.
@@ -498,12 +552,22 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    */
 
   /// BEGIN YOUR SOLUTION
-  if (M % TILE == 0 && P % TILE == 0) {
+  const size_t L = 4 * TILE;
+  const size_t S = 2 * TILE;
+  if (M % L == 0 && P % L == 0 && N % S == 0) {
+    // Can do shared-mem tiling
+    size_t size = out->size / (TILE * TILE);
+    CudaDims dim = CudaOneDim(size);
+    MatmulSharedMemTiledKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, 
+        size, L, S, N, P, P / TILE);
+
+  } else if (M % TILE == 0 && P % TILE == 0) {
     // Trường hợp M, P chia hết cho TILE thì dùng tile matmul
     size_t size = out->size / (TILE * TILE);
     CudaDims dim = CudaOneDim(size);
     MatmulTiledKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, 
-      size, N, P, P / TILE);
+        size, N, P, P / TILE);
+
   } else {
     // Nếu không thì dùng simple matmul mỗi thread tính 1 phần tử out[i,j]
     CudaDims dim = CudaOneDim(out->size);
@@ -650,4 +714,3 @@ PYBIND11_MODULE(ndarray_backend_cuda, m) {
   m.def("reduce_max", ReduceMax);
   m.def("reduce_sum", ReduceSum);
 }
-

@@ -34,7 +34,8 @@ make && python3 -m pytest -v -k "matmul and cpu"
 # https://www.youtube.com/watch?v=uB81vGRrH0c
 
 python3 -m pytest tests/test_optim.py -k "adam"
-python3 -m pytest tests/test_mlp_resnet.py -v
+python3 -m pytest tests/test_mlp_resnet.py -v -k "test_mlp_eval_epoch_1"
+python3 -m pytest tests/test_mlp_resnet.py -v -k "test_mlp_train_mnist_1"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py -k "mlp_resnet"
 
 

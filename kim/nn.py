@@ -185,11 +185,14 @@ class BatchNorm1d(Module):
 
         std = ops.power_scalar((var + self.eps), 0.5)
         std = std.reshape((1, dim)).broadcast_to(x.shape)
-
         norm = (x - mean) / std
-        w = self.weight.broadcast_to(x.shape)
-        b = self.bias.broadcast_to(x.shape)
-        return w * norm + b
+
+        if not self.training:
+            return norm
+        else:
+            w = self.weight.broadcast_to(x.shape)
+            b = self.bias.broadcast_to(x.shape)
+            return w * norm + b
 
 '''
 https://www.geeksforgeeks.org/expression-for-mean-and-variance-in-a-running-stream

@@ -460,33 +460,21 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
         b_t[o] = b[k*P + xbase + o];
       }
       // Tính toán trên local vars
-      for (size_t y = 0; y < TILE; ++y)
-        for (size_t x = 0; x < TILE; ++x)
-          c_t[y*TILE + x] += a_t[y] * b_t[x];
+      for (size_t i = 0; i < TILE; ++i)
+        for (size_t j = 0; j < TILE; ++j)
+          c_t[i*TILE + j] += a_t[i] * b_t[j];
     }
     // Update kết quả
     for (size_t o = 0; o < total; ++o) {
-      out[(ybase + o/TILE)*P + xbase + o%TILE] = c_t[o];
+      const size_t y = ybase + o / TILE;
+      const size_t x = xbase + o % TILE;
+      out[y*P + x] = c_t[o];
     }
     /// END YOUR SOLUTION
   }
-  // https://youtu.be/jYCxVirq4d0?t=1775
-  // int ybase = blockIdx.y * blockDim.y + threadIdx.y;
-  // int xbase = blockIdx.x * blockDim.x + threadIdx.x;
-  // float c[V][V] = {0};
-  // float a[V], b[V];
-  // for (int k = 0; k < N; ++k) {
-  //   a[:] = A[k, ybase*V : ybase*V + V];
-  //   b[:] = B[k, xbase*V : xbase*V + V];
-  //   for (int y = 0; y < V; ++y) {
-  //     for (int x = 0; x < V; ++x) {
-  //       c[y][x] += a[y] * b[x];
-  //     }
-  //   }
-  // }
-  // C[ybase*V : ybase*V + V, xbase*V : xbase*V + V] = c[:];
 }
 
+// https://youtu.be/jYCxVirq4d0?t=1775
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, uint32_t N, uint32_t P) {
   /**
    * Multiply two (compact) matrices into an output (also compact) matrix.

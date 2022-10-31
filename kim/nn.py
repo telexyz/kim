@@ -183,7 +183,6 @@ class BatchNorm1d(Module):
         var = var.reshape((1, dim)).broadcast_to(x.shape)
         norm = (x - mean) / ((var + self.eps) ** 0.5)
         
-        # if not self.training: return norm
         w = self.weight.broadcast_to(x.shape)
         b = self.bias.broadcast_to(x.shape)
         return w * norm + b

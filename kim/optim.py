@@ -27,13 +27,15 @@ class SGD(Optimizer):
 
     def step(self):
         for w in self.params:
-            # self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*w.grad.data
-            # w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
+            '''
+            grad = w.grad.data
+            self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*grad
+            w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w].data
+            '''
             grad = w.grad.data + w.data * self.weight_decay
             self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*grad
-            w.data = w.data - self.lr * self.u[w]
-# https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279
-
+            w.data = w.data - self.lr * self.u[w].data
+# https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279/17
 
 class Adam(Optimizer):
     def __init__(
@@ -72,4 +74,4 @@ class Adam(Optimizer):
             v_hat = self.v[w].data / (1 - (self.beta2 ** self.t))
 
             update = u_hat / ((v_hat ** 0.5) + self.eps)
-            w.data = w.data - self.lr * update
+            w.data = w.data - self.lr * update.data

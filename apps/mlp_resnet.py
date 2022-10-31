@@ -30,10 +30,10 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
     return f
 # https://raw.githubusercontent.com/dlsyscourse/hw2/32490e61fbae67d2b77eb48187824ca87ed1a95c/figures/mlp_resnet.png
 
-def epoch(dataloader, model, optimizer=None):
+def epoch(dataloader, model, opt=None):
     np.random.seed(4)
     loss_func = nn.SoftmaxLoss()
-    training = not (optimizer == None)
+    training = not (opt == None)
 
     if training:
         model.train()
@@ -52,9 +52,9 @@ def epoch(dataloader, model, optimizer=None):
         errors.append(error)
         
         if training:
-            optimizer.reset_grad()
+            opt.reset_grad()
             loss.backward()
-            optimizer.step()
+            opt.step()
 
     result = (np.mean(errors), np.mean(losses))
     

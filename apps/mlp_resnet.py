@@ -30,7 +30,7 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
     return f
 # https://raw.githubusercontent.com/dlsyscourse/hw2/32490e61fbae67d2b77eb48187824ca87ed1a95c/figures/mlp_resnet.png
 
-def epoch(dataloader, model, opt=None):
+def epoch0(dataloader, model, opt=None):
     np.random.seed(4)
     loss_func = nn.SoftmaxLoss()
     training = not (opt == None)
@@ -56,24 +56,48 @@ def epoch(dataloader, model, opt=None):
             loss.backward()
             opt.step()
 
-    result = (np.mean(errors), np.mean(losses))
-    
-    '''Nếu eval toàn bộ dataset một lúc thì pass `test_mlp_eval_epoch_1`'''
-    # if not training:
-    #     model.eval()
-    #     dataset = dataloader.dataset
-    #     x, y = dataset[range(len(dataset))]
-    #     x = kim.Tensor(x)
-    #     y = kim.Tensor(y)
-    #     out = model(x)
-    #     loss = loss_func(out, y).numpy()
-    #     error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
-    #     result = (error, loss)
+    return np.mean(errors), np.mean(losses)
 
-    print(result)
-    return result
+
+def epoch(dataloader, model, opt=None):
+    np.random.seed(4)
+    loss_func = nn.SoftmaxLoss()
+    training = not (opt == None)
+
+    if training:
+        model.train()
+        losses = []
+        errors = []
+
+        for i, batch in enumerate(dataloader):
+            x, y = batch[0], batch[1]
+            opt.reset_grad()
+            out = model(x)
+            loss = loss_func(out, y)
+            error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
+            losses.append(loss.numpy())
+            errors.append(error)
+            loss.backward()
+            opt.step()
+
+        return (np.mean(errors), np.mean(losses))
+
+    else:
+        '''Nếu eval toàn bộ dataset một lúc thì pass `test_mlp_eval_epoch_1`'''
+        model.eval()
+        model.eval()
+        dataset = dataloader.dataset
+        x, y = dataset[range(len(dataset))]
+        x = kim.Tensor(x)
+        y = kim.Tensor(y)
+        out = model(x)
+        loss = loss_func(out, y).numpy()
+        error = np.mean(out.numpy().argmax(axis=1) != y.numpy())
+        return (error, loss)
 
 '''
+https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279/17
+
 https://forum.dlsyscourse.org/t/q5-how-were-the-average-error-rate-and-the-average-loss-over-all-samples-computed/2295
 
 https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279/16
@@ -100,13 +124,9 @@ def train_mnist(batch_size=100, epochs=10, optimizer=kim.optim.Adam,
 
     model = MLPResNet(784, hidden_dim)
     opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay)
-
     for _ in range(epochs):
-        train_err, train_loss = epoch(train_dataloader, model, opt)
-
-    test_err, test_loss = epoch(test_dataloader, model)
-
-    return (train_err, train_loss, test_err, test_loss)
+        train = epoch(train_dataloader, model, opt)
+    return train + epoch(test_dataloader, model)
 
 
 if __name__ == "__main__":

@@ -27,10 +27,10 @@ class SGD(Optimizer):
 
     def step(self):
         for w in self.params:
-            self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*w.grad.data
-            w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
-            # self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*(w.grad.data + self.weight_decay*w.data)
-            # w.data = w.data - self.lr * self.u[w]
+            # self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*w.grad.data
+            # w.data = (1 - self.lr*self.weight_decay)*w.data - self.lr*self.u[w]
+            self.u[w].data = self.momentum*self.u[w].data + (1 - self.momentum)*(w.grad.data + self.weight_decay*w.data)
+            w.data = w.data - self.lr * self.u[w]
 # https://forum.dlsyscourse.org/t/q3-numerical-issue-in-sgd-and-adam/2279
 
 
@@ -64,11 +64,11 @@ class Adam(Optimizer):
         for w in self.params:
             if w.grad is None: continue
             grad = w.grad.data + w.data * self.weight_decay
-            self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
-            self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*grad*grad
+            self.u[w].data = self.beta1*self.u[w].data + (1-self.beta1)*grad
+            self.v[w].data = self.beta2*self.v[w].data + (1-self.beta2)*(grad**2)
 
-            u_hat = self.u[w] / (1 - pow(self.beta1, self.t))
-            v_hat = self.v[w] / (1 - pow(self.beta2, self.t))
+            u_hat = self.u[w].data / (1 - (self.beta1 ** self.t))
+            v_hat = self.v[w].data / (1 - (self.beta2 ** self.t))
 
-            update = u_hat / (np.power(v_hat, 0.5) + self.eps)
-            w.data = w.data - self.lr*update
+            update = u_hat / ((v_hat ** 0.5) + self.eps)
+            w.data = w.data - self.lr * update

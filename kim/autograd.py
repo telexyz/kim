@@ -1,56 +1,12 @@
 import kim
 from typing import List, Optional, NamedTuple, Tuple, Union
-
-# Dùng numpy làm array_api backend
-import numpy as array_api
 import numpy
-NDArray = numpy.ndarray
 
-# from . import backend_ndarray as array_api
-# from .backend_ndarray import all_devices, cuda, cpu, cpu_numpy, BackendDevice as Device
-# NDArray = array_api.NDArray
+from .backend_selection import Device, array_api, NDArray, default_device
 
 class State:
     LAZY_MODE = False
     TENSOR_COUNT = 0
-
-############################################
-####### Devices: phần cứng tính toán #######
-############################################
-
-class Device:
-    """Phần cứng tính toán trên dữ liệu NDArray. Có thể là CPU, GPU hoặc TPU"""
-
-class CpuDevice(Device):
-    def __repr__(self):
-        return "kim.cpu()"
-
-    def __eq__(self, other): # để xác định 2 instances của CpuDevice là = nhau
-        return isinstance(other, CpuDevice)
-
-    def enabled(self):
-        return True
-
-    def zeros(self, *shape, dtype="float32"):
-        return numpy.zeros(shape, dtype=dtype)
-
-    def ones(self, *shape, dtype="float32"):
-        return numpy.ones(shape, dtype=dtype)
-
-    def randn(self, *shape):
-        return numpy.random.randn(*shape)
-
-    def rand(self, *shape):
-        return numpy.random.rand(*shape)
-
-    def one_hot(self, n: int, i: NDArray, dtype="float32"):
-        return numpy.eye(n, dtype=dtype)[i]
-
-def cpu():
-    return CpuDevice() # một instant mới của class CpuDevice
-
-def all_devices():
-    return [cpu()]
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -124,7 +80,7 @@ class Tensor:
             if device == array.device and dtype == array.dtype:
                 cached_data = array.realize_cached_data()
         else:
-            if device is None: device = cpu()
+            if device is None: device = default_device()
             cached_data = get_array_from_numpy(array, device=device, dtype=dtype)
         
         self.assign_params_and_record_creation(
@@ -163,7 +119,7 @@ class Tensor:
 
     def backward(self, out_grad: Optional["Tensor"] = None):
         if out_grad is None:
-            out_grad = Tensor(cpu().ones(*self.shape, dtype="float32"))
+            out_grad = Tensor(default_device().ones(*self.shape, dtype="float32"))
         compute_gradient_of(self, out_grad)
 
     @property
@@ -184,7 +140,7 @@ class Tensor:
 
     @property
     def device(self):
-        if array_api is numpy: return cpu()
+        if array_api is numpy: return default_device()
         else: return self.realize_cached_data().device
 
     """ Syntax sugar, không có không sao

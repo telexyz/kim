@@ -11,7 +11,7 @@ class CPUDevice(Device):
     """Represents data that sits in CPU"""
 
     def __repr__(self):
-        return "needle.cpu()"
+        return "kim.cpu()"
 
     def __hash__(self):
         return self.__repr__().__hash__()
@@ -22,6 +22,12 @@ class CPUDevice(Device):
     def enabled(self):
         return True
 
+    def zeros(self, *shape, dtype="float32"):
+        return numpy.zeros(shape, dtype=dtype)
+
+    def ones(self, *shape, dtype="float32"):
+        return numpy.ones(shape, dtype=dtype)
+
     def randn(self, *shape, dtype="float32"):
         return numpy.random.randn(*shape).astype(dtype)
 
@@ -29,7 +35,7 @@ class CPUDevice(Device):
         return numpy.random.rand(*shape).astype(dtype)
 
     def one_hot(self, n, i, dtype="float32"):
-        return numpy.eye(n, dtype=dtype)
+        return numpy.eye(n, dtype=dtype)[i]
 
     def empty(self, shape, dtype="float32"):
         return numpy.empty(shape, dtype=dtype)

@@ -2,7 +2,7 @@
 import os
 
 
-BACKEND = os.environ.get("NEEDLE_BACKEND", "nd")
+BACKEND = os.environ.get("KIM_BACKEND", "np")
 
 
 if BACKEND == "nd":
@@ -17,10 +17,12 @@ if BACKEND == "nd":
     )
 
     NDArray = array_api.NDArray
+
 elif BACKEND == "np":
     import numpy as array_api
     from .backend_numpy import all_devices, cpu, default_device, Device
 
     NDArray = array_api.ndarray
+
 else:
-    raise RuntimeError("Unknown needle array backend %s" % BACKEND)
+    raise RuntimeError("Unknown kim array backend %s" % BACKEND)

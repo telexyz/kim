@@ -211,6 +211,7 @@ class NDArray:
         if self.is_compact():
             return self
         else:
+            '''Tạo một compact NDArray mới và copy dữ liệu sang'''
             out = NDArray.make(self.shape, device=self.device)
             # print(">>> Compact", self.shape, self.strides, self.offset);raise ValueError
             self.device.compact(self._handle, out._handle, 
@@ -576,12 +577,14 @@ class NDArray:
 
     def sum(self, axis=None):
         view, out = self.reduce_view_out(axis)
-        self.device.reduce_sum(view.compact()._handle, out._handle, view.shape[-1])
+        self.device.reduce_sum(
+            view.compact()._handle, out._handle, view.shape[-1])
         return out
 
     def max(self, axis=None):
         view, out = self.reduce_view_out(axis)
-        self.device.reduce_max(view.compact()._handle, out._handle, view.shape[-1])
+        self.device.reduce_max(
+            view.compact()._handle, out._handle, view.shape[-1])
         return out
 
 

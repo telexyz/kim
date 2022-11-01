@@ -1,10 +1,9 @@
 from numbers import Number
 from typing import Optional, List
-from .autograd import NDArray # Tạm thời NDArray = numpy.ndarray
+from .autograd import NDArray, array_api
 from .autograd import Tensor, TensorOp
 from .autograd import TensorTuple, TensorTupleOp
-import numpy as array_api
-
+import numpy
 
 class MakeTensorTuple(TensorTupleOp):
     def compute(self, *args) -> tuple:
@@ -366,15 +365,18 @@ class LogSumExp(TensorOp):
         self.axes = axes
 
     def compute(self, Z):
-        '''https://youtu.be/uB81vGRrH0c?t=1162 stable softmax lec video'''
-        Z_max = array_api.max(Z, axis=self.axes)
-        Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
-        Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
-        ZZ = Z - Z_max_broadcast
-        # print(">>>", ZZ.shape, ZZ); print(">>>", Z.shape, Z)
-        exp_ZZ = array_api.exp(ZZ)
-        sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
-        return array_api.log(sum_exp_ZZ) + Z_max
+        if array_api is numpy:
+            Z_max = array_api.max(Z, axis=self.axes)
+            Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
+            Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
+            ZZ = Z - Z_max_broadcast
+            exp_ZZ = array_api.exp(ZZ)
+            sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
+            return array_api.log(sum_exp_ZZ) + Z_max
+        else:
+            print(">>>", self.axes)
+            assert len(self.axes) == 1
+            Z_max = Z.max(self.axes[0])
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]

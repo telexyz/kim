@@ -32,15 +32,15 @@ class BackendDevice:
     def randn(self, *shape, dtype="float32"):
         # note: numpy doesn't support types within standard random routines, and
         # .astype("float32") does work if we're generating a singleton
-        return NDArray(numpy.random.randn(*shape).astype(dtype), device=self)
+        return NDArray(np.random.randn(*shape).astype(dtype), device=self)
 
     def rand(self, *shape, dtype="float32"):
         # note: numpy doesn't support types within standard random routines, and
         # .astype("float32") does work if we're generating a singleton
-        return NDArray(numpy.random.rand(*shape).astype(dtype), device=self)
+        return NDArray(np.random.rand(*shape).astype(dtype), device=self)
 
     def one_hot(self, n, i, dtype="float32"):
-        return NDArray(numpy.eye(n, dtype=dtype)[i], device=self)
+        return NDArray(np.eye(n, dtype=dtype)[i], device=self)
 
     def empty(self, shape, dtype="float32"):
         dtype = "float32" if dtype is None else dtype
@@ -265,8 +265,20 @@ class NDArray:
             strides changed).
         """
         new_shape = [self.shape[i] for i in new_axes]
-        new_strides = tuple([self.strides[i] for i in new_axes])
-        return self.as_strided(new_shape, new_strides)
+        new_strides = [self.strides[i] for i in new_axes]
+        return self.as_strided(new_shape, tuple(new_strides))
+
+    def swapaxes(self, a1, a2):
+        new_shape = list(self.shape)
+        new_strides = list(self.strides)
+
+        new_shape[a1] = self.shape[a2]
+        new_shape[a2] = self.shape[a1]
+
+        new_strides[a1] = self.strides[a2]
+        new_strides[a2] = self.strides[a1]
+
+        return self.as_strided(new_shape, tuple(new_strides))
 
 
     def broadcast_to(self, new_shape):

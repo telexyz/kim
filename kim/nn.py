@@ -201,7 +201,6 @@ class LayerNorm1d(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         batch, dim = x.shape
-        # print(">>>", x.shape, batch, dim)
         assert dim == self.dim
         mean = ops.summation(x, axes=1) / dim
         mean = mean.reshape((batch, 1)).broadcast_to(x.shape)

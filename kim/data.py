@@ -24,11 +24,8 @@ class RandomFlipHorizontal(Transform):
         Note: use the provided code to provide randomness, for easier testing
         """
         flip_img = np.random.rand() < self.p
-        ### BEGIN YOUR SOLUTION
-        if (flip_img):
-            return np.flip(img, axis=1)
+        if (flip_img): return np.flip(img, axis=1)
         return img
-        ### END YOUR SOLUTION
 
 
 class RandomCrop(Transform):
@@ -48,12 +45,12 @@ class RandomCrop(Transform):
         ### BEGIN YOUR SOLUTION
         start_x = shift_x + self.padding
         start_y = shift_y + self.padding
-        start_z = self.padding
-        pad_img = np.pad(img, self.padding)
+        pad_img = np.pad(img, 
+            ((self.padding, self.padding), (self.padding, self.padding), (0, 0)))
         return pad_img[
             start_x : start_x + img.shape[0],
             start_y : start_y + img.shape[1],
-            start_z : start_z + img.shape[2], # same as before padding
+            :, # same as before padding
         ]
         ### END YOUR SOLUTION
 

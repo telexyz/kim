@@ -170,18 +170,20 @@ class BatchNorm1d(Module):
         assert dim == self.dim
 
         if self.training:
-            mean_ = ops.summation(x, axes=0) / batch
-            mean = mean_.reshape((1, dim)).broadcast_to(x.shape)
-            var = ops.summation((x - mean) ** 2, axes=0) / batch
-            one_momen = (1 - self.momentum)
-            self.running_mean = one_momen*self.running_mean + self.momentum*mean_
-            self.running_var  = one_momen*self.running_var  + self.momentum*var
+            # only calculate mean, var and update running_mean, running_var in training
+            mean = ops.summation(x, axes=0) / batch
+            mean_full = mean.reshape((1, dim)).broadcast_to(x.shape)
+            var = ops.summation((x - mean_full) ** 2, axes=0) / batch
+
+            self.running_mean = (1-self.momentum)*self.running_mean + self.momentum*mean
+            self.running_var  = (1-self.momentum)*self.running_var  + self.momentum*var
         else:
-            mean = self.running_mean.reshape((1, dim)).broadcast_to(x.shape)
+            # inference use running_mean and running_var estimated in training
+            mean_full = self.running_mean.reshape((1, dim)).broadcast_to(x.shape)
             var = self.running_var
 
-        var = var.reshape((1, dim)).broadcast_to(x.shape)
-        norm = (x - mean) / ((var + self.eps) ** 0.5)
+        var_full = var.reshape((1, dim)).broadcast_to(x.shape)
+        norm = (x - mean_full) / ((var_full + self.eps) ** 0.5)
         
         w = self.weight.broadcast_to(x.shape)
         b = self.bias.broadcast_to(x.shape)
@@ -202,12 +204,14 @@ class LayerNorm1d(Module):
     def forward(self, x: Tensor) -> Tensor:
         batch, dim = x.shape
         assert dim == self.dim
+
         mean = ops.summation(x, axes=1) / dim
         mean = mean.reshape((batch, 1)).broadcast_to(x.shape)
 
         var = ops.power_scalar(x - mean, 2)
         var = ops.summation(var, axes=1) / dim
         var = var.reshape((batch, 1)).broadcast_to(x.shape)
+
         norm = (x - mean) / ((var + self.eps) ** 0.5)
         w = ops.broadcast_to(self.weight, x.shape)
         b = ops.broadcast_to(self.bias, x.shape)

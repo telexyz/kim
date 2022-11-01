@@ -557,10 +557,10 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
   if (false) {
   // if (M % L == 0 && P % L == 0 && N % S == 0) {
     // Can do shared-mem tiling
-    size_t size = out->size / (TILE * TILE);
-    CudaDims dim = CudaOneDim(size);
-    MatmulSharedMemTiledKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, 
-        size, L, S, N, P, P / TILE);
+    // size_t size = out->size / (TILE * TILE);
+    // CudaDims dim = CudaOneDim(size);
+    // MatmulSharedMemTiledKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, 
+    //     size, L, S, N, P, P / TILE);
 
   } else if (M % TILE == 0 && P % TILE == 0) {
     // Trường hợp M, P chia hết cho TILE thì dùng tile matmul

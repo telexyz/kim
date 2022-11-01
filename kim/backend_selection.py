@@ -2,7 +2,7 @@
 import os
 
 
-BACKEND = os.environ.get("KIM_BACKEND", "nd")
+BACKEND = os.environ.get("KIM_BACKEND", "np")
 
 
 if BACKEND == "nd":

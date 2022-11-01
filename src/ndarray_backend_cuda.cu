@@ -661,30 +661,40 @@ PYBIND11_MODULE(ndarray_backend_cuda, m) {
       .def_readonly("size", &CudaArray::size)
       .def("ptr", &CudaArray::ptr_as_int);
 
-  // return numpy array, copying from CPU
-  m.def("to_numpy", [](const CudaArray& a, std::vector<size_t> shape, std::vector<size_t> strides,
-                       size_t offset) {
+  // return numpy array, copying from GPU
+  m.def("to_numpy", [](const CudaArray& a, std::vector<size_t> shape, 
+    std::vector<size_t> strides, size_t offset) {
+    // 
     std::vector<size_t> numpy_strides = strides;
-    std::transform(numpy_strides.begin(), numpy_strides.end(), numpy_strides.begin(),
-                   [](size_t& c) { return c * ELEM_SIZE; });
+    // biến đổi elems từ begin() tới end() và ghi vào bắt đầu từ begin()
+    std::transform(numpy_strides.begin(), numpy_strides.end(), 
+      numpy_strides.begin(), [](size_t& c) { return c * ELEM_SIZE; });
 
-    // copy memory to host
+    /* copy memory to host */
+
+    // khởi tạo vùng nhớ mới trong hosst
     scalar_t* host_ptr = (scalar_t*)std::malloc(a.size * ELEM_SIZE);
-    if (host_ptr == 0) throw std::bad_alloc();
-    cudaError_t err = cudaMemcpy(host_ptr, a.ptr, a.size * ELEM_SIZE, cudaMemcpyDeviceToHost);
+    if (host_ptr == 0) { throw std::bad_alloc(); }
+
+    // a là CudaArray và a.ptr trỏ tới vùng nhớ trong GPU
+    cudaError_t err = cudaMemcpy(
+      host_ptr, a.ptr, a.size * ELEM_SIZE, cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
 
     // return numpy array
     py::capsule deallocate_buffer(host_ptr, [](void* p) { free(p); });
-    return py::array_t<scalar_t>(shape, numpy_strides, host_ptr + offset, deallocate_buffer);
+    return py::array_t<scalar_t>(
+      shape, numpy_strides, host_ptr + offset, deallocate_buffer);
   });
+
 
   // copy numpy array to GPU
   m.def("from_numpy", [](py::array_t<scalar_t> a, CudaArray* out) {
-    cudaError_t err =
-        cudaMemcpy(out->ptr, a.request().ptr, out->size * ELEM_SIZE, cudaMemcpyHostToDevice);
+    cudaError_t err = cudaMemcpy(
+      out->ptr, a.request().ptr, out->size * ELEM_SIZE, cudaMemcpyHostToDevice);
     if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
   });
+
 
   m.def("fill", Fill);
   m.def("compact", Compact);

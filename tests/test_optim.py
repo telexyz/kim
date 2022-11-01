@@ -124,4 +124,4 @@ def test_optim_adam_weight_decay_bias_correction_1():
 # if this fails, make sure you're using .detach()/.data whenever possible.
 def test_optim_adam_z_memory_check_1():
     np.testing.assert_allclose(global_tensor_count(),
-        np.array(1132), rtol=1e-5, atol=1000)
+        np.array(1000), rtol=1e-5, atol=1000)

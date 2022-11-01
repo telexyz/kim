@@ -110,13 +110,13 @@ class DataLoader:
         if not shuffle:
             self.ordering = np.array_split(np.arange(len(dataset)), 
                 range(batch_size, len(dataset), batch_size))
-        else:
-            n = len(dataset)
-            a = np.arange(n)
-            np.random.shuffle(a)
-            self.ordering = np.array_split(a, range(batch_size, n, batch_size))
 
     def __iter__(self):
+        if self.shuffle:
+            a = np.arange(len(self.dataset))
+            np.random.shuffle(a)
+            self.ordering = np.array_split(\
+                a, range(self.batch_size, len(self.dataset), self.batch_size))
         self.n = 0
         return self
 

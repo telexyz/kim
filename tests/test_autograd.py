@@ -5,7 +5,7 @@ import kim
 from gradient_check import *
 
 ##############################################################################
-### TESTS/SUBMISSION CODE FOR find_topo_sort
+### TESTS CODE FOR find_topo_sort
 
 def test_topo_sort():
     # Test case 1
@@ -64,7 +64,7 @@ def test_topo_sort():
     np.testing.assert_allclose(topo_order, soln, rtol=1e-06, atol=1e-06)
 
 ##############################################################################
-### TESTS/SUBMISSION CODE FOR compute_gradient_of_variables
+### TESTS CODE FOR compute_gradient_of_variables
 
 def test_compute_gradient():
     gradient_check(lambda A,B,C : kim.summation((A@B+C)*(A@B), axes=None),
@@ -81,6 +81,8 @@ def test_compute_gradient():
                    kim.Tensor(np.random.randn(10,5)),
                    kim.Tensor(np.random.randn(10,5)), backward=True)
 
+
+def test_gradient_of_gradient():
     # check gradient of gradient
     x2 = kim.Tensor([6])
     x3 = kim.Tensor([0])
@@ -88,14 +90,18 @@ def test_compute_gradient():
     y.backward()
     grad_x2 = x2.grad
     grad_x3 = x3.grad
+
     # gradient of gradient
     grad_x2.backward()
     grad_x2_x2 = x2.grad
     grad_x2_x3 = x3.grad
+
     x2_val = x2.numpy()
     x3_val = x3.numpy()
     assert y.numpy() == x2_val * x2_val + x2_val * x3_val
     assert grad_x2.numpy() == 2 * x2_val + x3_val
     assert grad_x3.numpy() == x2_val
+
+    # assert gradient of gradient
     assert grad_x2_x2.numpy() == 2
     assert grad_x2_x3.numpy() == 1

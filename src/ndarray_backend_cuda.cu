@@ -10,8 +10,12 @@ namespace needle {
 namespace cuda {
 
 #define BASE_THREAD_NUM 256
-
 #define TILE 4
+
+const size_t L = 4 * TILE;
+const size_t S = 2 * TILE;
+const size_t BLOCK_SIZE = S * L;
+
 typedef float scalar_t;
 const size_t ELEM_SIZE = sizeof(scalar_t);
 
@@ -475,7 +479,6 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
   }
 }
 
-///*
 __global__ void MatmulSharedMemTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, size_t size, size_t L, size_t S, uint32_t N, uint32_t P) {
 
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -500,8 +503,7 @@ __global__ void MatmulSharedMemTiledKernel(const scalar_t* a, const scalar_t* b,
     float c_t[total], a_t[TILE], b_t[TILE];
     for (size_t o = 0; o < total; ++o) { c_t[o] = 0; }
 
-    __shared__ float a_s[L * S]; // khối A(L,S)
-    __shared__ float b_s[S * L]; // khối B(S,L)
+    __shared__ float a_s[BLOCK_SIZE], b_s[BLOCK_SIZE]; // khối A(L,S), khối B(S,L)
 
     // dịch chuyển khối A(L,S) tới hết hàng, và khối B(S,L) tới hết cột
     // A có kích cỡ M x N, B có kích cỡ N x P nên dùng chung biến k được
@@ -568,8 +570,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
   /// BEGIN YOUR SOLUTION
   const size_t L = 4 * TILE;
   const size_t S = 2 * TILE;
-  if (false) {
-  ///*
+
   if (M % L == 0 && P % L == 0 && N % S == 0) {
     // Can do shared-mem tiling
     // Mỗi thread tính (TILE, TILE) sub-matrix

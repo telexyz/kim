@@ -7,6 +7,7 @@ from .backend_selection import Device, array_api, NDArray, default_device
 class State:
     LAZY_MODE = False
     TENSOR_COUNT = 0
+    MAX_BACKWARD_TENSOR_COUNT = 0
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -236,9 +237,14 @@ def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
         node.grad = sum(x for x in output_grads[node])
-        if State.TENSOR_COUNT > 1000: node.grad = node.grad.detach()
+
+        # Detach grad from computational graph to save memory
+        if State.TENSOR_COUNT > State.MAX_BACKWARD_TENSOR_COUNT:
+            node.grad = node.grad.detach()
+
         # print(">>>", node.op) # bắt lỗi grad không phải float32
         # assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node.dtype)
+
         if node.op:
             grads = node.op.gradient(node.grad, node)
             for k in range(len(node.inputs)):

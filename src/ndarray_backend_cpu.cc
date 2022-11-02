@@ -7,6 +7,8 @@
 #include <stdexcept>
 using namespace std;
 
+namespace needle {
+namespace cpu {
 
 #define ALIGNMENT 256
 #define TILE 8
@@ -497,6 +499,8 @@ void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
   /// END YOUR SOLUTION
 }
 
+}  // namespace cpu
+}  // namespace needle
 
 PYBIND11_MODULE(ndarray_backend_cpu, m) {
   namespace py = pybind11;

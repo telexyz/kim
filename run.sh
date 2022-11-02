@@ -1,5 +1,11 @@
 # pip3 install pytest numpy numdifftools pybind11 requests
 
+########
+# conv #
+########
+
+# https://colab.research.google.com/drive/1jj1kGMrMCBecrYx_uJ__rgDgtBF8MlmA#scrollTo=ql1GGrs4rTT8
+
 #######
 # hw3 #
 #######

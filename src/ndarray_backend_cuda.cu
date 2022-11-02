@@ -446,7 +446,7 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
   if (gid < size) {
     /// BEGIN YOUR SOLUTION
-    const size_t P_T = P / T;
+    const size_t  ;
     const size_t ybase = (gid / P_T) * TILE;
     const size_t xbase = (gid % P_T) * TILE;
     const size_t total = TILE * TILE;

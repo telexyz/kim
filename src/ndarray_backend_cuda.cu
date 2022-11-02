@@ -6,8 +6,6 @@
 #include <iostream>
 #include <sstream>
 
-namespace needle {
-namespace cuda {
 
 #define BASE_THREAD_NUM 256
 
@@ -645,8 +643,6 @@ void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
   /// END YOUR SOLUTION
 }
 
-}  // namespace cuda
-}  // namespace needle
 
 PYBIND11_MODULE(ndarray_backend_cuda, m) {
   namespace py = pybind11;

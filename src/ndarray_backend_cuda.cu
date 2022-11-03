@@ -489,8 +489,8 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
   // Như trong trục tọa độ 2 chiều thì thì x trục tung = hàng, y trục dọc = cột
 
   // tới vị trí đầu của block
-  const size_t yblock = blockIdx.y * L;
-  const size_t xblock = blockIdx.x * L;
+  const size_t yblock = blockIdx.y * blockDim.y * L;
+  const size_t xblock = blockIdx.x * blockDim.x * L;
   
   float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
   // will map to gpu registers <= https://youtu.be/jYCxVirq4d0?t=1811

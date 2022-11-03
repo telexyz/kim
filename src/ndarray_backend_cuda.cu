@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <sstream>
+using namespace std;
 
 namespace needle {
 namespace cuda {

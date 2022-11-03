@@ -487,11 +487,10 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
 
   // Mỗi gid nhân sub-matrix(TILE, TILE)
   // Như trong trục tọa độ 2 chiều thì thì x trục tung = hàng, y trục dọc = cột
-  // M = gridDim.y * L, P = gridDim.x * L
 
-  // làm tròn tới vị trí đầu của block
-  const size_t yblock = gridIdx.y*gridDim.y + blockIdx.y;
-  const size_t xblock = gridIdx.x*gridDim.x + blockIdx.x;
+  // tới vị trí đầu của block
+  const size_t yblock = blockIdx.y * L;
+  const size_t xblock = blockIdx.x * L;
   
   float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
   // will map to gpu registers <= https://youtu.be/jYCxVirq4d0?t=1811
@@ -531,8 +530,8 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
     }
   }
 
-  const size_t ybase = (yblock*blockDim.y + threadIdx.y)*TILE;
-  const size_t xbase = (xblock*blockDim.x + threadIdx.y)*TILE;
+  const size_t ybase = yblock + threadIdx.y*TILE;
+  const size_t xbase = xblock + threadIdx.y*TILE;
   // Update kết quả cho TILE * TILE tại ybase, xbase
   for (size_t i = 0; i < TILE; ++i)
     for (size_t j = 0; j < TILE; ++j)
@@ -567,10 +566,10 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
   if (M % L == 0 && P % L == 0 && N % S == 0) {
     // => Can do shared-mem tiling
     // Mỗi thread tính (TILE, TILE) sub-matrix
-    dim3 blockDim(L / TILE, L / TILE, 1);
-    dim3 gridDim(P / L, M / L, 1); // => M = gridDim.y * L, P = gridDim.x * L
+    dim3 block(L / TILE, L / TILE, 1);
+    dim3 grid(P / L, M / L, 1); // => M = blockDim.y * L, P = blockDim.x * L
     // (M/L)*(P/L)*(L/TILE)*(L/TILE) = (M*L)/(TILE*TILE) = out->size/(TILE*TILE)
-    MatmulSharedMemKernel<<<gridDim, blockDim>>>(a.ptr, b.ptr, out->ptr, P, N);
+    MatmulSharedMemKernel<<<grid, block>>>(a.ptr, b.ptr, out->ptr, P, N);
   /**/
   } else if (M % TILE == 0 && P % TILE == 0) {
     // Trường hợp M, P chia hết cho TILE thì dùng tile matmul

@@ -1,3 +1,7 @@
+https://gist.github.com/raytroop/120e2d175d95f82edbee436374293420
+
+- - -
+
 https://forums.developer.nvidia.com/t/difference-between-threadidx-blockidx-statements/12161
 
 If you declared a two dimensional block size, say (3,3), then `threadIdx.x` would be 0,1,2 and you would now have a `threadIdx.y` value corresponding to 0,1,2. There are actually nine threads associated with the (3,3) block size. For instance, the thread indices (0,0) (0,1) (1,2) etc refer to independent threads.

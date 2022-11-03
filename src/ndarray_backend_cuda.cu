@@ -453,7 +453,6 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
     const size_t P_T = P / TILE;
     const size_t ybase = (gid / P_T) * TILE;
     const size_t xbase = (gid % P_T) * TILE;
-    const size_t total = TILE * TILE;
 
     float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
     for (size_t i = 0; i < TILE; ++i)
@@ -475,7 +474,6 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
     for (size_t i = 0; i < TILE; ++i)
       for (size_t j = 0; j < TILE; ++j)
         out[(ybase + i)*P + (xbase + j)] = c_t[i][j];
-    }
     /// END YOUR SOLUTION
   }
 }

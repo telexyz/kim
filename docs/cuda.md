@@ -1,3 +1,12 @@
+https://developer.nvidia.com/blog/cuda-refresher-cuda-programming-model
+
+A100: 256KB Registers, 192KB SMEM
+
+![](memory-hierarchy-in-gpus.png)
+
+
+- - -
+
 https://gist.github.com/raytroop/120e2d175d95f82edbee436374293420
 
 - - -

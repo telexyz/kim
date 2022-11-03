@@ -1,3 +1,6 @@
+https://lilianweng.github.io/posts/2021-07-11-diffusion-models |
+https://yang-song.net/blog/2021/score
+
 https://jalammar.github.io/illustrated-stable-diffusion |
 https://huggingface.co/blog/annotated-diffusion |
 https://www.youtube.com/watch?v=ltLNYA3lWAQ

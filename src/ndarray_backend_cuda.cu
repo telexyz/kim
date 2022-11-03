@@ -458,7 +458,7 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
     float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
     for (size_t i = 0; i < TILE; ++i)
       for (size_t j = 0; j < TILE; ++j)
-        c_t[i][j] = 0
+        c_t[i][j] = 0;
 
     for (size_t k = 0; k < N; ++k) {
       // Khởi tạo mảng a_t, b_t
@@ -474,7 +474,7 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
     // Update kết quả
     for (size_t i = 0; i < TILE; ++i)
       for (size_t j = 0; j < TILE; ++j)
-        out[(ybase + i)*P + (xbase + j)] = c_t[i][j]
+        out[(ybase + i)*P + (xbase + j)] = c_t[i][j];
     }
     /// END YOUR SOLUTION
   }
@@ -579,10 +579,6 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
     MatmulSharedMemTiledKernel<<<dim.grid, dim.block>>>(a.ptr, b.ptr, out->ptr, 
         size, N, P);
   /**/
-  // size_t num_blocks = (size + BASE_THREAD_NUM - 1) / BASE_THREAD_NUM;
-  // dim.block = dim3(BASE_THREAD_NUM, 1, 1);
-  // dim.grid = dim3(num_blocks, 1, 1);
-
   } else if (M % TILE == 0 && P % TILE == 0) {
     // Trường hợp M, P chia hết cho TILE thì dùng tile matmul
     size_t size = out->size / (TILE * TILE);

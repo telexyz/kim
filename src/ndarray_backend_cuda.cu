@@ -534,7 +534,8 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
   // Update kết quả cho TILE * TILE tại ybase, xbase
   for (size_t i = 0; i < TILE; ++i)
     for (size_t j = 0; j < TILE; ++j)
-      out[(ybase + i)*P + xbase + j] = c_t[i][j];
+      // out[(ybase + i)*P + xbase + j] = c_t[i][j];
+      out[(ybase + i)*P + xbase + j] = i % 2 == 1 ? i : blockIdx.x*blockDim.y + blockIdx.y;
 }
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
@@ -568,6 +569,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
     dim3 block(L / TILE, L / TILE, 1);
     dim3 grid(P / L, M / L, 1); // => M = blockDim.y * L, P = blockDim.x * L
     // (M/L)*(P/L)*(L/TILE)*(L/TILE) = (M*L)/(TILE*TILE) = out->size/(TILE*TILE)
+    cout << "\nmatmul: "<<grid.x<<","<<grid.y<<","<<grid.z<<" "<<block.x<<","<<block.y<<","<<block.z;
     MatmulSharedMemKernel<<<grid, block>>>(a.ptr, b.ptr, out->ptr, P, N);
   /**/
   } else if (M % TILE == 0 && P % TILE == 0) {

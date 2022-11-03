@@ -307,7 +307,9 @@ def test_matmul(m, n, p, device):
     _B = np.random.randn(n, p)
     A = nd.array(_A, device=device)
     B = nd.array(_B, device=device)
-    np.testing.assert_allclose((A @ B).numpy(), _A @ _B, rtol=1e-5, atol=1e-5)
+    mm = A @ B
+    if m % 64 == 0: print(">>>", mm.shape, mm)
+    np.testing.assert_allclose(mm.numpy(), _A @ _B, rtol=1e-5, atol=1e-5)
 
 
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])

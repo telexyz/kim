@@ -490,8 +490,8 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
   // M = gridDim.y * L, P = gridDim.x * L
 
   // làm tròn tới vị trí đầu của block
-  const size_t yblock = blockIdx.y;
-  const size_t xblock = blockIdx.x;
+  const size_t yblock = gridIdx.y*gridDim.y + blockIdx.y;
+  const size_t xblock = gridIdx.x*gridDim.x + blockIdx.x;
   
   float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
   // will map to gpu registers <= https://youtu.be/jYCxVirq4d0?t=1811
@@ -531,12 +531,12 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
     }
   }
 
-  const size_t ybase = yblock*blockDim.y + threadIdx.y;
-  const size_t xbase = xblock*blockDim.x + threadIdx.y;
+  const size_t ybase = (yblock*blockDim.y + threadIdx.y)*TILE;
+  const size_t xbase = (xblock*blockDim.x + threadIdx.y)*TILE;
   // Update kết quả cho TILE * TILE tại ybase, xbase
   for (size_t i = 0; i < TILE; ++i)
     for (size_t j = 0; j < TILE; ++j)
-      out[(ybase*TILE + i)*P + xbase*TILE + j] = c_t[i][j];
+      out[(ybase + i)*P + xbase + j] = c_t[i][j];
 }
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,

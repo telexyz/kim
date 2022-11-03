@@ -566,7 +566,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
    */
 
   /// BEGIN YOUR SOLUTION
-  // if (false) { /*
+  if (false) { /*
   if (M % L == 0 && P % L == 0 && N % S == 0) {
     // Can do shared-mem tiling
     // Mỗi thread tính (TILE, TILE) sub-matrix

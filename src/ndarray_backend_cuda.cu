@@ -478,7 +478,7 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
 }
 
 __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b, 
-  scalar_t* out,uint32_t N) {
+  scalar_t* out, uint32_t P, uint32_t N) {
 
   // https://youtu.be/jYCxVirq4d0?t=2113
   // out là ma trận C trong video trên gồm M hàng, P cột,
@@ -570,7 +570,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
     dim3 blockDim(L / TILE, L / TILE, 1);
     dim3 gridDim(P / L, M / L, 1); // => M = gridDim.y * L, P = gridDim.x * L
     // (M/L)*(P/L)*(L/TILE)*(L/TILE) = (M*L)/(TILE*TILE) = out->size/(TILE*TILE)
-    MatmulSharedMemKernel<<<gridDim, blockDim>>>(a.ptr, b.ptr, out->ptr, N);
+    MatmulSharedMemKernel<<<gridDim, blockDim>>>(a.ptr, b.ptr, out->ptr, P, N);
   /**/
   } else if (M % TILE == 0 && P % TILE == 0) {
     // Trường hợp M, P chia hết cho TILE thì dùng tile matmul

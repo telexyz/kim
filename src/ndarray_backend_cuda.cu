@@ -12,8 +12,8 @@ namespace cuda {
 #define BASE_THREAD_NUM 256
 #define TILE 4
 
-const size_t L = 16 * TILE; // => 16 * 16 = 256 thread
-const size_t S =  8 * TILE; // => 16 * 4 * 8 * 4 * 4-byte = 8k shared memory
+const size_t L = 8 * TILE; // => 8 * 8 = 64 threads; 16 * 16 = 256 threads
+const size_t S = 8 * TILE; // => 16 * 4 * 8 * 4 * 4-byte = 8k shared memory
 
 typedef float scalar_t;
 const size_t ELEM_SIZE = sizeof(scalar_t);
@@ -485,7 +485,7 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
   // xử lý theo block (L,L), L=16*TILE
   // dữ liệu lấy từ A là khối (L,S), từ B là khối (S, L)
 
-  // Mỗi gid nhân sub-matrix(TILE, TILE)
+  // Mỗi thread nhân sub-matrix(TILE, TILE)
   // Như trong trục tọa độ 2 chiều thì thì x trục tung = hàng, y trục dọc = cột
 
   // tới vị trí đầu của block
@@ -493,7 +493,7 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
   const size_t xblock = blockIdx.x * blockDim.x * L;
   
   float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
-  // will map to gpu registers <= https://youtu.be/jYCxVirq4d0?t=1811
+  // local vars will be mapped to registers <= https://youtu.be/jYCxVirq4d0?t=1811
   for (size_t i = 0; i < TILE; ++i)
     for (size_t j = 0; j < TILE; ++j)
       c_t[i][j] = 0;
@@ -503,7 +503,6 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
   // dịch chuyển khối A(L,S) tới hết hàng, và khối B(S,L) tới hết cột
   // A có kích cỡ M x N, B có kích cỡ N x P nên dùng chung biến k được
   for (size_t k = 0; k < N; k += S) {
-
     __syncthreads();
     // sA[:, :] = A[k : k + S, yblock : yblock + L];
     // sB[:, :] = B[k : k + S, xblock : xblock + L];

@@ -455,8 +455,10 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
     const size_t xbase = (gid % P_T) * TILE;
     const size_t total = TILE * TILE;
 
-    float c_t[total], a_t[TILE], b_t[TILE];
-    for (size_t o = 0; o < total; ++o) { c_t[o] = 0; }
+    float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
+    for (size_t i = 0; i < TILE; ++i)
+      for (size_t j = 0; j < TILE; ++j)
+        c_t[i][j] = 0
 
     for (size_t k = 0; k < N; ++k) {
       // Khởi tạo mảng a_t, b_t
@@ -467,13 +469,12 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
       // Tính toán trên local vars
       for (size_t i = 0; i < TILE; ++i)
         for (size_t j = 0; j < TILE; ++j)
-          c_t[i*TILE + j] += a_t[i] * b_t[j];
+          c_t[i][j] += a_t[i] * b_t[j];
     }
     // Update kết quả
-    for (size_t o = 0; o < total; ++o) {
-      const size_t y = ybase + o / TILE;
-      const size_t x = xbase + o % TILE;
-      out[y*P + x] = c_t[o];
+    for (size_t i = 0; i < TILE; ++i)
+      for (size_t j = 0; j < TILE; ++j)
+        out[(ybase + i)*P + (xbase + j)] = c_t[i][j]
     }
     /// END YOUR SOLUTION
   }
@@ -569,7 +570,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
    */
 
   /// BEGIN YOUR SOLUTION
-  // if (false) { /*
+  if (false) { /*
   if (M % L == 0 && P % L == 0 && N % S == 0) {
     // Can do shared-mem tiling
     // Mỗi thread tính (TILE, TILE) sub-matrix

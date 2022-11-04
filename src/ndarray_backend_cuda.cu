@@ -316,7 +316,7 @@ void EwiseLog(const CudaArray& a, CudaArray* out) {
 
 __global__ void EwiseGeKernel(const scalar_t* a, const scalar_t* b, scalar_t* out, size_t size) {
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (gid < size) { out[gid] = a[gid] > b[gid] ? 1.0 : 0.0; }
+  if (gid < size) { out[gid] = a[gid] >= b[gid] ? 1.0 : 0.0; }
 }
 
 void EwiseGe(const CudaArray& a, const CudaArray& b, CudaArray* out) {

@@ -1,3 +1,6 @@
+import sys
+sys.path.append("..")
+
 import kim
 import kim.nn as nn
 import kim.init as init

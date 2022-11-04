@@ -13,8 +13,8 @@ namespace cuda {
 #define BASE_THREAD_NUM 256
 #define TILE 4
 
-const size_t L = 8 * TILE; // => 8 * 8 = 64 threads; 16 * 16 = 256 threads
-const size_t S = 8 * TILE; // => 16 * 4 * 8 * 4 * 4-byte = 8k shared memory
+const size_t L = 16 * TILE; // => 16 * 16 = 256 threads
+const size_t S =  4 * TILE; // => 2 * 16*4 * 4*4 * 4-byte = 8.1k shared memory
 
 typedef float scalar_t;
 const size_t ELEM_SIZE = sizeof(scalar_t);
@@ -480,24 +480,25 @@ __global__ void MatmulTiledKernel(const scalar_t* a, const scalar_t* b, scalar_t
 
 __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b, 
   scalar_t* out, uint32_t M, uint32_t N, uint32_t P) {
-
   // https://youtu.be/jYCxVirq4d0?t=2113
   // out là ma trận C trong video trên gồm M hàng, P cột,
-  // xử lý theo block (L,L), L=16*TILE
-  // dữ liệu lấy từ A là khối (L,S), từ B là khối (S, L)
+  // xử lý out theo block (L,L), i.e L=16*TILE
+  // dữ liệu lấy từ a là khối (L,S), từ b là khối (S, L)
 
-  // Mỗi thread nhân sub-matrix(TILE, TILE)
-  // Như trong trục tọa độ 2 chiều thì thì x trục tung = hàng, y trục dọc = cột
-
-  // tới vị trí đầu của block
   const size_t P_L = P / L;
   const size_t L_T = L / TILE;
+  const size_t threads_num = L_T * L_T;
+  const size_t block_size = S * L;
   
+  // Tới vị trí đầu của block(L, L) trong out (như trong trục tọa độ 2 chiều
+  // x trục tung = hàng, y trục dọc = cột)
   const size_t yblock = (blockIdx.x / P_L) * L;
   const size_t xblock = (blockIdx.x % P_L) * L;
   
-  const size_t ythread = threadIdx.y / L_T;
-  const size_t xthread = threadIdx.x % L_T;
+  // Mỗi thread nhân sub-matrix(TILE, TILE)
+  // Tới vị trị đầu của thread trong block(L, L) của out
+  const size_t ythread = (threadIdx.x / L_T) * TILE;
+  const size_t xthread = (threadIdx.x % L_T) * TILE;
   
   float c_t[TILE][TILE], a_t[TILE], b_t[TILE];
   // local vars will be mapped to registers <= https://youtu.be/jYCxVirq4d0?t=1811
@@ -508,16 +509,18 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
   __shared__ float a_s[S][L], b_s[S][L]; // khối A(L,S), khối B(S,L)
 
   // dịch chuyển khối A(L,S) tới hết hàng, và khối B(S,L) tới hết cột
-  // A có kích cỡ M x N, B có kích cỡ N x P nên dùng chung biến k được
-  for (size_t k = 0; k < N; k += S) {
+  // A có kích cỡ M x N, B có kích cỡ N x P nên dùng chung `ko`
+  for (size_t ko = 0; ko < N; ko += S) {
     __syncthreads();
-    // sA[:, :] = A[k : k + S, yblock : yblock + L];
-    // sB[:, :] = B[k : k + S, xblock : xblock + L];
-    for (size_t s = 0; s < S; ++s) {
-      for (size_t l = 0; l < L; ++l) {
-        a_s[s][l] = a[(yblock + l)*N +      (k + s)]; // a: M*N
-        b_s[s][l] = a[     (k + s)*P + (xblock + l)]; // b: N*P
-      }
+    // sA[:, :] = A[ko : ko + S, yblock : yblock + L];
+    // sB[:, :] = B[ko : ko + S, xblock : xblock + L];
+    for (size_t offset = 0; offset < block_size; offset += threads_num) {
+      // co-operative fetching
+      const size_t id = offset + threadIdx.x;
+      const size_t s = id / L;
+      const size_t l = id % L;
+      a_s[s][l] = a[(yblock + l)*N   +      (ko + s)]; // a: M*N
+      b_s[s][l] = b[    (ko + s)*P   +  (xblock + l)]; // b: N*P
     }
     __syncthreads();
 
@@ -526,8 +529,8 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
       // a[:] = sA[ki, threadIdx.y * V : threadIdx.y * V + V];
       // b[:] = sA[ki, threadIdx.x * V : threadIdx.x * V + V];
       for (size_t t = 0; t < TILE; ++t) { 
-        a_t[t] = a_s[ki][ythread*TILE + t];
-        b_t[t] = b_s[ki][xthread*TILE + t];
+        a_t[t] = a_s[ki][ythread + t];
+        b_t[t] = b_s[ki][xthread + t];
       }
       // Tính toán trên local vars
       for (size_t i = 0; i < TILE; ++i)
@@ -536,12 +539,10 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
     }
   }
   
-  const size_t ybase = yblock + ythread*TILE;
-  const size_t xbase = xblock + xthread*TILE;
   // Update kết quả cho TILE * TILE tại ybase, xbase
   for (size_t i = 0; i < TILE; ++i)
     for (size_t j = 0; j < TILE; ++j)
-      out[(ybase + i)*P + xbase + j] = c_t[i][j];
+      out[(yblock + ythread + i)*P + (xblock + xthread + j)] = c_t[i][j];
 }
 
 void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,

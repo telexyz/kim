@@ -299,7 +299,12 @@ matmul_dims = [(16, 16, 16),
     (72, 72, 72), 
     (72, 73, 74), 
     (74, 73, 72), 
-    (128, 128, 128)]
+    (128, 128, 128),
+    (256, 128, 128),
+    (256, 128, 64),
+    (256, 128, 512),
+    (64, 128, 512),
+    ]
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 @pytest.mark.parametrize("m,n,p", matmul_dims)
 def test_matmul(m, n, p, device):

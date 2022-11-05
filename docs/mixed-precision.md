@@ -1,6 +1,15 @@
-https://stackoverflow.com/questions/71980837/cuda-tensor-cores-what-is-the-effect-of-numblocks-and-threadsperblock
+https://docs.nvidia.com/cuda/cusparse/index.html#introduction
 
 - - -
+
+
+https://stackoverflow.com/questions/71980837/cuda-tensor-cores-what-is-the-effect-of-numblocks-and-threadsperblock
+
+https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#wmma
+
+## Mixed Precision
+
+https://github.com/NVIDIA/apex
 
 https://towardsdatascience.com/understanding-mixed-precision-training-4b246679c7c4
 
@@ -10,7 +19,7 @@ Here, we can see the benefit of keeping the FP32 copy of the weights. As the lea
 
 The use of both FP16 and FP32 is the reason this technique is called mixed-precision training.
 
-## Automatic Mixed Precision
+### Automatic Mixed Precision
 
 In 2018, NVIDIA released an extension for PyTorch called Apex, which contained AMP (Automatic Mixed Precision) capability. This provided a streamlined solution for using mixed-precision training in PyTorch.
 

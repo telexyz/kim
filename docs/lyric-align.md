@@ -1,3 +1,11 @@
+Audio-to-Lyrics Alignment Demo https://www.youtube.com/watch?v=0AOVLWo7k_c
+
+https://music-ir.org/mirex/wiki/2020:Automatic_Lyrics-to-Audio_Alignment
+
+- - -
+
+wav2vec2 https://github.com/guxm2021/alt_speechbrain
+
 Code https://github.com/jhuang448/LyricsAlignment-MTL
 
 Data https://github.com/gabolsgabs/DALI

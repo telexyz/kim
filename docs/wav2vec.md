@@ -1,3 +1,11 @@
+Forced Align
+
+https://pytorch.org/tutorials/intermediate/forced_alignment_with_torchaudio_tutorial.html
+
+https://paperswithcode.com/paper/ctc-segmentation-of-large-corpora-for-german
+
+- - -
+
 https://jonathanbgn.com/2021/06/29/illustrated-wav2vec.html
 
 https://jonathanbgn.com/2021/09/30/illustrated-wav2vec-2.html

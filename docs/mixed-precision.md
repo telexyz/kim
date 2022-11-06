@@ -1,7 +1,8 @@
-https://docs.nvidia.com/cuda/cusparse/index.html#introduction
+## mixed-precision_AMP-Pytorch.pdf
+
+![](files/mp-maxi-perf.png)
 
 - - -
-
 
 https://stackoverflow.com/questions/71980837/cuda-tensor-cores-what-is-the-effect-of-numblocks-and-threadsperblock
 

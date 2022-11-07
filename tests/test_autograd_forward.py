@@ -123,10 +123,10 @@ def test_summation_forward():
        [2.95, 3.7 , 2.6 ],
        [0.1 , 4.1 , 3.3 ],
        [1.1 , 3.4 , 3.4 ],
-       [1.8 , 4.55, 2.3 ]]), axes=1).numpy(), np.array([4.6 , 9.25, 7.5 , 7.9 , 8.65]))
+       [1.8 , 4.55, 2.3 ]]), axes=1).numpy().flat, np.array([4.6 , 9.25, 7.5 , 7.9 , 8.65]))
     np.testing.assert_allclose(kim.summation(kim.Tensor([[1.5 , 3.85, 3.45],
        [1.35, 1.3 , 0.65],
-       [2.6 , 4.55, 0.25]]), axes=0).numpy(), np.array([5.45, 9.7 , 4.35]))
+       [2.6 , 4.55, 0.25]]), axes=0).numpy().flat, np.array([5.45, 9.7 , 4.35]))
 
 
 def test_broadcast_to_forward():

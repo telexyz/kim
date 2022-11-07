@@ -127,7 +127,7 @@ class PowerScalar(TensorOp):
         self.scalar = numpy.float32(scalar)
 
     def compute(self, a: NDArray) -> NDArray:
-        return array_api.power(a, self.scalar)
+        return a ** self.scalar
 
     def gradient(self, out_grad: Tensor, node: Tensor):
         # adjoin w.r.t a = out_grad * grad(a^scalar)
@@ -217,12 +217,24 @@ class BroadcastTo(TensorOp):
         self.shape = shape
 
     def compute(self, a):
+        n = len(a.shape)
+        # print(">>>", a.shape, self.shape)
+        if n < len(self.shape):
+            shape = []
+            k = 0
+            for i in range(len(self.shape)):
+                if n == 0 or k == n:
+                    shape.insert(0, 1)
+                else:
+                    shape.append(a.shape[k])
+                    k += 1
+            # print(shape)
+            a = a.reshape(tuple(shape))
+
         return array_api.broadcast_to(a, self.shape)
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]
-        # broadcasted from `a.shape` to `self.shape`
-        # print(">>>", a.shape, "to", self.shape)
 
         axes = ()
         n = len(a.shape)
@@ -233,13 +245,11 @@ class BroadcastTo(TensorOp):
         else:
             k = 0
             for i in range(len(self.shape)):
-                # print("@", i, k, self.shape[i], a.shape[k])
                 if n == 0 or self.shape[i] != a.shape[k]:
                     axes += (i,)
                 else:
                     k += 1
 
-        # print(">>> broadcasted from", a.shape, "to", self.shape, "=>", axes)
         accum_grads = summation(out_grad, axes=axes)
         return reshape(accum_grads, a.shape),
 
@@ -310,7 +320,7 @@ def matmul(a, b):
 
 class Negate(TensorOp):
     def compute(self, a):
-        return array_api.negative(a)
+        return -a
 
     def gradient(self, out_grad, node):
         return negate(out_grad),
@@ -321,7 +331,10 @@ def negate(a):
 
 class Log(TensorOp):
     def compute(self, a):
-        return array_api.log(a)
+        if isinstance(a, numpy.ndarray):
+            return numpy.log(a)
+        else:
+            return a.log()
 
     def gradient(self, out_grad, node):
         return divide(out_grad, node.inputs[0]),
@@ -344,11 +357,14 @@ def exp(a):
 
 class ReLU(TensorOp):
     def compute(self, a):
-        return array_api.maximum(a, 0)
+        if isinstance(a, numpy.ndarray):
+            return numpy.maximum(a, 0)
+        else:
+            return a.maximum(0)
 
     def gradient(self, out_grad, node):
         a = node.inputs[0].numpy()
-        relu_a = array_api.where(a <= 0, 0, 1)
+        relu_a = (a > 0)
         return Tensor(out_grad.numpy() * relu_a),
 
 def relu(a):
@@ -367,9 +383,8 @@ class LogSumExp(TensorOp):
             ZZ = Z - Z_max_broadcast
             exp_ZZ = array_api.exp(ZZ)
             sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
-            return array_api.log(sum_exp_ZZ) + Z_max
+            return sum_exp_ZZ.log() + Z_max
         else:
-            print(">>>", self.axes)
             assert len(self.axes) == 1
             Z_max = Z.max(self.axes[0])
 

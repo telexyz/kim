@@ -313,7 +313,7 @@ def test_matmul(m, n, p, device):
     A = nd.array(_A, device=device)
     B = nd.array(_B, device=device)
     mm = A @ B
-    if m % 64 == 0: print(">>>", mm.shape, mm)
+    # if m % 64 == 0: print(">>>", mm.shape, mm)
     np.testing.assert_allclose(mm.numpy(), _A @ _B, rtol=1e-5, atol=1e-5)
 
 

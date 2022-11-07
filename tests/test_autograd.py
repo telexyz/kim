@@ -108,3 +108,4 @@ def test_gradient_of_gradient():
     assert grad_x2_x2.numpy() == 2
     assert grad_x2_x3.numpy() == 1
     kim.autograd.State.MAX_BACKWARD_TENSOR_COUNT = 0
+

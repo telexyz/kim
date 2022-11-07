@@ -82,6 +82,7 @@ def add(a, b):
 class AddScalar(TensorOp):
     def __init__(self, scalar):
         self.scalar = numpy.float32(scalar)
+        # self.scalar = scalar
 
     def compute(self, a: NDArray):
         return a + self.scalar

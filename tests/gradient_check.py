@@ -36,5 +36,8 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
         np.linalg.norm(computed_grads[i] - numerical_grads[i])
         for i in range(len(args))
     )
+
+    print(">>>", f, args, kwargs)
+    print(">>>", numerical_grads, computed_grads)
     assert error < tol
     return computed_grads

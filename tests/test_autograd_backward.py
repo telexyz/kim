@@ -33,7 +33,7 @@ def test_divide_backward():
 
 def test_divide_scalar_backward():
     gradient_check(kim.divide_scalar, kim.Tensor(np.random.randn(5, 4)),
-        scalar=np.random.randn(1))
+        scalar=np.random.randn(1)[0])
 
 
 def test_matmul_simple_backward():

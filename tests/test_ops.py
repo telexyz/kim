@@ -1,10 +1,10 @@
 import numpy as np
-import kim as ndl
+import kim
 import kim.nn as nn
 
 def get_tensor(*shape, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)
-    return ndl.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
+    return kim.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
 
 def power_scalar_forward(shape, power=2):
     x = get_tensor(*shape)
@@ -18,11 +18,11 @@ def power_scalar_backward(shape, power=2):
 
 def logsumexp_forward(shape, axes):
     x = get_tensor(*shape)
-    return (ndl.ops.logsumexp(x,axes=axes)).cached_data
+    return (kim.ops.logsumexp(x,axes=axes)).cached_data
 
 def logsumexp_backward(shape, axes):
     x = get_tensor(*shape)
-    y = (ndl.ops.logsumexp(x, axes=axes)**2).sum()
+    y = (kim.ops.logsumexp(x, axes=axes)**2).sum()
     y.backward()
     return x.grad.cached_data
 
@@ -62,7 +62,7 @@ def test_op_logsumexp_forward_4():
 
 
 def test_op_logsumexp_forward_5():
-    test_data = ndl.ops.logsumexp(ndl.Tensor(np.array([[1e10,1e9,1e8,-10],[1e-10,1e9,1e8,-10]])), (0,)).numpy()
+    test_data = kim.ops.logsumexp(kim.Tensor(np.array([[1e10,1e9,1e8,-10],[1e-10,1e9,1e8,-10]])), (0,)).numpy()
     np.testing.assert_allclose(test_data,np.array([ 1.00000000e+10,  1.00000000e+09,  1.00000001e+08, -9.30685282e+00]), rtol=1e-5, atol=1e-5)
 
 def test_op_logsumexp_backward_1():
@@ -101,8 +101,8 @@ def test_op_logsumexp_backward_3():
         [3.9397335 , 0.19614778, 3.9397335 ]]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_op_logsumexp_backward_5():
-    grad_compare = ndl.Tensor(np.array([[1e10,1e9,1e8,-10],[1e-10,1e9,1e8,-10]]))
-    test_data = (ndl.ops.logsumexp(grad_compare, (0,))**2).sum().backward()
+    grad_compare = kim.Tensor(np.array([[1e10,1e9,1e8,-10],[1e-10,1e9,1e8,-10]]))
+    test_data = (kim.ops.logsumexp(grad_compare, (0,))**2).sum().backward()
     np.testing.assert_allclose(grad_compare.grad.cached_data,np.array([[ 2.00000000e+10,  9.99999999e+08,  1.00000001e+08,
         -9.30685282e+00],
        [ 0.00000000e+00,  9.99999999e+08,  1.00000001e+08,

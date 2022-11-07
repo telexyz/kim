@@ -1,5 +1,5 @@
 import numpy as np
-import kim as ndl
+import kim
 import kim.nn as nn
 
 import sys
@@ -15,7 +15,7 @@ def residual_block_num_params(dim, hidden_dim, norm):
 
 def residual_block_forward(dim, hidden_dim, norm, drop_prob):
     np.random.seed(2)
-    input_tensor = ndl.Tensor(np.random.randn(1, dim))
+    input_tensor = kim.Tensor(np.random.randn(1, dim))
     output_tensor = ResidualBlock(dim, hidden_dim, norm, drop_prob)(input_tensor)
     return output_tensor.numpy()
 
@@ -26,16 +26,16 @@ def mlp_resnet_num_params(dim, hidden_dim, num_blocks, num_classes, norm):
 
 def mlp_resnet_forward(dim, hidden_dim, num_blocks, num_classes, norm, drop_prob):
     np.random.seed(4)
-    input_tensor = ndl.Tensor(np.random.randn(2, dim), dtype=np.float32)
+    input_tensor = kim.Tensor(np.random.randn(2, dim), dtype=np.float32)
     output_tensor = MLPResNet(dim, hidden_dim, num_blocks, num_classes, norm, drop_prob)(input_tensor)
     return output_tensor.numpy()
 
 def train_epoch_1(hidden_dim, batch_size, optimizer, **kwargs):
     np.random.seed(1)
-    train_dataset = ndl.data.MNISTDataset(\
+    train_dataset = kim.data.MNISTDataset(\
             "./data/train-images-idx3-ubyte.gz",
             "./data/train-labels-idx1-ubyte.gz")
-    train_dataloader = ndl.data.DataLoader(\
+    train_dataloader = kim.data.DataLoader(\
              dataset=train_dataset,
              batch_size=batch_size)
 
@@ -46,10 +46,10 @@ def train_epoch_1(hidden_dim, batch_size, optimizer, **kwargs):
 
 def eval_epoch_1(hidden_dim, batch_size):
     np.random.seed(1)
-    test_dataset = ndl.data.MNISTDataset(\
+    test_dataset = kim.data.MNISTDataset(\
             "./data/t10k-images-idx3-ubyte.gz",
             "./data/t10k-labels-idx1-ubyte.gz")
-    test_dataloader = ndl.data.DataLoader(\
+    test_dataloader = kim.data.DataLoader(\
              dataset=test_dataset,
              batch_size=batch_size,
              shuffle=False)
@@ -119,7 +119,7 @@ def test_mlp_resnet_forward_2():
         atol=1e-5)
 
 def test_mlp_train_epoch_1():
-    np.testing.assert_allclose(train_epoch_1(5, 250, ndl.optim.Adam, lr=0.01, weight_decay=0.1),
+    np.testing.assert_allclose(train_epoch_1(5, 250, kim.optim.Adam, lr=0.01, weight_decay=0.1),
         np.array([0.675267, 1.84043]), rtol=0.0001, atol=0.0001)
 
 def test_mlp_eval_epoch_1():
@@ -127,5 +127,5 @@ def test_mlp_eval_epoch_1():
         np.array([0.9164 , 4.137814]), rtol=1e-5, atol=1e-5)
 
 def test_mlp_train_mnist_1():
-    np.testing.assert_allclose(train_mnist_1(250, 2, ndl.optim.SGD, 0.001, 0.01, 100),
+    np.testing.assert_allclose(train_mnist_1(250, 2, kim.optim.SGD, 0.001, 0.01, 100),
         np.array([0.4875 , 1.462595, 0.3245 , 1.049429]), rtol=0.001, atol=0.001)

@@ -1,4 +1,4 @@
-import kim as ndl
+import kim
 import numpy as np
 import mugrade
 
@@ -8,18 +8,18 @@ from test_optim import *
 from test_mlp_resnet import *
 
 def submit_flip_horizontal():
-    tform = ndl.data.RandomFlipHorizontal(0.5)
+    tform = kim.data.RandomFlipHorizontal(0.5)
     np.random.seed(0)
     for _ in range(2):
         size_a, size_b, size_c = np.random.randint(1,5), np.random.randint(1,5), np.random.randint(1,5)
         mugrade.submit(tform(np.random.rand(size_a, size_b,size_c)))
 
-    tform = ndl.data.RandomFlipHorizontal(0)
+    tform = kim.data.RandomFlipHorizontal(0)
     for _ in range(2):
         size_a, size_b, size_c = np.random.randint(1,5), np.random.randint(1,5), np.random.randint(1,5)
         mugrade.submit(tform(np.random.rand(size_a, size_b,size_c)))
 
-    tform = ndl.data.RandomFlipHorizontal(1.0)
+    tform = kim.data.RandomFlipHorizontal(1.0)
     for _ in range(2):
         size_a, size_b, size_c = np.random.randint(1,5), np.random.randint(1,5), np.random.randint(1,5)
         mugrade.submit(tform(np.random.rand(size_a, size_b,size_c)))
@@ -28,17 +28,17 @@ def submit_flip_horizontal():
 
 def submit_random_crop():
     np.random.seed(0)
-    tform = ndl.data.RandomCrop(0)
+    tform = kim.data.RandomCrop(0)
     for _ in range(2):
         size_a, size_b, size_c = np.random.randint(4,5), np.random.randint(4,6), np.random.randint(4,7)
         mugrade.submit(tform(np.random.rand(size_a, size_b,size_c)))
 
-    tform = ndl.data.RandomCrop(2)
+    tform = kim.data.RandomCrop(2)
     for _ in range(2):
         size_a, size_b, size_c = np.random.randint(4,5), np.random.randint(4,6), np.random.randint(4,7)
         mugrade.submit(tform(np.random.rand(size_a, size_b,size_c)))
 
-    tform = ndl.data.RandomCrop(3)
+    tform = kim.data.RandomCrop(3)
     for _ in range(2):
         ize_a, size_b, size_c = np.random.randint(4,5), np.random.randint(4,6), np.random.randint(4,7)
         mugrade.submit(tform(np.random.rand(size_a, size_b,size_c)))
@@ -46,13 +46,13 @@ def submit_random_crop():
 
 
 def submit_mnist_dataset():
-    mnist_train_dataset = ndl.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
+    mnist_train_dataset = kim.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
                                                 "data/train-labels-idx1-ubyte.gz")
     mugrade.submit(mnist_train_dataset[69][:25])
     mugrade.submit(len(mnist_train_dataset))
     np.random.seed(0)
-    tforms = [ndl.data.RandomFlipHorizontal()]
-    mnist_train_dataset = ndl.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
+    tforms = [kim.data.RandomFlipHorizontal()]
+    mnist_train_dataset = kim.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
                                                 "data/train-labels-idx1-ubyte.gz",
                                                 transforms=tforms)
 
@@ -60,8 +60,8 @@ def submit_mnist_dataset():
         mugrade.submit(mnist_train_dataset[i][:-25])
 
 
-    tforms = [ndl.data.RandomCrop(15), ndl.data.RandomFlipHorizontal()]
-    mnist_train_dataset = ndl.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
+    tforms = [kim.data.RandomCrop(15), kim.data.RandomFlipHorizontal()]
+    mnist_train_dataset = kim.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
                                                 "data/train-labels-idx1-ubyte.gz",
                                                 transforms=tforms)
 
@@ -86,10 +86,10 @@ def submit_op_logsumexp():
 
 def submit_init():
     np.random.seed(0)
-    mugrade.submit(ndl.init.kaiming_normal(2,5).numpy())
-    mugrade.submit(ndl.init.kaiming_uniform(2,5).numpy())
-    mugrade.submit(ndl.init.xavier_uniform(2,5, gain=0.33).numpy())
-    mugrade.submit(ndl.init.xavier_normal(2,5, gain=1.3).numpy())
+    mugrade.submit(kim.init.kaiming_normal(2,5).numpy())
+    mugrade.submit(kim.init.kaiming_uniform(2,5).numpy())
+    mugrade.submit(kim.init.xavier_uniform(2,5, gain=0.33).numpy())
+    mugrade.submit(kim.init.xavier_normal(2,5, gain=1.3).numpy())
 
 
 def submit_nn_linear():
@@ -165,20 +165,20 @@ def submit_nn_flatten():
     
 
 def submit_optim_sgd():
-    mugrade.submit(learn_model_1d(48, 17, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 17)), ndl.optim.SGD, lr=0.03, momentum=0.0, epochs=2))
-    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.SGD, lr=0.01, momentum=0.9, epochs=2))
-    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), ndl.optim.SGD, lr=0.01, momentum=0.0, weight_decay=0.01, epochs=2))
-    mugrade.submit(learn_model_1d(54, 16, lambda z: nn.Sequential(nn.Linear(54, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.SGD, lr=0.01, momentum=0.9, weight_decay=0.01, epochs=2))
-    mugrade.submit(learn_model_1d(64, 4, lambda z: nn.Sequential(nn.Linear(64, 8), nn.ReLU(), nn.Residual(nn.Linear(8, 8)), nn.Linear(8, 4)), ndl.optim.SGD, epochs=3, lr=0.01, weight_decay=0.001))
+    mugrade.submit(learn_model_1d(48, 17, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 17)), kim.optim.SGD, lr=0.03, momentum=0.0, epochs=2))
+    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), kim.optim.SGD, lr=0.01, momentum=0.9, epochs=2))
+    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), kim.optim.SGD, lr=0.01, momentum=0.0, weight_decay=0.01, epochs=2))
+    mugrade.submit(learn_model_1d(54, 16, lambda z: nn.Sequential(nn.Linear(54, 32), nn.ReLU(), nn.Linear(32, 16)), kim.optim.SGD, lr=0.01, momentum=0.9, weight_decay=0.01, epochs=2))
+    mugrade.submit(learn_model_1d(64, 4, lambda z: nn.Sequential(nn.Linear(64, 8), nn.ReLU(), nn.Residual(nn.Linear(8, 8)), nn.Linear(8, 4)), kim.optim.SGD, epochs=3, lr=0.01, weight_decay=0.001))
 
 
 def submit_optim_adam():
-    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, epochs=2))
-    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.01, epochs=2))
-    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.001, epochs=3))
-    mugrade.submit(learn_model_1d_eval(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.001,  epochs=2))
-    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.LayerNorm1d(32), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.01, weight_decay=0.01,  epochs=2))
-    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), ndl.optim.Adam, lr=0.001, weight_decay=0.01,  epochs=2))
+    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), kim.optim.Adam, lr=0.001, epochs=2))
+    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), kim.optim.Adam, lr=0.001, weight_decay=0.01, epochs=2))
+    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), kim.optim.Adam, lr=0.001, weight_decay=0.001, epochs=3))
+    mugrade.submit(learn_model_1d_eval(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.BatchNorm1d(32), nn.Linear(32, 16)), kim.optim.Adam, lr=0.001, weight_decay=0.001,  epochs=2))
+    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.LayerNorm1d(32), nn.Linear(32, 16)), kim.optim.Adam, lr=0.01, weight_decay=0.01,  epochs=2))
+    mugrade.submit(learn_model_1d(48, 16, lambda z: nn.Sequential(nn.Linear(48, 32), nn.ReLU(), nn.Linear(32, 16)), kim.optim.Adam, lr=0.001, weight_decay=0.01,  epochs=2))
 
 
 def submit_mlp_resnet():
@@ -189,16 +189,16 @@ def submit_mlp_resnet():
     mugrade.submit(mlp_resnet_num_params(15, 10, 10, 5, nn.BatchNorm1d))
     mugrade.submit(mlp_resnet_forward(12, 7, 1, 6, nn.LayerNorm1d, 0.8))
     mugrade.submit(mlp_resnet_forward(15, 3, 2, 15, nn.BatchNorm1d, 0.3))
-    mugrade.submit(train_epoch_1(7, 256, ndl.optim.Adam, lr=0.01, weight_decay=0.01))
+    mugrade.submit(train_epoch_1(7, 256, kim.optim.Adam, lr=0.01, weight_decay=0.01))
     mugrade.submit(eval_epoch_1(12, 154))
-    mugrade.submit(train_mnist_1(550, 1, ndl.optim.SGD, 0.01, 0.01, 7))
+    mugrade.submit(train_mnist_1(550, 1, kim.optim.SGD, 0.01, 0.01, 7))
 
 
 def submit_dataloader():
     batch_size = 1
-    mnist_train_dataset = ndl.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
+    mnist_train_dataset = kim.data.MNISTDataset("data/train-images-idx3-ubyte.gz",
                                                 "data/train-labels-idx1-ubyte.gz")
-    mnist_train_dataloader = ndl.data.DataLoader(dataset=mnist_train_dataset,
+    mnist_train_dataloader = kim.data.DataLoader(dataset=mnist_train_dataset,
                                                  batch_size=batch_size,
                                                  shuffle=False)
     subl = []
@@ -211,9 +211,9 @@ def submit_dataloader():
     mugrade.submit(subl)
 
     batch_size = 5
-    mnist_test_dataset = ndl.data.MNISTDataset("data/t10k-images-idx3-ubyte.gz",
+    mnist_test_dataset = kim.data.MNISTDataset("data/t10k-images-idx3-ubyte.gz",
                                                "data/t10k-labels-idx1-ubyte.gz")
-    mnist_test_dataloader = ndl.data.DataLoader(dataset=mnist_test_dataset,
+    mnist_test_dataloader = kim.data.DataLoader(dataset=mnist_test_dataset,
                                                 batch_size=batch_size,
                                                 shuffle=False)
 
@@ -228,7 +228,7 @@ def submit_dataloader():
     mugrade.submit(subl_y[-2:])
 
     np.random.seed(0)
-    shuf = ndl.data.DataLoader(dataset=mnist_test_dataset,
+    shuf = kim.data.DataLoader(dataset=mnist_test_dataset,
                                batch_size=10,
                                shuffle=True)
     subl_x = []

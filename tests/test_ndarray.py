@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import mugrade
-import kim as ndl
+import kim
 from kim import backend_ndarray as nd
 
 

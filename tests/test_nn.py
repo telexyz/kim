@@ -1,15 +1,15 @@
 import numpy as np
-import kim as ndl
+import kim
 import kim.nn as nn
 
 """Deterministically generate a matrix"""
 def get_tensor(*shape, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)
-    return ndl.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
+    return kim.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
 
 def get_int_tensor(*shape, low=0, high=10, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)
-    return ndl.Tensor(np.random.randint(low, high, size=shape))
+    return kim.Tensor(np.random.randint(low, high, size=shape))
 
 def check_prng(*shape):
     """ We want to ensure that numpy generates random matrices on your machine/colab
@@ -20,7 +20,7 @@ def check_prng(*shape):
 
 def batchnorm_forward(*shape, affine=False):
     x = get_tensor(*shape)
-    bn = ndl.nn.BatchNorm1d(shape[1])
+    bn = kim.nn.BatchNorm1d(shape[1])
     if affine:
         bn.weight.data = get_tensor(shape[1], entropy=42)
         bn.bias.data = get_tensor(shape[1], entropy=1337)
@@ -28,7 +28,7 @@ def batchnorm_forward(*shape, affine=False):
 
 def batchnorm_backward(*shape, affine=False):
     x = get_tensor(*shape)
-    bn = ndl.nn.BatchNorm1d(shape[1])
+    bn = kim.nn.BatchNorm1d(shape[1])
     if affine:
         bn.weight.data = get_tensor(shape[1], entropy=42)
         bn.bias.data = get_tensor(shape[1], entropy=1337)
@@ -37,33 +37,33 @@ def batchnorm_backward(*shape, affine=False):
 
 def flatten_forward(*shape):
     x = get_tensor(*shape)
-    tform = ndl.nn.Flatten()
+    tform = kim.nn.Flatten()
     return tform(x).cached_data
 
 def flatten_backward(*shape):
     x = get_tensor(*shape)
-    tform = ndl.nn.Flatten()
+    tform = kim.nn.Flatten()
     (tform(x)**2).sum().backward()
     return x.grad.cached_data
 
 
 
 def batchnorm_running_mean(*shape, iters=10):
-    bn = ndl.nn.BatchNorm1d(shape[1])
+    bn = kim.nn.BatchNorm1d(shape[1])
     for i in range(iters):
         x = get_tensor(*shape, entropy=i)
         y = bn(x)
     return bn.running_mean.cached_data
 
 def batchnorm_running_var(*shape, iters=10):
-    bn = ndl.nn.BatchNorm1d(shape[1])
+    bn = kim.nn.BatchNorm1d(shape[1])
     for i in range(iters):
         x = get_tensor(*shape, entropy=i)
         y = bn(x)
     return bn.running_var.cached_data
 
 def batchnorm_running_grad(*shape, iters=10):
-    bn = ndl.nn.BatchNorm1d(shape[1])
+    bn = kim.nn.BatchNorm1d(shape[1])
     for i in range(iters):
         x = get_tensor(*shape, entropy=i)
         y = bn(x)
@@ -72,23 +72,23 @@ def batchnorm_running_grad(*shape, iters=10):
     return x.grad.cached_data
 
 def relu_forward(*shape):
-    f = ndl.nn.ReLU()
+    f = kim.nn.ReLU()
     x = get_tensor(*shape)
     return f(x).cached_data
 
 def relu_backward(*shape):
-    f = ndl.nn.ReLU()
+    f = kim.nn.ReLU()
     x = get_tensor(*shape)
     (f(x)**2).sum().backward()
     return x.grad.cached_data
 
 def layernorm_forward(shape, dim):
-    f = ndl.nn.LayerNorm1d(dim)
+    f = kim.nn.LayerNorm1d(dim)
     x = get_tensor(*shape)
     return f(x).cached_data
 
 def layernorm_backward(shape, dims):
-    f = ndl.nn.LayerNorm1d(dims)
+    f = kim.nn.LayerNorm1d(dims)
     x = get_tensor(*shape)
     (f(x)**4).sum().backward()
     return x.grad.cached_data
@@ -96,27 +96,27 @@ def layernorm_backward(shape, dims):
 def softmax_loss_forward(rows, classes):
     x = get_tensor(rows, classes)
     y = get_int_tensor(rows, low=0, high=classes)
-    f = ndl.nn.SoftmaxLoss()
+    f = kim.nn.SoftmaxLoss()
     return np.array(f(x, y).cached_data)
 
 def softmax_loss_backward(rows, classes):
     x = get_tensor(rows, classes)
     y = get_int_tensor(rows, low=0, high=classes)
-    f = ndl.nn.SoftmaxLoss()
+    f = kim.nn.SoftmaxLoss()
     loss = f(x, y)
     loss.backward()
     return x.grad.cached_data
 
 def linear_forward(lhs_shape, rhs_shape):
     np.random.seed(199)
-    f = ndl.nn.Linear(*lhs_shape)
+    f = kim.nn.Linear(*lhs_shape)
     f.bias.data = get_tensor(lhs_shape[-1])
     x = get_tensor(*rhs_shape)
     return f(x).cached_data
 
 def linear_backward(lhs_shape, rhs_shape):
     np.random.seed(199)
-    f = ndl.nn.Linear(*lhs_shape)
+    f = kim.nn.Linear(*lhs_shape)
     f.bias.data = get_tensor(lhs_shape[-1])
     x = get_tensor(*rhs_shape)
     (f(x)**2).sum().backward()
@@ -156,16 +156,16 @@ def init_a_tensor_of_shape(shape, init_fn):
 
 def nn_linear_weight_init():
     np.random.seed(1337)
-    f = ndl.nn.Linear(7, 4)
+    f = kim.nn.Linear(7, 4)
     f.weight.cached_data
     return f.weight.cached_data
 
 def nn_linear_bias_init():
     np.random.seed(1337)
-    f = ndl.nn.Linear(7, 4)
+    f = kim.nn.Linear(7, 4)
     return f.bias.cached_data
 
-class UselessModule(ndl.nn.Module):
+class UselessModule(kim.nn.Module):
     def __init__(self):
         super().__init__()
         self.stuff = {
@@ -232,7 +232,7 @@ def residual_block_num_params(dim, hidden_dim, norm):
 
 def residual_block_forward(dim, hidden_dim, norm, drop_prob):
     np.random.seed(2)
-    input_tensor = ndl.Tensor(np.random.randn(1, dim))
+    input_tensor = kim.Tensor(np.random.randn(1, dim))
     output_tensor = ResidualBlock(dim, hidden_dim, norm, drop_prob)(input_tensor)
     return output_tensor.numpy()
 

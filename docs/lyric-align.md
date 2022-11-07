@@ -1,6 +1,6 @@
-Audio-to-Lyrics Alignment Demo https://www.youtube.com/watch?v=0AOVLWo7k_c
+## Vocal separation
 
-https://music-ir.org/mirex/wiki/2020:Automatic_Lyrics-to-Audio_Alignment
+https://github.com/facebookresearch/demucs
 
 - - -
 

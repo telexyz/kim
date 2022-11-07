@@ -317,16 +317,14 @@ class NDArray:
     def process_slice(self, sl, dim) -> slice:
         """ Convert a slice to an explicit start/stop/step """
         start, stop, step = sl.start, sl.stop, sl.step
-        if start == None:
-            start = 0
-        if start < 0:
-            start = self.shape[dim]
-        if stop == None:
-            stop = self.shape[dim]
-        if stop < 0:
-            stop = self.shape[dim] + stop
-        if step == None:
-            step = 1
+
+        if start == None: start = 0
+        if start < 0: start += self.shape[dim]
+
+        if stop == None: stop = self.shape[dim]
+        if stop < 0: stop += self.shape[dim]
+
+        if step == None: step = 1
 
         # we're not gonna handle negative strides and that kind of thing
         assert stop > start, "Start must be less than stop"

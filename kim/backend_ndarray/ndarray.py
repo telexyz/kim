@@ -29,6 +29,12 @@ class BackendDevice:
     def enabled(self):
         return self.mod is not None
 
+    def zeros(self, *shape, dtype="float32"):
+        return NDArray(np.zeros(shape, dtype=dtype), device=self)
+
+    def ones(self, *shape, dtype="float32"):
+        return NDArray(np.ones(shape, dtype=dtype), device=self)
+
     def randn(self, *shape, dtype="float32"):
         '''Return a sample (or samples) from the “standard normal” distribution.'''
         return NDArray(np.random.randn(*shape).astype(dtype), device=self)
@@ -387,9 +393,8 @@ class NDArray:
             new_shape.append(math.ceil((idx.stop - idx.start) / idx.step))
             new_strides.append(self.strides[i] * idx.step)
             new_offset += idx.start * self.strides[i]
-            print(">>>", i, idx, self.strides[i], new_offset, new_shape, new_strides)
-        
-        print("__getitem__", idxs)
+            # print(">>>", i, idx, self.strides[i], new_offset, new_shape, new_strides)
+        # print("__getitem__", idxs)
 
         '''Returns:
             NDArray: a new NDArray object corresponding to the selected

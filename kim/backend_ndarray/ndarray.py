@@ -82,7 +82,8 @@ def cpu():
 
 def default_device():
     # return cpu_numpy()
-    return cpu()
+    # return cpu()
+    return cuda()
 
 
 def all_devices():

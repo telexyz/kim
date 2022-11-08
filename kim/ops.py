@@ -288,7 +288,22 @@ def summation(a, axes=None):
 
 class MatMul(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
-        return a @ b
+        if array_api == numpy: return a @ b
+        if a.ndim == 2: return a @ b
+
+        # batch matmul
+        assert a.ndim == 3
+        assert b.ndim == 3
+        assert a.shape[0] == b.shape[0]
+        assert a.shape[2] == b.shape[1]
+
+        c = numpy.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
+        for i in range(a.shape[0]):
+            _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
+            _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
+            c[i] = (_a @ _b).numpy()
+        return Tensor(c)
+
 
     def gradient(self, out_grad, node):
         a, b = node.inputs 

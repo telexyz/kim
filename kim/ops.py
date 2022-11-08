@@ -299,13 +299,17 @@ class MatMul(TensorOp):
                 _a = nd.array(a, device=nd_cuda)
                 _b = nd.array(b, device=nd_cuda)
                 return (_a @ _b).numpy()
+
             # batch matmul
-            c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
-            for i in range(a.shape[0]):
-                _a = nd.array(a[i], device=nd_cuda)
-                _b = nd.array(b[i], device=nd_cuda)
-                c[i] = (_a @ _b).numpy()
-            return c
+            if a.ndim == 3 and b.ndim == 3:
+                c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
+                for i in range(a.shape[0]):
+                    _a = nd.array(a[i], device=nd_cuda)
+                    _b = nd.array(b[i], device=nd_cuda)
+                    c[i] = (_a @ _b).numpy()
+                return c
+
+            return a @ b
 
 
         if a.ndim == 2: return a @ b

@@ -2,7 +2,7 @@
 
 - [-] Integrate CUDA backend to autograd
 
-- [ ] Integrate CUDA selected ops like matmul
+- [-] Integrate CUDA selected ops like matmul
 
 - [ ] Impl wav2vec model + inference
 

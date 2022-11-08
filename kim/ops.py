@@ -3,7 +3,9 @@ from typing import Optional, List
 from .autograd import NDArray, array_api
 from .autograd import Tensor, TensorOp
 from .autograd import TensorTuple, TensorTupleOp
-import numpy
+
+import numpy as np
+from kim import backend_ndarray as nd
 
 class MakeTensorTuple(TensorTupleOp):
     def compute(self, *args) -> tuple:
@@ -81,7 +83,7 @@ def add(a, b):
 
 class AddScalar(TensorOp):
     def __init__(self, scalar):
-        self.scalar = numpy.float32(scalar)
+        self.scalar = np.float32(scalar)
         # self.scalar = scalar
 
     def compute(self, a: NDArray):
@@ -108,7 +110,7 @@ def multiply(a, b):
 
 class MulScalar(TensorOp):
     def __init__(self, scalar):
-        self.scalar = numpy.float32(scalar)
+        self.scalar = np.float32(scalar)
 
     def compute(self, a: NDArray):
         return a * self.scalar
@@ -125,7 +127,7 @@ class PowerScalar(TensorOp):
     """Op raise a tensor to an (integer) power."""
 
     def __init__(self, scalar: int):
-        self.scalar = numpy.float32(scalar)
+        self.scalar = np.float32(scalar)
 
     def compute(self, a: NDArray) -> NDArray:
         return a ** self.scalar
@@ -169,7 +171,7 @@ def divide(a, b):
 
 class DivScalar(TensorOp):
     def __init__(self, scalar):
-        self.scalar = numpy.float32(scalar)
+        self.scalar = np.float32(scalar)
 
     def compute(self, a: NDArray):
         return a / self.scalar
@@ -288,21 +290,37 @@ def summation(a, axes=None):
 
 class MatMul(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
-        if array_api == numpy: return a @ b
-        if a.ndim == 2: return a @ b
+        if array_api == np:
+            nd_cuda = nd.cuda()
+            # nd_cuda = nd.cpu()
+            if not nd_cuda.enabled(): return a @ b
+            # using cuda backend
+            if a.ndim == 2:
+                _a = nd.array(a, device=nd_cuda)
+                _b = nd.array(b, device=nd_cuda)
+                return (_a @ _b).numpy()
+            # batch matmul
+            c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
+            for i in range(a.shape[0]):
+                _a = nd.array(a[i], device=nd_cuda)
+                _b = nd.array(b[i], device=nd_cuda)
+                c[i] = (_a @ _b).numpy()
+            return c
 
+
+        if a.ndim == 2: return a @ b
         # batch matmul
         assert a.ndim == 3
         assert b.ndim == 3
         assert a.shape[0] == b.shape[0]
         assert a.shape[2] == b.shape[1]
 
-        c = numpy.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
+        c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
         for i in range(a.shape[0]):
             _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
             _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
             c[i] = (_a @ _b).numpy()
-        return Tensor(c)
+        return nd.array(c)
 
 
     def gradient(self, out_grad, node):
@@ -347,8 +365,8 @@ def negate(a):
 
 class Log(TensorOp):
     def compute(self, a):
-        if isinstance(a, numpy.ndarray):
-            return numpy.log(a)
+        if array_api == np:
+            return np.log(a)
         else:
             return a.log()
 
@@ -373,8 +391,8 @@ def exp(a):
 
 class ReLU(TensorOp):
     def compute(self, a):
-        if isinstance(a, numpy.ndarray):
-            return numpy.maximum(a, 0)
+        if array_api == np:
+            return np.maximum(a, 0)
         else:
             return a.maximum(0)
 
@@ -392,7 +410,7 @@ class LogSumExp(TensorOp):
         self.axes = axes
 
     def compute(self, Z):
-        if array_api is numpy:
+        if array_api is np:
             Z_max = array_api.max(Z, axis=self.axes)
             Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
             Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)

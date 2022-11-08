@@ -399,7 +399,7 @@ class LogSumExp(TensorOp):
             ZZ = Z - Z_max_broadcast
             exp_ZZ = array_api.exp(ZZ)
             sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
-            return sum_exp_ZZ.log() + Z_max
+            return array_api.log(sum_exp_ZZ) + Z_max
         else:
             assert len(self.axes) == 1
             Z_max = Z.max(self.axes[0])

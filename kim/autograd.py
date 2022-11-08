@@ -131,7 +131,7 @@ class Tensor:
         # print(">>>", value)
         assert isinstance(value, Tensor)
         # assert value.dtype == self.dtype, "%s %s" % (value.dtype, self.dtype)
-        self.cached_data = value.realize_cached_data().astype(self.dtype)
+        self.cached_data = value.realize_cached_data()#.astype(self.dtype)
 
     @property
     def shape(self): return self.realize_cached_data().shape

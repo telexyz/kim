@@ -66,5 +66,10 @@ dot product are enery function, the function we use to score each of the key usi
 ![](files/scaled-dot-attention3.png)
 3 is dimensionality of the key.
 
-## Single head self-attention
-![](files/single-head-self-attention.png)
+## Self-attention
+![](files/self-attention-single-head.png)
+
+![](files/self-attention-multiple-head.png)
+
+## Attention is all we need
+![](files/attention-is-all-we-need.png)

@@ -1,12 +1,12 @@
-- [x] Finish cuda matmul shared mem https://youtu.be/jYCxVirq4d0?t=1335
-
-- [-] Integrate CUDA backend to autograd
-
-- [-] Integrate CUDA selected ops like matmul
+- [ ] hw4
 
 - [ ] Finish Paper [Sparse GPU Kernels for Deep Learning](docs/sparse.pdf)
 
 - [ ] Finish Lec14 [Training Large Models](https://www.youtube.com/watch?v=HSzVogM5IPo)
+
+- [-] Integrate CUDA backend to autograd
+
+- [-] Integrate CUDA selected ops like matmul
 
 - - -
 

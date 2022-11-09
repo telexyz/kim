@@ -3,22 +3,23 @@ import kim
 
 def rand(*shape, low=0.0, high=1.0, device=None, dtype="float32", requires_grad=False):
     """ Generate random numbers uniform between low and high """
-    if device is None: device = kim.cpu()
+    if device is None: device = kim.default_device()
     array = device.rand(*shape) * (high - low) + low
     return kim.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
     
 
 def randn(*shape, mean=0.0, std=1.0, device=None, dtype="float32", requires_grad=False):
     """ Generate random normal with specified mean and std deviation """
-    if device is None: device = kim.cpu()
+    if device is None: device = kim.default_device()
     array = device.randn(*shape) * std + mean
     return kim.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def constant(*shape, c=1.0, device=None, dtype="float32", requires_grad=False):
     """ Generate constant Tensor """
-    if device is None: device = kim.cpu()
-    array = device.ones(*shape, dtype=dtype) * c # note: can change dtype
+    if device is None: device = kim.default_device()
+    # array = device.ones(*shape, dtype=dtype) * c # note: can change dtype
+    array = device.full(shape, c, dtype=dtype)
     return kim.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
@@ -34,15 +35,29 @@ def zeros(*shape, device=None, dtype="float32", requires_grad=False):
 
 def randb(*shape, p=0.5, device=None, dtype="bool", requires_grad=False):
     """ Generate binary random Tensor """
-    if device is None: device = kim.cpu()
+    if device is None: device = kim.default_device()
     array = device.rand(*shape) <= p
     return kim.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def one_hot(n, i, device=None, dtype="float32", requires_grad=False):
     """ Generate one-hot encoding Tensor """
-    if device is None: device = kim.cpu()
-    return kim.Tensor(device.one_hot(n,i.numpy(), dtype=dtype), device=device, requires_grad=requires_grad)
+    if device is None: device = kim.default_device()
+    return kim.Tensor(device.one_hot(n,i.numpy().astype("int32"), dtype=dtype), device=device, requires_grad=requires_grad)
+
+
+def zeros_like(array, *, device=None, requires_grad=False):
+    if device is None: device = array.device
+    return zeros(
+        *array.shape, dtype=array.dtype, device=device, requires_grad=requires_grad
+    )
+
+
+def ones_like(array, *, device=None, requires_grad=False):
+    if device is None: device = array.device
+    return ones(
+        *array.shape, dtype=array.dtype, device=device, requires_grad=requires_grad
+    )
 
 
 def xavier_uniform(fan_in, fan_out, gain=1.0, **kwargs):

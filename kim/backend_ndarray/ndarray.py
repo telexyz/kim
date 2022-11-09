@@ -601,13 +601,40 @@ def array(a, dtype="float32", device=None):
 
 
 def empty(shape, dtype="float32", device=None):
-    device = device if device is not None else default_device()
-    return devie.empty(shape, dtype)
+    if device is None: device = default_device()
+    return device.empty(shape, dtype)
 
 
 def full(shape, fill_value, dtype="float32", device=None):
-    device = device if device is not None else default_device()
+    if device is None: device = default_device()
     return device.full(shape, fill_value, dtype)
+
 
 def broadcast_to(array, new_shape):
     return array.broadcast_to(new_shape)
+
+def reshape(array, new_shape):
+    return array.reshape(new_shape)
+
+
+def maximum(a, b):
+    return a.maximum(b)
+
+
+def log(a):
+    return a.log()
+
+
+def exp(a):
+    return a.exp()
+
+
+def tanh(a):
+    return a.tanh()
+
+def flip(a, axes):
+    return a.flip(axes)
+
+
+def summation(a, axis=None, keepdims=False):
+    return a.sum(axis=axis, keepdims=keepdims)

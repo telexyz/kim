@@ -1,8 +1,9 @@
 import numpy as np
 import kim
 
+# `tests/test_nd_backend.py` gradient check use `assert error < 4.2e-1`
 # def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
-def gradient_check(f, *args, tol=1e0, backward=False, **kwargs):
+def gradient_check(f, *args, tol=4.2e-1, backward=False, **kwargs):
     eps = 1e-4 # = 1^(-4)
     # Khởi tạo mảng numerical_grads = [0..] có shapes tương ứng với 
     # từng args đầu vào của hàm `f`

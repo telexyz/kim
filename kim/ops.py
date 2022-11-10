@@ -267,7 +267,7 @@ class Summation(TensorOp):
         self.axes = axes	
 
     def compute(self, a):
-        return a.sum(self.axes)
+        return a.sum(self.axes, keepdims=True)
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]

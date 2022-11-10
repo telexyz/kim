@@ -26,6 +26,8 @@ def backward_check(f, *args, **kwargs):
             args[i].realize_cached_data().flat[j] += eps
             numerical_grad[i].flat[j] = (f1 - f2) / (2 * eps)
     backward_grad = kim.Tensor(c, device=args[0].device), out
+
+    print(">>>", f, backward_grad[0].shape, numerical_grad[0].shape)
     error = sum(
         np.linalg.norm(backward_grad[i].numpy() - numerical_grad[i])
         for i in range(len(args))

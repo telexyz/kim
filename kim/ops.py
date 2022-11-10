@@ -267,7 +267,7 @@ class Summation(TensorOp):
         self.axes = axes	
 
     def compute(self, a):
-        return a.sum(self.axes, keepdims=True)
+        return a.sum(self.axes, keepdims=False)
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]
@@ -322,15 +322,13 @@ class MatMul(TensorOp):
 
         # batch matmul
         assert a.ndim == 3 and b.ndim == 2, "Only support 2D @ 2D, 3D @ 3D"
+        # print(a.shape, b.shape)
+        assert a.shape[2] == b.shape[0], "Matrix sizes not matched"
 
-        assert a.shape[0] == b.shape[0]
-        assert a.shape[2] == b.shape[1]
-
-        c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
+        c = np.zeros((a.shape[0], a.shape[1], b.shape[1])).astype(a.dtype)
         for i in range(a.shape[0]):
             _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
-            _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
-            c[i] = (_a @ _b).numpy()
+            c[i] = (_a @ b).numpy()
 
         return nd.array(c)
 

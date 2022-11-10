@@ -54,7 +54,8 @@ class Tensor:
     def numpy(self):
         data = self.realize_cached_data()
         if array_api is numpy: return data
-        else: return data.numpy()
+        if isinstance(data, tuple): return [x.numpy() for x in data]
+        return data.numpy()
 
     def assign_params_and_record_creation(
         self, op: Optional[TensorOp],

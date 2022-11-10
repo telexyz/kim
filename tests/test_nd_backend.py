@@ -34,8 +34,8 @@ def backward_check(f, *args, **kwargs):
     return [g.numpy() for g in backward_grad]
 
 
-_DEVICES = [kim.cpu(), pytest.param(kim.cuda(),
-    marks=pytest.mark.skipif(not kim.cuda().enabled(), reason="No GPU"))]
+_DEVICES = [kim.nd.cpu(), pytest.param(kim.nd.cuda(),
+    marks=pytest.mark.skipif(not kim.nd.cuda().enabled(), reason="No GPU"))]
 
 
 EWISE_OPS = {
@@ -53,7 +53,12 @@ def test_ewise_fn(fn, shape, device):
     _B = np.random.randn(*shape).astype(np.float32)
     A = kim.Tensor(nd.array(_A), device=device)
     B = kim.Tensor(nd.array(_B), device=device)
-    np.testing.assert_allclose(fn(_A, _B), fn(A, B).numpy(), atol=1e-5, rtol=1e-5)
+    fn_A_B = fn(_A, _B)
+    fnAB = fn(A, B).numpy()
+    # print(">>>", fn_A_B, fnAB)
+    # print(">>>", fn_A_B.dtype, fnAB.dtype)
+    # print(">>>", type(fn_A_B), type(fnAB))
+    np.testing.assert_allclose(fn_A_B, fnAB, atol=1e-5, rtol=1e-5)
 
 
 SCALAR_OPS = {
@@ -242,7 +247,7 @@ def test_logsumexp(shape, axes, device):
 
 ### MUGRADE ###
 
-TEST_GENERAL_SHAPES = [(3, 1, 2)]
+TEST_GENERAL_SHAPES = [(3, 1, 2), (1,1), (8, 15, 1)]
 TEST_MATMUL_DIMS = [(3, 4, 2), (8, 16, 16)]
 TEST_STACK_PARAMETERS = [((2, 3), 0, 3)]
 TEST_SUMMATION_PARAMETERS = [((3, 2), 0), ((2, 1, 2, 3), 3)]
@@ -265,10 +270,10 @@ def mugrade_submit(x):
 
 
 def submit_new_nd_backend():
-    #devices = [kim.cpu(), kim.cuda()] if kim.cuda().enabled() else [kim.cpu()]
-    devices = [kim.cpu(), kim.cuda()]
+    #devices = [kim.nd.cpu(), kim.nd.cuda()] if kim.nd.cuda().enabled() else [kim.nd.cpu()]
+    devices = [kim.nd.cpu(), kim.nd.cuda()]
 
-    if not kim.cuda().enabled():
+    if not kim.nd.cuda().enabled():
         print('You need a GPU to run some of these tests.')
         
     # ewise fn

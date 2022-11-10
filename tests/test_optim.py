@@ -17,7 +17,8 @@ def learn_model_1d(feature_size, nclasses, _model, optimizer, epochs=1, **kwargs
     np.random.seed(42)
     model = _model([])
     X = get_tensor(1024, feature_size).cached_data
-    y = get_int_tensor(1024, low=0, high=nclasses).cached_data.astype(np.uint8)
+    y = get_int_tensor(1024, low=0, high=nclasses).cached_data
+    # y = y.astype(np.uint8)
     m = X.shape[0]
     batch = 32
 

@@ -205,8 +205,8 @@ class NDArray:
 
     def numpy(self) -> np.ndarray:
         """ convert to a numpy array """
-        return self.device.to_numpy(self._handle, self._shape, 
-            self._strides, self._offset)
+        x = self.device.to_numpy(self._handle, self._shape, self._strides, self._offset)
+        return x
 
     def is_compact(self) -> bool:
         """Return true if array is compact in memory and internal size equals product
@@ -226,11 +226,13 @@ class NDArray:
                 self._shape, self._strides, self._offset)
             return out
 
+
     def as_strided(self, shape: tuple, strides: tuple) -> "NDArray":
         """ Restride the matrix without copying memory. """
         assert len(shape) == len(strides)
         return NDArray.make(shape, strides=strides,
             device=self.device, handle=self._handle)
+
 
     def reshape(self, new_shape: tuple) -> "NDArray":
         """
@@ -252,6 +254,7 @@ class NDArray:
         assert self.is_compact(), "%s is not compact" % (self)
         new_strides = self.compact_strides(new_shape)
         return self.as_strided(new_shape, new_strides)
+
 
     def permute(self, new_axes: tuple) -> "NDArray":
         """
@@ -619,6 +622,10 @@ def reshape(array, new_shape):
 
 def maximum(a, b):
     return a.maximum(b)
+
+
+def max(a, axis=None):
+    return a.max(axis)
 
 
 def log(a):

@@ -1,7 +1,8 @@
 import numpy as np
 import kim
 
-def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
+# def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
+def gradient_check(f, *args, tol=1e0, backward=False, **kwargs):
     eps = 1e-4 # = 1^(-4)
     # Khởi tạo mảng numerical_grads = [0..] có shapes tương ứng với 
     # từng args đầu vào của hàm `f`
@@ -38,6 +39,7 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
     )
 
     print(">>>", f, args, kwargs)
-    print(">>>", numerical_grads, computed_grads)
+    print(">>>", numerical_grads)
+    print(">>>", computed_grads)
     assert error < tol
     return computed_grads

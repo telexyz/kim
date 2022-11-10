@@ -72,6 +72,8 @@ bắt đầu quy trình backward.
 
 class EWiseAdd(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
+        # print(">>>", a.shape, b.shape)
+        if len(b.shape) > len(a.shape): a = a.reshape(b.shape)
         return a + b
 
     def gradient(self, out_grad: Tensor, node: Tensor):
@@ -292,8 +294,8 @@ class MatMul(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
         if array_api == np:
             nd_cuda = nd.cuda()
-            # nd_cuda = nd.cpu()
             if not nd_cuda.enabled(): return a @ b
+
             # using cuda backend
             if a.ndim == 2:
                 _a = nd.array(a, device=nd_cuda)
@@ -313,6 +315,7 @@ class MatMul(TensorOp):
 
 
         if a.ndim == 2: return a @ b
+
         # batch matmul
         assert a.ndim == 3
         assert b.ndim == 3
@@ -324,6 +327,7 @@ class MatMul(TensorOp):
             _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
             _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
             c[i] = (_a @ _b).numpy()
+
         return nd.array(c)
 
 
@@ -408,17 +412,13 @@ class LogSumExp(TensorOp):
         self.axes = axes
 
     def compute(self, Z):
-        if array_api is np:
-            Z_max = array_api.max(Z, axis=self.axes)
-            Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
-            Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
-            ZZ = Z - Z_max_broadcast
-            exp_ZZ = array_api.exp(ZZ)
-            sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
-            return array_api.log(sum_exp_ZZ) + Z_max
-        else:
-            assert len(self.axes) == 1
-            Z_max = Z.max(self.axes[0])
+        Z_max = array_api.max(Z, axis=self.axes)
+        Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
+        Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
+        ZZ = Z - Z_max_broadcast
+        exp_ZZ = array_api.exp(ZZ)
+        sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
+        return array_api.log(sum_exp_ZZ) + Z_max
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]

@@ -439,6 +439,7 @@ class LogSumExp(TensorOp):
         new_shape = list(shape)
         if self.axes:
             axes = self.axes
+            if isinstance(axes, int): axes = [axes]
         else:
             axes = range(len(shape))
         for i in axes: new_shape[i] = 1

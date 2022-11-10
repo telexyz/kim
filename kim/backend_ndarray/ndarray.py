@@ -645,3 +645,6 @@ def flip(a, axes):
 
 def summation(a, axis=None, keepdims=False):
     return a.sum(axis=axis, keepdims=keepdims)
+
+def sum(a, axis=None, keepdims=False):
+    return a.sum(axis=axis, keepdims=keepdims)

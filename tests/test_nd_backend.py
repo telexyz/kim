@@ -25,7 +25,7 @@ def backward_check(f, *args, **kwargs):
             f2 = (f(*args, **kwargs).numpy() * c).sum()
             args[i].realize_cached_data().flat[j] += eps
             numerical_grad[i].flat[j] = (f1 - f2) / (2 * eps)
-    backward_grad = out.op.gradient_as_tuple(kim.Tensor(c, device=args[0].device), out)
+    backward_grad = kim.Tensor(c, device=args[0].device), out
     error = sum(
         np.linalg.norm(backward_grad[i].numpy() - numerical_grad[i])
         for i in range(len(args))

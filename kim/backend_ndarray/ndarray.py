@@ -573,12 +573,11 @@ class NDArray:
         """ Return a view to the array set up for reduction functions and output array. """
         if axis is None:
             view = self.compact().reshape((1,) * (self.ndim - 1) + (prod(self.shape),))
-
+            # out = NDArray.make((1,), device=self.device)
             if keepdims:
                 out = NDArray.make((1,) * self.ndim, device=self.device)
             else:
-                out = NDArray.make((1,), device=self.device)
-
+                out = NDArray.make((), device=self.device)
             return view, out
 
         ### axist is not None

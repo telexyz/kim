@@ -19,7 +19,7 @@ def check_prng(*shape):
         Such that our tests will make sense
         So this matrix should match our to full precision
     """
-    return get_tensor(*shape).cached_data
+    return as_numpy(get_tensor(*shape).cached_data)
 
 def batchnorm_forward(*shape, affine=False):
     x = get_tensor(*shape)
@@ -247,7 +247,7 @@ def test_check_prng_contact_us_if_this_fails_1():
 
 
 def test_nn_linear_weight_init_1():
-    np.testing.assert_allclose(nn_linear_weight_init(),
+    np.testing.assert_allclose(as_numpy(nn_linear_weight_init()),
         np.array([[-4.4064468e-01, -6.3199449e-01, -4.1082984e-01, -7.5330488e-02],
                 [-3.3144259e-01,  3.4056887e-02, -4.4079605e-01,  8.8153863e-01],
                 [ 4.3108878e-01, -7.1237373e-01, -2.1057765e-01,  2.3793796e-01],
@@ -258,38 +258,38 @@ def test_nn_linear_weight_init_1():
          dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_linear_bias_init_1():
-    np.testing.assert_allclose(nn_linear_bias_init(),
+    np.testing.assert_allclose(as_numpy(nn_linear_bias_init()),
         np.array([[ 0.077647,  0.814139, -0.770975,  1.120297]],
          dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_linear_forward_1():
-    np.testing.assert_allclose(linear_forward((10, 5), (1, 10)),
+    np.testing.assert_allclose(as_numpy(linear_forward((10, 5), (1, 10))),
         np.array([[3.849948, 9.50499 , 2.38029 , 5.572587, 5.668391]],
          dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_linear_forward_2():
-    np.testing.assert_allclose(linear_forward((10, 5), (3, 10)),
+    np.testing.assert_allclose(as_numpy(linear_forward((10, 5), (3, 10))),
         np.array([[ 7.763089, 10.086785,  0.380316,  6.242502,  6.944664],
               [ 2.548275,  7.747925,  5.343155,  2.065694,  9.871243],
               [ 2.871696,  7.466332,  4.236925,  2.461897,  8.209476]],
          dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_linear_forward_3():
-    np.testing.assert_allclose(linear_forward((10, 5), (1, 3, 10)),
+    np.testing.assert_allclose(as_numpy(linear_forward((10, 5), (1, 3, 10))),
         np.array([[[ 4.351459,  8.782808,  3.935711,  3.03171 ,  8.014219],
                [ 5.214458,  8.728788,  2.376814,  5.672185,  4.974319],
                [ 1.343204,  8.639378,  2.604359, -0.282955,  9.864498]]],
          dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_linear_backward_1():
-    np.testing.assert_allclose(linear_backward((10, 5), (1, 10)),
+    np.testing.assert_allclose(as_numpy(linear_backward((10, 5), (1, 10))),
         np.array([[ 20.61148,   6.920893,  -1.625556, -13.497676,  -6.672813,
                18.762121,   7.286628,   8.18535 ,   2.741301,   5.723689]],
          dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_linear_backward_2():
     print(linear_backward((10, 5), (3, 10)))
-    np.testing.assert_allclose(linear_backward((10, 5), (3, 10)),
+    np.testing.assert_allclose(as_numpy(linear_backward((10, 5), (3, 10))),
         np.array([[ 24.548800,    8.775347 ,   4.387898 , -21.248514,   -3.9669373,
         24.256767, 6.3171115,   6.029777 ,   0.8809935,   3.5995162],
         [ 12.233745,   -3.792646 ,  -4.1903896,  -5.106719,  -12.004269 ,  11.967942, 11.939469,
@@ -299,7 +299,7 @@ def test_nn_linear_backward_2():
 
 def test_nn_linear_backward_3():
     print(linear_backward((10, 5), (1, 3, 10)))
-    np.testing.assert_allclose(linear_backward((10, 5), (1, 3, 10)),
+    np.testing.assert_allclose(as_numpy(linear_backward((10, 5), (1, 3, 10))),
         np.array([[[ 16.318823,    0.3890714,  -2.3196607, -10.607947 ,  -8.891977,
     16.04581 ,    9.475689 ,  14.571134 ,   6.581477 ,  10.204643 ],
     [ 20.291656,    7.48733  ,   1.2581345, -14.285493 ,  -6.0252004,
@@ -309,40 +309,45 @@ def test_nn_linear_backward_3():
 
 
 def test_nn_relu_forward_1():
-    np.testing.assert_allclose(relu_forward(2, 2),
+    np.testing.assert_allclose(as_numpy(relu_forward(2, 2)),
         np.array([[3.35, 4.2 ],
          [0.25, 4.5 ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_relu_backward_1():
-    np.testing.assert_allclose(relu_backward(3, 2),
+    np.testing.assert_allclose(as_numpy(relu_backward(3, 2)),
         np.array([[7.5, 2.7],
          [0.6, 0.2],
          [0.3, 6.7]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_sequential_forward_1():
     print(sequential_forward(batches=3))
-    np.testing.assert_allclose(sequential_forward(batches=3),
+    np.testing.assert_allclose(as_numpy(sequential_forward(batches=3)),
         np.array([[ 3.296263,  0.057031,  2.97568 , -4.618432, -0.902491],
               [ 2.465332, -0.228394,  2.069803, -3.772378, -0.238334],
               [ 3.04427 , -0.25623 ,  3.848721, -6.586399, -0.576819]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_sequential_backward_1():
-    np.testing.assert_allclose(sequential_backward(batches=3),
+    np.testing.assert_allclose(as_numpy(sequential_backward(batches=3)),
         np.array([[ 0.802697, -1.0971  ,  0.120842,  0.033051,  0.241105],
               [-0.364489,  0.651385,  0.482428,  0.925252, -1.233545],
               [ 0.802697, -1.0971  ,  0.120842,  0.033051,  0.241105]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 
 def test_nn_softmax_loss_forward_1():
-    np.testing.assert_allclose(softmax_loss_forward(5, 10),
-        np.array(4.041218, dtype=np.float32), rtol=1e-5, atol=1e-5)
+    x = softmax_loss_forward(5, 10)
+    y = np.array(4.041218, dtype=np.float32)
+    print(">>>", x, x.shape, y, y.shape)
+    print(">>>", type(x), type(y))
+    assert x == y
+    # np.testing.assert_allclose(x, y, rtol=1e-5, atol=1e-5)
 
 def test_nn_softmax_loss_forward_2():
-    np.testing.assert_allclose(softmax_loss_forward(3, 11),
-        np.array(3.3196716, dtype=np.float32), rtol=1e-5, atol=1e-5)
+    assert softmax_loss_forward(3, 11) == np.array(3.3196716, dtype=np.float32)
+    # np.testing.assert_allclose(softmax_loss_forward(3, 11),
+    #     np.array(3.3196716, dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_softmax_loss_backward_1():
-    np.testing.assert_allclose(softmax_loss_backward(5, 10),
+    np.testing.assert_allclose(as_numpy(softmax_loss_backward(5, 10)),
         np.array([[ 0.00068890385, 0.0015331834 , 0.013162163 , -0.16422154 ,
          0.023983022 , 0.0050903494 , 0.00076135644, 0.050772052 ,
          0.0062173656 , 0.062013146 ],
@@ -360,7 +365,7 @@ def test_nn_softmax_loss_backward_1():
          0.0071787895 , -0.19804356 ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_softmax_loss_backward_2():
-    np.testing.assert_allclose(softmax_loss_backward(3, 11),
+    np.testing.assert_allclose(as_numpy(softmax_loss_backward(3, 11)),
         np.array([[ 0.0027466794, 0.020295369 , 0.012940894 , 0.04748398 ,
          0.052477922 , 0.090957515 , 0.0028875037, 0.012940894 ,
          0.040869843 , 0.04748398 , -0.33108455 ],
@@ -372,53 +377,53 @@ def test_nn_softmax_loss_backward_2():
          0.0037236712, -0.3119051 , 0.04104668 ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_layernorm_forward_1():
-    np.testing.assert_allclose(layernorm_forward((3, 3), 3),
+    np.testing.assert_allclose(as_numpy(layernorm_forward((3, 3), 3)),
         np.array([[-0.06525002, -1.1908097 ,  1.2560595 ],
        [ 1.3919864 , -0.47999576, -0.911992  ],
        [ 1.3628436 , -1.0085043 , -0.3543393 ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_layernorm_forward_2():
-    np.testing.assert_allclose(layernorm_forward((2,10), 10),
+    np.testing.assert_allclose(as_numpy(layernorm_forward((2,10), 10)),
         np.array([[ 0.8297899 ,  1.6147263 , -1.525019  , -0.4036814 ,  0.306499  ,
          0.08223152,  0.6429003 , -1.3381294 ,  0.8671678 , -1.0764838 ],
        [-1.8211555 ,  0.39098236, -0.5864739 ,  0.853988  , -0.3806936 ,
          1.2655486 ,  0.33953735,  1.522774  , -0.8951442 , -0.68936396]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_layernorm_forward_3():
-    np.testing.assert_allclose(layernorm_forward((1,5), 5),
+    np.testing.assert_allclose(as_numpy(layernorm_forward((1,5), 5)),
         np.array([[-1.0435007 , -0.8478443 ,  0.7500162 , -0.42392215,  1.565251  ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 
 def test_nn_layernorm_backward_1():
-    np.testing.assert_allclose(layernorm_backward((3, 3), 3),
+    np.testing.assert_allclose(as_numpy(layernorm_backward((3, 3), 3)),
         np.array([[-2.8312206e-06, -6.6757202e-05,  6.9618225e-05],
        [ 1.9950867e-03, -6.8092346e-04, -1.3141632e-03],
        [ 4.4703484e-05, -3.2544136e-05, -1.1801720e-05]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_layernorm_backward_2():
-    np.testing.assert_allclose(layernorm_backward((2,10), 10),
+    np.testing.assert_allclose(as_numpy(layernorm_backward((2,10), 10)),
         np.array([[-2.301574  ,  4.353944  , -1.9396116 ,  2.4330146 , -1.1070801 ,
          0.01571643, -2.209449  ,  0.49513134, -2.261348  ,  2.5212562 ],
        [-9.042961  , -2.6184766 ,  4.5592957 , -4.2109876 ,  3.4247458 ,
         -1.9075732 , -2.2689414 ,  2.110825  ,  5.044025  ,  4.910048  ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_layernorm_backward_3():
-    np.testing.assert_allclose(layernorm_backward((1,5), 5),
+    np.testing.assert_allclose(as_numpy(layernorm_backward((1,5), 5)),
         np.array([[ 0.150192,  0.702322, -3.321343,  0.31219 ,  2.156639]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 
 def test_nn_layernorm_backward_4():
-    np.testing.assert_allclose(layernorm_backward((5,1), 1),
+    np.testing.assert_allclose(as_numpy(layernorm_backward((5,1), 1)),
         np.array([[ 0 ],  [0],[0],[0],[0]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 
 def test_nn_batchnorm_check_model_eval_switches_training_flag_1():
-    np.testing.assert_allclose(check_training_mode(),
+    np.testing.assert_allclose(as_numpy(check_training_mode()),
         np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
          0, 0, 0, 0, 0]), rtol=1e-5, atol=1e-5)
 
 def test_nn_batchnorm_forward_1():
-    np.testing.assert_allclose(batchnorm_forward(4, 4),
+    np.testing.assert_allclose(as_numpy(batchnorm_forward(4, 4)),
         np.array([[ 7.8712696e-01, -3.1676728e-01, -6.4885163e-01, 2.0828949e-01],
          [-7.9508079e-03, 1.0092355e+00, 1.6221288e+00, 8.5209310e-01],
          [ 8.5073310e-01, -1.4954363e+00, -9.6686421e-08, -1.6852506e+00],
@@ -428,7 +433,7 @@ def test_nn_batchnorm_forward_1():
 
 
 def test_nn_batchnorm_forward_affine_1():
-    np.testing.assert_allclose(batchnorm_forward(4, 4, affine=True),
+    np.testing.assert_allclose(as_numpy(batchnorm_forward(4, 4, affine=True)),
         np.array([[ 7.49529 , 0.047213316, 2.690084 , 5.5227957 ],
          [ 4.116209 , 3.8263211 , 7.79979 , 7.293256 ],
          [ 7.765616 , -3.3119934 , 4.15 , 0.31556034 ],
@@ -437,7 +442,7 @@ def test_nn_batchnorm_forward_affine_1():
 
 
 def test_nn_batchnorm_backward_1():
-    np.testing.assert_allclose(batchnorm_backward(5, 4),
+    np.testing.assert_allclose(as_numpy(batchnorm_backward(5, 4)),
         np.array([[ 2.1338463e-04, 5.2094460e-06, -2.8359889e-05, -4.4368207e-06],
          [-3.8480759e-04, -4.0292739e-06, 1.8370152e-05, -1.1172146e-05],
          [ 2.5629997e-04, -1.1003018e-05, -9.0479853e-06, 5.5171549e-06],
@@ -446,7 +451,7 @@ def test_nn_batchnorm_backward_1():
          dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_nn_batchnorm_backward_affine_1():
-    np.testing.assert_allclose(batchnorm_backward(5, 4, affine=True),
+    np.testing.assert_allclose(as_numpy(batchnorm_backward(5, 4, affine=True)),
         np.array([[ 3.8604736e-03, 4.2676926e-05, -1.4114380e-04, -3.2424927e-05],
          [-6.9427490e-03, -3.3140182e-05, 9.1552734e-05, -8.5830688e-05],
          [ 4.6386719e-03, -8.9883804e-05, -4.5776367e-05, 4.3869019e-05],
@@ -456,19 +461,19 @@ def test_nn_batchnorm_backward_affine_1():
 
 
 def test_nn_batchnorm_running_mean_1():
-    np.testing.assert_allclose(batchnorm_running_mean(4, 3),
+    np.testing.assert_allclose(as_numpy(batchnorm_running_mean(4, 3)),
         np.array([2.020656, 1.69489 , 1.498846], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 
 
 def test_nn_batchnorm_running_var_1():
-    np.testing.assert_allclose(batchnorm_running_var(4, 3),
+    np.testing.assert_allclose(as_numpy(batchnorm_running_var(4, 3)),
         np.array([1.412775, 1.386191, 1.096604], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 
 
 def test_nn_batchnorm_running_grad_1():
-    np.testing.assert_allclose(batchnorm_running_grad(4, 3),
+    np.testing.assert_allclose(as_numpy(batchnorm_running_grad(4, 3)),
         np.array([[ 8.7022781e-06, -4.9751252e-06, 9.5367432e-05],
          [ 6.5565109e-06, -7.2401017e-06, -2.3484230e-05],
          [-3.5762787e-06, -4.5262277e-07, 1.6093254e-05],

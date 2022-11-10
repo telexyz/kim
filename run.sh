@@ -6,7 +6,10 @@
 
 # https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
 
-
+python3 -m pytest tests/test_init.py tests/test_autograd.py tests/test_ndarray.py pytest tests/ops.py
+python3 -m pytest tests/test_nn.py
+# python3 -m tests/test_nd_backend.py
+# python3 -m tests/test_mlp_resnet.py
 
 #######
 # hw3 #

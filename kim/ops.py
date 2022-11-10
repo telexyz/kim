@@ -413,8 +413,10 @@ class LogSumExp(TensorOp):
 
     def compute(self, Z):
         Z_max = array_api.max(Z, axis=self.axes)
-        Z_max_reshape = array_api.reshape(Z_max, self.new_shape(Z.shape))
-        Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
+        new_shape = self.new_shape(Z.shape)
+        print(">>>", new_shape, Z.shape, Z_max.shape, self.axes)
+        Z_max_reshape = Z_max.reshape(new_shape)
+        Z_max_broadcast = Z_max_reshape.broadcast_to(Z.shape)
         ZZ = Z - Z_max_broadcast
         exp_ZZ = array_api.exp(ZZ)
         sum_exp_ZZ = array_api.sum(exp_ZZ, self.axes)
@@ -435,19 +437,21 @@ class LogSumExp(TensorOp):
         y = broadcast_to(y, a.shape)
         return (y * normalize,)
 
+
     def new_shape(self, shape):
-        new_shape = list(shape)
-        if self.axes:
+        if self.axes is None:
+            axes = range(len(shape))
+        else:
             axes = self.axes
             if isinstance(axes, int): axes = [axes]
-        else:
-            axes = range(len(shape))
+
+        new_shape = list(shape)
         for i in axes: new_shape[i] = 1
         return tuple(new_shape)
 
+
 def logsumexp(a, axes=None):
     return LogSumExp(axes=axes)(a)
-
 
 
 

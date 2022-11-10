@@ -399,7 +399,7 @@ class ReLU(TensorOp):
         return array_api.maximum(a, 0)
 
     def gradient(self, out_grad, node):
-        a = node.inputs[0].numpy()
+        a = node.inputs[0].realize_cached_data()
         relu_a = (a > 0)
         return Tensor(out_grad.numpy() * relu_a),
 
@@ -419,9 +419,11 @@ class LogSumExp(TensorOp):
         return ZZ.exp().sum(self.axes).log() + Z_max
 
     def gradient(self, out_grad, node):
-        a = node.inputs[0]
-        m = array_api.max(a.numpy(), axis=self.axes, keepdims=True)
-        exp_a = exp(a - m)
+        a = node.inputs[0].realize_cached_data()
+        print(">>>", array_api, array_api.max, type(a))
+        m = a.max(axis=self.axes, keepdims=True)
+        print(">>>", a.shape, m.shape)
+        exp_a = exp(Tensor(a - m.broadcast_to(a.shape)))
         # 
         new_shape = self.new_shape(a.shape)
         sum_exp_a = summation(exp_a, self.axes)

@@ -283,7 +283,11 @@ class Summation(TensorOp):
             new_shape = new_shape[0:idx] + (1,) + new_shape[idx:]        
         # Các thao tác trên chỉ để tính new_shape
 
-        x = reshape(out_grad, new_shape)
+        if len(out_grad.shape) == len(a.shape):
+            x = out_grad
+        else:
+            x = reshape(out_grad, new_shape)
+
         return broadcast_to(x, a.shape),
 
 def summation(a, axes=None):
@@ -297,13 +301,13 @@ class MatMul(TensorOp):
             if not nd_cuda.enabled(): return a @ b
 
             # using cuda backend
-            if a.ndim == 2:
+            if a.ndim == 2 and a.ndim == 2:
                 _a = nd.array(a, device=nd_cuda)
                 _b = nd.array(b, device=nd_cuda)
                 return (_a @ _b).numpy()
 
             # batch matmul
-            if a.ndim == 3 and b.ndim == 3:
+            if a.ndim == 3 and b.ndim == 2:
                 c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
                 for i in range(a.shape[0]):
                     _a = nd.array(a[i], device=nd_cuda)
@@ -314,11 +318,11 @@ class MatMul(TensorOp):
             return a @ b
 
 
-        if a.ndim == 2: return a @ b
+        if a.ndim == 2 and b.ndim == 2: return a @ b
 
         # batch matmul
-        assert a.ndim == 3
-        assert b.ndim == 3
+        assert a.ndim == 3 and b.ndim == 2, "Only support 2D @ 2D, 3D @ 3D"
+
         assert a.shape[0] == b.shape[0]
         assert a.shape[2] == b.shape[1]
 

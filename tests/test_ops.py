@@ -437,6 +437,8 @@ def test_broadcast_to_backward():
 def test_summation_backward():
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4)), axes=(1,))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4)), axes=(0,))
+
+def test_summation_backward_multi_axis():
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4)), axes=(0,1))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4,1)), axes=(0,1))
 

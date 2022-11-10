@@ -313,7 +313,7 @@ class NDArray:
             NDArray: the new NDArray object with the new broadcast shape; should
             point to the same memory as the original array.
         """
-        if len(self.shape) != len(new_shape): raise ValueError
+        if len(self.shape) != len(new_shape): raise ValueError("Only broadcast to same shape len")
         new_strides = []
         for i in range(len(self.shape)):
             if self.shape[i] != 1 and self.shape[i] != new_shape[i]: raise ValueError
@@ -533,7 +533,7 @@ class NDArray:
         the GPU version will just work natively by tiling any input size).
         """
 
-        assert self.ndim == 2 and other.ndim == 2
+        assert self.ndim == 2 and other.ndim == 2, "__matmul__ 2D arrays only"
         assert self.shape[1] == other.shape[0]
 
         m, n, p = self.shape[0], self.shape[1], other.shape[1]

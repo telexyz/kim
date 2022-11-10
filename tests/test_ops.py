@@ -5,7 +5,9 @@ import kim.nn as nn
 from gradient_check import *
 
 def as_numpy(x):
-    return x if isinstance(x, np.ndarray) else x.numpy()
+    if isinstance(x, np.ndarray): return x
+    if isinstance(x, np.float32): return x
+    return x.numpy()
 
 def get_tensor(*shape, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)

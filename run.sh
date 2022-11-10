@@ -7,8 +7,8 @@
 # https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
 
 python3 -m pytest tests/test_optim.py
-# python3 -m pytest tests/test_nd_backend.py
-# python3 -m pytest tests/test_data.py
+python3 -m pytest tests/test_nd_backend.py
+python3 -m pytest tests/test_data.py
 
 # DONE
 python3 -m pytest \

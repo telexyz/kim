@@ -1,6 +1,14 @@
 # pip3 install pytest numpy numdifftools pybind11 requests
 
 #######
+# hw4 #
+#######
+
+# https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
+
+
+
+#######
 # hw3 #
 #######
 
@@ -23,6 +31,7 @@
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw3_submit.py -k "ndarray_cpu_matmul"
 
 
+
 #######
 # hw2 #
 #######
@@ -37,6 +46,8 @@
 # python3 -m pytest tests/test_mlp_resnet.py -v -k "test_mlp_eval_epoch_1"
 # python3 -m pytest tests/test_mlp_resnet.py -v -k "test_mlp_train_mnist_1"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/hw2_submit.py -k "mlp_resnet"
+
+
 
 #######
 # hw1 #

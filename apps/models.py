@@ -1,13 +1,13 @@
 import sys
 sys.path.append('./python')
-import needle as ndl
-import needle.nn as nn
+import kim as kim
+import kim.nn as nn
 import math
 import numpy as np
 np.random.seed(0)
 
 
-class ResNet9(ndl.nn.Module):
+class ResNet9(kim.nn.Module):
     def __init__(self, device=None, dtype="float32"):
         super().__init__()
         ### BEGIN YOUR SOLUTION ###
@@ -58,8 +58,8 @@ class LanguageModel(nn.Module):
 
 if __name__ == "__main__":
     model = ResNet9()
-    x = ndl.ops.randu((1, 32, 32, 3), requires_grad=True)
+    x = kim.ops.randu((1, 32, 32, 3), requires_grad=True)
     model(x)
-    cifar10_train_dataset = ndl.data.CIFAR10Dataset("data/cifar-10-batches-py", train=True)
-    train_loader = ndl.data.DataLoader(cifar10_train_dataset, 128, ndl.cpu(), dtype="float32")
+    cifar10_train_dataset = kim.data.CIFAR10Dataset("data/cifar-10-batches-py", train=True)
+    train_loader = kim.data.DataLoader(cifar10_train_dataset, 128, kim.cpu(), dtype="float32")
     print(dataset[1][0].shape)

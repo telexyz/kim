@@ -1,12 +1,12 @@
 import sys
 sys.path.append('../python')
-import needle as ndl
-import needle.nn as nn
-from needle import backend_ndarray as nd
+import kim as kim
+import kim.nn as nn
+from kim import backend_ndarray as nd
 from models import *
 import time
 
-device = ndl.cpu()
+device = kim.cpu()
 
 ### CIFAR-10 training ###
 
@@ -33,7 +33,7 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
     ### END YOUR SOLUTION
 
 
-def train_cifar10(model, dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
+def train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,
           lr=0.001, weight_decay=0.001, loss_fn=nn.SoftmaxLoss):
     """
     Performs {n_epochs} epochs of training.
@@ -104,7 +104,7 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
     ### END YOUR SOLUTION
 
 
-def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=ndl.optim.SGD,
+def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=kim.optim.SGD,
           lr=4.0, weight_decay=0.0, loss_fn=nn.SoftmaxLoss, clip=None,
           device=None, dtype="float32"):
     """
@@ -154,22 +154,22 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
 
 if __name__ == "__main__":
     ### For testing purposes
-    device = ndl.cpu()
-    #dataset = ndl.data.CIFAR10Dataset("./data/cifar-10-batches-py", train=True)
-    #dataloader = ndl.data.DataLoader(\
+    device = kim.cpu()
+    #dataset = kim.data.CIFAR10Dataset("./data/cifar-10-batches-py", train=True)
+    #dataloader = kim.data.DataLoader(\
     #         dataset=dataset,
     #         batch_size=128,
     #         shuffle=True
     #         )
     #
     #model = ResNet9(device=device, dtype="float32")
-    #train_cifar10(model, dataloader, n_epochs=10, optimizer=ndl.optim.Adam,
+    #train_cifar10(model, dataloader, n_epochs=10, optimizer=kim.optim.Adam,
     #      lr=0.001, weight_decay=0.001)
 
-    corpus = ndl.data.Corpus("./data/ptb")
+    corpus = kim.data.Corpus("./data/ptb")
     seq_len = 40
     batch_size = 16
     hidden_size = 100
-    train_data = ndl.data.batchify(corpus.train, batch_size, device=device, dtype="float32")
+    train_data = kim.data.batchify(corpus.train, batch_size, device=device, dtype="float32")
     model = LanguageModel(1, len(corpus.dictionary), hidden_size, num_layers=2, device=device)
     train_ptb(model, train_data, seq_len, n_epochs=10, device=device)

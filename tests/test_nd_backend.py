@@ -6,8 +6,8 @@ import pytest
 import mugrade
 import torch
 
-import needle as ndl
-from needle import backend_ndarray as nd
+import kim as kim
+from kim import backend_ndarray as nd
 
 np.random.seed(1)
 
@@ -25,7 +25,7 @@ def backward_check(f, *args, **kwargs):
             f2 = (f(*args, **kwargs).numpy() * c).sum()
             args[i].realize_cached_data().flat[j] += eps
             numerical_grad[i].flat[j] = (f1 - f2) / (2 * eps)
-    backward_grad = out.op.gradient_as_tuple(ndl.Tensor(c, device=args[0].device), out)
+    backward_grad = out.op.gradient_as_tuple(kim.Tensor(c, device=args[0].device), out)
     error = sum(
         np.linalg.norm(backward_grad[i].numpy() - numerical_grad[i])
         for i in range(len(args))
@@ -34,8 +34,8 @@ def backward_check(f, *args, **kwargs):
     return [g.numpy() for g in backward_grad]
 
 
-_DEVICES = [ndl.cpu(), pytest.param(ndl.cuda(),
-    marks=pytest.mark.skipif(not ndl.cuda().enabled(), reason="No GPU"))]
+_DEVICES = [kim.cpu(), pytest.param(kim.cuda(),
+    marks=pytest.mark.skipif(not kim.cuda().enabled(), reason="No GPU"))]
 
 
 EWISE_OPS = {
@@ -51,8 +51,8 @@ GENERAL_SHAPES = [(1, 1, 1), (4, 5, 6)]
 def test_ewise_fn(fn, shape, device):
     _A = np.random.randn(*shape).astype(np.float32)
     _B = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    B = ndl.Tensor(nd.array(_B), device=device)
+    A = kim.Tensor(nd.array(_A), device=device)
+    B = kim.Tensor(nd.array(_B), device=device)
     np.testing.assert_allclose(fn(_A, _B), fn(A, B).numpy(), atol=1e-5, rtol=1e-5)
 
 
@@ -68,7 +68,7 @@ SCALAR_OP_NAMES = [k for k in SCALAR_OPS]
 def test_scalar_fn(fn, shape, device):
     _A = np.random.randn(*shape).astype(np.float32)
     _B = np.random.randn(1).astype(np.float32).item()
-    A = ndl.Tensor(nd.array(_A), device=device)
+    A = kim.Tensor(nd.array(_A), device=device)
     np.testing.assert_allclose(fn(_A, _B), fn(A, _B).numpy(), atol=1e-5, rtol=1e-5)
 
 
@@ -88,8 +88,8 @@ MATMUL_DIMS = [(16, 16, 16),
 def test_matmul(m, n, p, device):
     _A = np.random.randn(m, n).astype(np.float32)
     _B = np.random.randn(n, p).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    B = ndl.Tensor(nd.array(_B), device=device)
+    A = kim.Tensor(nd.array(_A), device=device)
+    B = kim.Tensor(nd.array(_B), device=device)
     np.testing.assert_allclose(_A @ _B, (A @ B).numpy(), atol=1e-5, rtol=1e-5)
 
 
@@ -98,7 +98,7 @@ def test_matmul(m, n, p, device):
 def test_power(shape, device):
     _A = np.random.randn(*shape).astype(np.float32)
     _B = np.random.randint(1)
-    A = ndl.Tensor(nd.array(_A), device=device)
+    A = kim.Tensor(nd.array(_A), device=device)
     np.testing.assert_allclose(_A**_B, (A**_B).numpy(), atol=1e-5, rtol=1e-5)
 
 
@@ -106,40 +106,40 @@ def test_power(shape, device):
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_log(shape, device):
     _A = np.random.randn(*shape).astype(np.float32) + 5.
-    A = ndl.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.log(_A), ndl.log(A).numpy(), atol=1e-5, rtol=1e-5)
+    A = kim.Tensor(nd.array(_A), device=device)
+    np.testing.assert_allclose(np.log(_A), kim.log(A).numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("shape", GENERAL_SHAPES)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_exp(shape, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.exp(_A), ndl.exp(A).numpy(), atol=1e-5, rtol=1e-5)
+    A = kim.Tensor(nd.array(_A), device=device)
+    np.testing.assert_allclose(np.exp(_A), kim.exp(A).numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("shape", GENERAL_SHAPES)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_relu(shape, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.maximum(_A, 0), ndl.relu(A).numpy(), atol=1e-5, rtol=1e-5)
+    A = kim.Tensor(nd.array(_A), device=device)
+    np.testing.assert_allclose(np.maximum(_A, 0), kim.relu(A).numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("shape", GENERAL_SHAPES)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_tanh(shape, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.tanh(_A), ndl.tanh(A).numpy(), atol=1e-5, rtol=1e-5)
+    A = kim.Tensor(nd.array(_A), device=device)
+    np.testing.assert_allclose(np.tanh(_A), kim.tanh(A).numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("shape", GENERAL_SHAPES)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_tanh_backward(shape, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    backward_check(ndl.tanh, A)
+    A = kim.Tensor(nd.array(_A), device=device)
+    backward_check(kim.tanh, A)
 
 
 STACK_PARAMETERS = [((5, 5), 0, 1),
@@ -149,9 +149,9 @@ STACK_PARAMETERS = [((5, 5), 0, 1),
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_stack(shape, axis, l, device):
     _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
-    A = [ndl.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
+    A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
     A_t = [torch.Tensor(_A[i]) for i in range(l)]
-    out = ndl.stack(A, axis=axis)
+    out = kim.stack(A, axis=axis)
     out_t = torch.stack(A_t, dim=axis)
     np.testing.assert_allclose(out_t.numpy(), out.numpy(), atol=1e-5, rtol=1e-5)
 
@@ -160,11 +160,11 @@ def test_stack(shape, axis, l, device):
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_stack_backward(shape, axis, l, device):
     _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
-    A = [ndl.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
+    A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
     A_t = [torch.Tensor(_A[i]) for i in range(l)]
     for i in range(l):
         A_t[i].requires_grad = True
-    ndl.stack(A, axis=axis).sum().backward()
+    kim.stack(A, axis=axis).sum().backward()
     torch.stack(A_t, dim=axis).sum().backward()
     for i in range(l):
         np.testing.assert_allclose(A_t[i].grad.numpy(), A[i].grad.numpy(), atol=1e-5, rtol=1e-5)
@@ -179,16 +179,16 @@ SUMMATION_PARAMETERS = [((1, 1, 1), None),
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_summation(shape, axes, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.sum(_A, axes), ndl.summation(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
+    A = kim.Tensor(nd.array(_A), device=device)
+    np.testing.assert_allclose(np.sum(_A, axes), kim.summation(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("shape, axes", SUMMATION_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_summation_backward(shape, axes, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    backward_check(ndl.summation, A, axes=axes)
+    A = kim.Tensor(nd.array(_A), device=device)
+    backward_check(kim.summation, A, axes=axes)
 
 
 BROADCAST_SHAPES = [((1, 1, 1), (3, 3, 3)),
@@ -197,8 +197,8 @@ BROADCAST_SHAPES = [((1, 1, 1), (3, 3, 3)),
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_broadcast_to(shape, shape_to, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.broadcast_to(_A, shape_to), ndl.broadcast_to(A, shape_to).numpy(), atol=1e-5, rtol=1e-5)
+    A = kim.Tensor(nd.array(_A), device=device)
+    np.testing.assert_allclose(np.broadcast_to(_A, shape_to), kim.broadcast_to(A, shape_to).numpy(), atol=1e-5, rtol=1e-5)
 
 
 RESHAPE_SHAPES = [((1, 1, 1), (1,)),
@@ -207,8 +207,8 @@ RESHAPE_SHAPES = [((1, 1, 1), (1,)),
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_reshape(shape, shape_to, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.reshape(_A, shape_to), ndl.reshape(A, shape_to).numpy(), atol=1e-5, rtol=1e-5)
+    A = kim.Tensor(nd.array(_A), device=device)
+    np.testing.assert_allclose(np.reshape(_A, shape_to), kim.reshape(A, shape_to).numpy(), atol=1e-5, rtol=1e-5)
 
 
 TRANSPOSE_SHAPES = [(1, 1, 1), (4, 5, 6)]
@@ -218,25 +218,25 @@ TRANSPOSE_AXES = [(0, 1), (0, 2), None]
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_transpose(shape, axes, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
+    A = kim.Tensor(nd.array(_A), device=device)
     if axes is None:
         np_axes = (_A.ndim - 2, _A.ndim - 1)
     else:
         np_axes = axes
-    np.testing.assert_allclose(np.swapaxes(_A, np_axes[0], np_axes[1]), ndl.transpose(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(np.swapaxes(_A, np_axes[0], np_axes[1]), kim.transpose(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("shape, axes", SUMMATION_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
 def test_logsumexp(shape, axes, device):
     _A = np.random.randn(*shape).astype(np.float32)
-    A = ndl.Tensor(nd.array(_A), device=device)
+    A = kim.Tensor(nd.array(_A), device=device)
     A_t = torch.Tensor(_A)
     if axes is None:
         t_axes = tuple(list(range(len(shape))))
     else:
         t_axes = axes
-    np.testing.assert_allclose(torch.logsumexp(A_t, dim=t_axes).numpy(), ndl.logsumexp(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(torch.logsumexp(A_t, dim=t_axes).numpy(), kim.logsumexp(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
 
 
 
@@ -265,25 +265,25 @@ def mugrade_submit(x):
 
 
 def submit_new_nd_backend():
-    #devices = [ndl.cpu(), ndl.cuda()] if ndl.cuda().enabled() else [ndl.cpu()]
-    devices = [ndl.cpu(), ndl.cuda()]
+    #devices = [kim.cpu(), kim.cuda()] if kim.cuda().enabled() else [kim.cpu()]
+    devices = [kim.cpu(), kim.cuda()]
 
-    if not ndl.cuda().enabled():
+    if not kim.cuda().enabled():
         print('You need a GPU to run some of these tests.')
         
     # ewise fn
     for (device, shape, fn_name) in itertools.product(devices, TEST_GENERAL_SHAPES, EWISE_OP_NAMES):
         _A = np.random.randn(*shape).astype(np.float32)
         _B = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        B = ndl.Tensor(nd.array(_B), device=device)
+        A = kim.Tensor(nd.array(_A), device=device)
+        B = kim.Tensor(nd.array(_B), device=device)
         mugrade_submit(EWISE_OPS[fn_name](A, B).numpy())
 
     # scalar fn
     for (device, shape, fn_name) in itertools.product(devices, TEST_GENERAL_SHAPES, SCALAR_OP_NAMES):
         _A = np.random.randn(*shape).astype(np.float32)
         _B = np.random.randn(1).astype(np.float32).item()
-        A = ndl.Tensor(nd.array(_A), device=device)
+        A = kim.Tensor(nd.array(_A), device=device)
         mugrade_submit(EWISE_OPS[fn_name](A, _B).numpy())
 
     # matmul
@@ -291,41 +291,41 @@ def submit_new_nd_backend():
         m, n, p = matmul_dim
         _A = np.random.randn(m, n).astype(np.float32)
         _B = np.random.randn(n, p).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        B = ndl.Tensor(nd.array(_B), device=device)
+        A = kim.Tensor(nd.array(_A), device=device)
+        B = kim.Tensor(nd.array(_B), device=device)
         mugrade_submit((A @ B).numpy())
 
     # power
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
         _B = np.random.randint(1)
-        A = ndl.Tensor(nd.array(_A), device=device)
+        A = kim.Tensor(nd.array(_A), device=device)
         mugrade_submit((A**_B).numpy())
 
     # log
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32) + 5.
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.log(A).numpy())
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.log(A).numpy())
 
     # exp
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.exp(A).numpy())
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.exp(A).numpy())
 
     # tanh
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.tanh(A).numpy())
-        mugrade_submit(backward_check(ndl.tanh, A))
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.tanh(A).numpy())
+        mugrade_submit(backward_check(kim.tanh, A))
 
     # stack
     for (device, (shape, axis, l)) in itertools.product(devices, TEST_STACK_PARAMETERS):
         _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
-        A = [ndl.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
-        out = ndl.stack(A, axis=axis)
+        A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
+        out = kim.stack(A, axis=axis)
         mugrade_submit(out.numpy())
         out.backward()
         mugrade_submit(A[0].grad.numpy())
@@ -333,34 +333,34 @@ def submit_new_nd_backend():
     # summation
     for (device, (shape, axes)) in itertools.product(devices, TEST_SUMMATION_PARAMETERS):
         _A = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.summation(A, axes).numpy())
-        mugrade_submit(backward_check(ndl.summation, A, axes=axes))
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.summation(A, axes).numpy())
+        mugrade_submit(backward_check(kim.summation, A, axes=axes))
 
     # broadcast
     for (device, (shape, shape_to)) in itertools.product(devices, TEST_BROADCAST_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.broadcast_to(A, shape_to).numpy())
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.broadcast_to(A, shape_to).numpy())
 
     # reshape
     for (device, (shape, shape_to)) in itertools.product(devices, TEST_RESHAPE_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.reshape(A, shape_to).numpy())
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.reshape(A, shape_to).numpy())
 
     # transpose
     for (device, shape, axes) in itertools.product(devices, TEST_TRANSPOSE_SHAPES, TEST_TRANSPOSE_AXES):
         _A = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.transpose(A, axes=axes).numpy())
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.transpose(A, axes=axes).numpy())
 
     # logsumexp
     for (device, (shape, axes)) in itertools.product(devices, TEST_LOGSUMEXP_PARAMETERS):
         _A = np.random.randn(*shape).astype(np.float32)
-        A = ndl.Tensor(nd.array(_A), device=device)
-        mugrade_submit(ndl.logsumexp(A, axes).numpy())
-        mugrade_submit(backward_check(ndl.logsumexp, A, axes=axes))
+        A = kim.Tensor(nd.array(_A), device=device)
+        mugrade_submit(kim.logsumexp(A, axes).numpy())
+        mugrade_submit(backward_check(kim.logsumexp, A, axes=axes))
 
 
 if __name__ == "__main__":

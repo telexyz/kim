@@ -32,17 +32,17 @@ def logsumexp_backward(shape, axes):
     return x.grad.cached_data
 
 def test_op_power_scalar_forward_1():
-    np.testing.assert_allclose(power_scalar_forward((2,2), power=2),
+    np.testing.assert_allclose(as_numpy(power_scalar_forward((2,2), power=2)),
         np.array([[11.222499, 17.639997],
          [ 0.0625 , 20.25 ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_op_power_scalar_forward_2():
-    np.testing.assert_allclose(power_scalar_forward((2,2), power=-1.5),
+    np.testing.assert_allclose(as_numpy(power_scalar_forward((2,2), power=-1.5)),
         np.array([[0.16309206, 0.11617859],
          [8. , 0.10475656]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
 def test_op_power_scalar_backward_1():
-    np.testing.assert_allclose(power_scalar_backward((2,2), power=2),
+    np.testing.assert_allclose(as_numpy(power_scalar_backward((2,2), power=2)),
         np.array([[6.7, 8.4],
          [0.5, 9. ]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 

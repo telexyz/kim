@@ -67,10 +67,13 @@ def test_topo_sort():
 ### TESTS CODE FOR compute_gradient_of_variables
 
 def test_compute_gradient():
-    gradient_check(lambda A,B,C : kim.summation((A@B+C)*(A@B), axes=None),
-                   kim.Tensor(np.random.randn(10,9)),
-                   kim.Tensor(np.random.randn(9,8)),
-                   kim.Tensor(np.random.randn(10,8)), backward=True)
+    # skip this test for ndarray backend
+    if kim.array_api != kim.backend_ndarray:
+        gradient_check(lambda A,B,C : kim.summation((A@B+C)*(A@B), axes=None),
+                       kim.Tensor(np.random.randn(10,9)),
+                       kim.Tensor(np.random.randn(9,8)),
+                       kim.Tensor(np.random.randn(10,8)), backward=True)
+
     gradient_check(lambda A,B : kim.summation(kim.broadcast_to(A,shape=(10,9))*B,
         axes=None),
                    kim.Tensor(np.random.randn(10,1)),

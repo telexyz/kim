@@ -187,7 +187,7 @@ SUMMATION_PARAMETERS = [((1, 1, 1), None),
 def test_summation(shape, axes, device):
     _A = np.random.randn(*shape).astype(np.float32)
     A = kim.Tensor(nd.array(_A), device=device)
-    np.testing.assert_allclose(np.sum(_A, axes, keepdims=True), kim.summation(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(np.sum(_A, axes), kim.summation(A, axes=axes).numpy(), atol=1e-5, rtol=1e-5)
 
 
 @pytest.mark.parametrize("shape, axes", SUMMATION_PARAMETERS)
@@ -195,7 +195,7 @@ def test_summation(shape, axes, device):
 def test_summation_backward(shape, axes, device):
     _A = np.random.randn(*shape).astype(np.float32)
     A = kim.Tensor(nd.array(_A), device=device)
-    backward_check(kim.summation, A, axes=axes)
+    backward_check(kim.summation, A, axes=axes, keepdims=True)
 
 
 BROADCAST_SHAPES = [((1, 1, 1), (3, 3, 3)),

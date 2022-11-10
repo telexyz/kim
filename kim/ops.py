@@ -263,11 +263,12 @@ def broadcast_to(a, shape):
 
 
 class Summation(TensorOp):
-    def __init__(self, axes: Optional[tuple] = None):
+    def __init__(self, axes: Optional[tuple] = None, keepdims=False):
         self.axes = axes	
+        self.keepdims = keepdims
 
     def compute(self, a):
-        return a.sum(self.axes, keepdims=False)
+        return a.sum(self.axes, keepdims=self.keepdims)
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]
@@ -290,8 +291,8 @@ class Summation(TensorOp):
 
         return broadcast_to(x, a.shape),
 
-def summation(a, axes=None):
-    return Summation(axes)(a)
+def summation(a, axes=None, keepdims=False):
+    return Summation(axes, keepdims=keepdims)(a)
 
 
 class MatMul(TensorOp):

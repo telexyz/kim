@@ -2,6 +2,11 @@ import numpy as np
 import kim
 import kim.nn as nn
 
+def as_numpy(x):
+    if isinstance(x, np.ndarray): return x
+    if isinstance(x, np.float32): return x
+    return x.numpy()
+
 def get_tensor(*shape, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)
     return kim.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
@@ -24,7 +29,9 @@ def learn_model_1d(feature_size, nclasses, _model, optimizer, epochs=1, **kwargs
 
     loss_func = nn.SoftmaxLoss()
     opt = optimizer(model.parameters(), **kwargs)
-
+    
+    X = as_numpy(X)
+    y = as_numpy(y)
     for _ in range(epochs):
         for i, (X0, y0) in enumerate(zip(np.array_split(X, m//batch), np.array_split(y, m//batch))):
             opt.reset_grad()

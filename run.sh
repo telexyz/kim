@@ -18,7 +18,8 @@ python3 -m pytest \
 	tests/test_nn.py \
 	tests/test_ops.py \
 
-# SKIP
+# !! SKIP: Khi dùng ndarray_backend quá nhiều phép toán lồng nhau (deep layers) khiến sai số với numpy_backend bị trượt dài nên tham số test gốc với model không còn đúng !!
+# - - -
 # python3 -m pytest tests/test_simple_nn.py
 # python3 -m pytest tests/test_mlp_resnet.py
 

@@ -423,9 +423,9 @@ class LogSumExp(TensorOp):
 
     def gradient(self, out_grad, node):
         a = node.inputs[0].realize_cached_data()
-        print(">>>", array_api, array_api.max, type(a))
+        # print(">>>", array_api, array_api.max, type(a))
         m = a.max(axis=self.axes, keepdims=True)
-        print(">>>", a.shape, m.shape)
+        # print(">>>", a.shape, m.shape)
         exp_a = exp(Tensor(a - array_api.broadcast_to(m, a.shape)))
         # 
         new_shape = self.new_shape(a.shape)

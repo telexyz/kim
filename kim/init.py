@@ -1,5 +1,6 @@
 import math
 import kim
+import numpy as np
 
 def rand(*shape, low=0.0, high=1.0, device=None, dtype="float32", requires_grad=False):
     """ Generate random numbers uniform between low and high """
@@ -43,7 +44,8 @@ def randb(*shape, p=0.5, device=None, dtype="bool", requires_grad=False):
 def one_hot(n, i, device=None, dtype="float32", requires_grad=False):
     """ Generate one-hot encoding Tensor """
     if device is None: device = kim.default_device()
-    return kim.Tensor(device.one_hot(n,i.numpy().astype("int32"), dtype=dtype), device=device, requires_grad=requires_grad)
+    i = kim.as_numpy(i).astype("int32")
+    return kim.Tensor(device.one_hot(n, i, dtype=dtype), device=device, requires_grad=requires_grad)
 
 
 def zeros_like(array, *, device=None, requires_grad=False):

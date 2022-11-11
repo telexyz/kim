@@ -1,9 +1,7 @@
 import numpy as np
 import kim
 import kim.nn as nn
-
-def as_numpy(x):
-    return x if isinstance(x, np.ndarray) else x.numpy()
+from kim import as_numpy
 
 """Deterministically generate a matrix"""
 def get_tensor(*shape, entropy=1):

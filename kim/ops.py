@@ -297,42 +297,39 @@ def summation(a, axes=None, keepdims=False):
 
 class MatMul(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
-        if array_api == np:
-            nd_cuda = nd.cuda()
-            if not nd_cuda.enabled(): return a @ b
+        if array_api == np: return a @ b # numpy_backend
 
-            # using cuda backend
-            if a.ndim == 2 and a.ndim == 2:
-                _a = nd.array(a, device=nd_cuda)
-                _b = nd.array(b, device=nd_cuda)
-                return (_a @ _b).numpy()
-
-            # batch matmul
-            if a.ndim == 3 and b.ndim == 2:
-                c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
-                for i in range(a.shape[0]):
-                    _a = nd.array(a[i], device=nd_cuda)
-                    _b = nd.array(b[i], device=nd_cuda)
-                    c[i] = (_a @ _b).numpy()
-                return c
-
-            return a @ b
-
-
+        # ndarray_backend
         if a.ndim == 2 and b.ndim == 2: return a @ b
 
-        # batch matmul
-        assert a.ndim == 3 and b.ndim == 2, "Only support 2D @ 2D, 3D @ 3D"
-        # print(a.shape, b.shape)
-        assert a.shape[2] == b.shape[0], "Matrix sizes not matched"
+        if a.ndim == 2 and b.ndim == 3:
+            assert a.shape[1] == b.shape[1], "Matrix sizes not matched"
+            c = np.zeros((b.shape[0], a.shape[0], b.shape[2])).astype(a.dtype)
+            for i in range(b.shape[0]):
+                _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
+                c[i] = (a @ _b).numpy()
+            return nd.array(c)
 
-        c = np.zeros((a.shape[0], a.shape[1], b.shape[1])).astype(a.dtype)
+        if a.ndim == 3 and b.ndim == 2:
+            assert a.shape[2] == b.shape[0], "Matrix sizes not matched"
+            c = np.zeros((a.shape[0], a.shape[1], b.shape[1])).astype(a.dtype)
+            for i in range(a.shape[0]):
+                _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
+                c[i] = (_a @ b).numpy()
+            return nd.array(c)
+
+        print(a.shape, b.shape)
+        # TODO impl matmul for (7, 2, 2) (7, 2, 4)
+        # https://www.geeksforgeeks.org/numpy-3d-matrix-multiplication
+        assert a.ndim == 3 and b.ndim == 3, "Only support 2D @ 2D, 3D @ 2D, and 3D @ 3D"
+        assert a.shape[2] == b.shape[1], "Matrix sizes not matched"
+        assert a.shape[0] == b.shape[0], "Batch need to be same size"
+        c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
         for i in range(a.shape[0]):
             _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
-            c[i] = (_a @ b).numpy()
-
+            _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
+            c[i] = (_a @ _b).numpy()
         return nd.array(c)
-
 
     def gradient(self, out_grad, node):
         a, b = node.inputs 
@@ -458,20 +455,17 @@ def logsumexp(a, axes=None):
 
 class Tanh(TensorOp):
     def compute(self, a):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        return array_api.tanh(a)
 
     def gradient(self, out_grad, node):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
-
+        x = tanh(out_grad)
+        return 1 - (x * x)
 
 def tanh(a):
     return Tanh()(a)
 
 
+# https://stackoverflow.com/questions/69220221/use-of-torch-stack
 class Stack(TensorOp):
     def __init__(self, axis: int):
         """

@@ -405,7 +405,13 @@ def test_matmul_simple_backward():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(5, 4)), kim.Tensor(np.random.randn(4, 5)))
 
 
-def test_matmul_batched_backward():
+def test_matmul_batched_backward_2d3d():
+    gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 5, 4)), kim.Tensor(np.random.randn(6, 4, 3)))
+    gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 5, 4)), kim.Tensor(np.random.randn(4, 9)))
+    gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 5)), kim.Tensor(np.random.randn(3, 5, 6)))
+    gradient_check(kim.matmul, kim.Tensor(np.random.randn(5, 4)), kim.Tensor(np.random.randn(4, 9)))
+
+def test_matmul_batched_backward_3d4d():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 6, 5, 4)), kim.Tensor(np.random.randn(6, 6, 4, 3)))
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 6, 5, 4)), kim.Tensor(np.random.randn(4, 3)))
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(5, 4)), kim.Tensor(np.random.randn(6, 6, 4, 3)))
@@ -441,7 +447,7 @@ def test_summation_backward_multi_axis():
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4,1)), axes=(0,1))
 
 
-def test_backward_matmul_2d3d():
+def test_matmul_2d3d_backward():
     np.random.seed(0)
     gradient_check(kim.divide, kim.Tensor(np.random.randn(3, 5)), 
         kim.Tensor(6 + np.random.randn(3, 5)))
@@ -460,7 +466,7 @@ def test_backward_matmul_2d3d():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(2, 4)), 
         kim.Tensor(np.random.randn(7, 4, 2)))
 
-def test_backward_matmul():
+def test_matmul_backward_3d_4d():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(3, 2, 1)), 
         kim.Tensor(np.random.randn(3, 3, 1, 2)))
 
@@ -475,15 +481,19 @@ def test_backward():
     gradient_check(kim.transpose, kim.Tensor(np.random.randn(3, 2, 4)), axes=(0, 2))
     gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(7, 1)), shape=(7, 7))
     gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(1, 5)), shape=(5, 5))
-    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(1,)), shape=(4, 4, 4))
-    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn()), shape=(1, 3, 6))
     gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(4,4,1)), shape=(4,4,6))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(3,2,1)))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(3,6)), axes=(1,))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(7,)), axes=(0,))
+
+def test_backward_multi_axis():
+    # if kim.array_api != np: return # tests only supported by numpy_backend
+    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(1,)), shape=(4, 4, 4))
+    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn()), shape=(1, 3, 6))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(7,8)), axes=(0,1))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4,5)), axes=(0,1,2))
 
+def test_tanh_backward():
     gradient_check(kim.tanh, kim.Tensor(np.random.randn(5,4,5)))
 
 

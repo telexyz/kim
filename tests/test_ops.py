@@ -58,11 +58,9 @@ def test_op_logsumexp_forward_3():
         np.array([[5.276974 , 5.047317 , 3.778802 , 5.0103745],
        [5.087831 , 4.391712 , 5.025037 , 2.0214698]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
-
 def test_op_logsumexp_forward_4():
     np.testing.assert_allclose(as_numpy(logsumexp_forward((3,10),(1,))),
         np.array([5.705309, 5.976375, 5.696459], dtype=np.float32), rtol=1e-5, atol=1e-5)
-
 
 def test_op_logsumexp_forward_5():
     test_data = kim.ops.logsumexp(kim.Tensor(np.array([[1e10,1e9,1e8,-10],[1e-10,1e9,1e8,-10]])), (0,)).numpy()
@@ -87,7 +85,6 @@ def test_op_logsumexp_backward_2():
        [[0.2755132 , 2.365242  , 2.888913  ],
         [0.05291228, 1.1745441 , 0.02627547],
         [2.748018  , 0.13681579, 2.748018  ]]], dtype=np.float32), rtol=1e-5, atol=1e-5)
-
 
 def test_op_logsumexp_backward_3():
     np.testing.assert_allclose(logsumexp_backward((3,3,3), (0,2)),
@@ -433,10 +430,11 @@ def test_transpose_backward():
 def test_broadcast_to_backward():
     gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(3, 1)), shape=(3, 3))
     gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(1, 3)), shape=(3, 3))
-    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(1,)), shape=(3, 3, 3))
-    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn()), shape=(3, 3, 3))
     gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(5,4,1)), shape=(5,4,3))
 
+def test_broadcast_to_backward_multi_axis():
+    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn(1,)), shape=(3, 3, 3))
+    gradient_check(kim.broadcast_to, kim.Tensor(np.random.randn()), shape=(3, 3, 3))
 
 def test_summation_backward():
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4)), axes=(1,))

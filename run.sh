@@ -6,7 +6,6 @@
 
 # https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
 
-python3 -m pytest tests/test_optim.py
 python3 -m pytest tests/test_nd_backend.py
 python3 -m pytest tests/test_data.py
 
@@ -17,11 +16,13 @@ python3 -m pytest \
 	tests/test_ndarray.py \
 	tests/test_nn.py \
 	tests/test_ops.py \
+	tests/test_optim.py
 
 # !! SKIP: Khi dùng ndarray_backend quá nhiều phép toán lồng nhau (deep layers) khiến sai số với numpy_backend bị trượt dài nên tham số test gốc với model không còn đúng !!
 # - - -
 # python3 -m pytest tests/test_simple_nn.py
 # python3 -m pytest tests/test_mlp_resnet.py
+
 
 #######
 # hw3 #

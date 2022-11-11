@@ -41,7 +41,7 @@ def gradient_check(f, *args, tol=4.2e-1, backward=False, **kwargs):
     )
 
     # print(">>>", f, args, kwargs)
-    # print(">>>", numerical_grads)
-    # print(">>>", computed_grads)
+    print(">>>", numerical_grads)
+    print(">>>", computed_grads)
     assert error < tol
     return computed_grads

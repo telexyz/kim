@@ -493,6 +493,8 @@ def test_backward_multi_axis():
 
 def test_tanh_backward():
     gradient_check(kim.tanh, kim.Tensor(np.random.randn(5,4,5)))
+    gradient_check(kim.tanh, kim.Tensor(np.random.randn(3,2)))
+    gradient_check(kim.tanh, kim.Tensor(np.random.randn(1)))
 
 
 def test_log_backward():

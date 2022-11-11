@@ -72,7 +72,6 @@ bắt đầu quy trình backward.
 
 class EWiseAdd(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
-        # print(">>>", a.shape, b.shape)
         if len(b.shape) > len(a.shape): a = a.reshape(b.shape)
         return a + b
 
@@ -164,7 +163,7 @@ class EWiseDiv(TensorOp):
         a, b = node.inputs
         return (
             divide(out_grad, b), 
-            multiply(out_grad, multiply(negate(power_scalar(b, -2)), a))
+            out_grad * negate(power_scalar(b, -2) * a)
         )
 
 def divide(a, b):
@@ -458,8 +457,12 @@ class Tanh(TensorOp):
         return array_api.tanh(a)
 
     def gradient(self, out_grad, node):
-        x = tanh(out_grad)
-        return 1 - (x * x)
+        # adjoin w.r.t x = out_grad * derivate(f(x))
+        # d_tanh(x) = 1 - tanh(x)^2
+        # d_x = out_grad * (1 - tanh(x)^2)
+        x = node.inputs[0]
+        y = 1 + negate(power_scalar(tanh(x), 2))
+        return (out_grad * y,)
 
 def tanh(a):
     return Tanh()(a)

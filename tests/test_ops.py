@@ -1,6 +1,7 @@
 import numpy as np
 import kim
 import kim.nn as nn
+import pytest
 
 from gradient_check import *
 from kim import as_numpy
@@ -491,6 +492,7 @@ def test_backward_multi_axis():
     gradient_check(kim.summation, kim.Tensor(np.random.randn(7,8)), axes=(0,1))
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4,5)), axes=(0,1,2))
 
+
 def test_tanh_backward():
     gradient_check(kim.tanh, kim.Tensor(np.random.randn(5,4,5)))
     gradient_check(kim.tanh, kim.Tensor(np.random.randn(3,2)))
@@ -503,3 +505,50 @@ def test_log_backward():
 
 def test_relu_backward():
     gradient_check(kim.relu, kim.Tensor(np.random.randn(5,4)))
+
+
+# - - - - - - - - - - - - - - - - - -
+
+GENERAL_SHAPES = [(3, 1, 2), (1,1), (8, 15, 1)]
+
+@pytest.mark.parametrize("shape", GENERAL_SHAPES)
+def test_power(shape):
+    _A = np.random.randn(*shape).astype(np.float32)
+    _B = np.random.randint(1)
+    A = kim.Tensor(kim.array_api.array(_A))
+    np.testing.assert_allclose(_A**_B, (A**_B).numpy(), atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("shape", GENERAL_SHAPES)
+def test_log(shape):
+    _A = np.random.randn(*shape).astype(np.float32) + 5.
+    A = kim.Tensor(kim.array_api.array(_A))
+    np.testing.assert_allclose(np.log(_A), kim.log(A).numpy(), atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("shape", GENERAL_SHAPES)
+def test_exp(shape):
+    _A = np.random.randn(*shape).astype(np.float32)
+    A = kim.Tensor(kim.array_api.array(_A))
+    np.testing.assert_allclose(np.exp(_A), kim.exp(A).numpy(), atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("shape", GENERAL_SHAPES)
+def test_relu(shape):
+    _A = np.random.randn(*shape).astype(np.float32)
+    A = kim.Tensor(kim.array_api.array(_A))
+    np.testing.assert_allclose(np.maximum(_A, 0), kim.relu(A).numpy(), atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("shape", GENERAL_SHAPES)
+def test_tanh(shape):
+    _A = np.random.randn(*shape).astype(np.float32)
+    A = kim.Tensor(kim.array_api.array(_A))
+    np.testing.assert_allclose(np.tanh(_A), kim.tanh(A).numpy(), atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("shape", GENERAL_SHAPES)
+def test_tanh_backward(shape):
+    _A = np.random.randn(*shape).astype(np.float32)
+    A = kim.Tensor(kim.array_api.array(_A))
+    gradient_check(kim.tanh, A)

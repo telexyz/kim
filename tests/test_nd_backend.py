@@ -168,6 +168,7 @@ def test_stack_split(shape, axis, l, device):
     for i, a in enumerate(A):
         np.testing.assert_allclose(B[i].numpy(), a.numpy(), atol=1e-5, rtol=1e-5)
 
+
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
 def test_stack_backward(shape, axis, l, device):

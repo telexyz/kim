@@ -17,14 +17,6 @@ class State:
 class TensorOp:
     def __call__(self, *args):
         return Tensor.make_from_op(self, args)
-    def compute():
-        raise NotImplementedError()
-    def gradient(self, out_grad: "Tensor", node: "Tensor") -> Tuple["Tensor"]:
-        raise NotImplementedError()
-
-class TensorTupleOp(TensorOp):
-    def __call__(self, *args):
-        return TensorTuple.make_from_op(self, args)
 
 
 class Tensor:
@@ -114,7 +106,7 @@ class Tensor:
             requires_grad=requires_grad
         )
         return tensor
-    
+
     
     def detach(self):
         return Tensor.make_const(self.realize_cached_data())
@@ -194,7 +186,46 @@ class Tensor:
 ####### trên Tensor      #######
 ################################
 
-class TensorTuple(Tensor):
+class TensorTupleOp:
+    def __call__(self, *args):
+        return TensorTuple.make_from_op(self, args)
+
+
+class TensorTuple:
+    op: Optional[TensorTupleOp]
+    inputs: List["TensorTuple"]
+    cached_data: Optional["TensorTuple"]
+    requires_grad: bool
+
+    def realize_cached_data(self) -> NDArray:
+        if self.cached_data is None:
+            self.cached_data = self.op.compute(
+                *[x.realize_cached_data() for x in self.inputs]
+            )
+        return self.cached_data
+
+    def numpy(self):
+        data = self.realize_cached_data()
+        if array_api is numpy: return data
+        if isinstance(data, tuple):
+            return [x.numpy() for x in data]
+        else:
+            return data.numpy()
+
+    def assign_params_and_record_creation(
+        self, op: Optional[TensorTupleOp],
+        inputs: List["TensorTuple"],
+        cached_data = None,
+        requires_grad: bool = False
+    ):
+        State.TENSOR_COUNT += 1
+        if not requires_grad:
+            requires_grad = any(x.requires_grad for x in inputs)
+        self.op = op
+        self.inputs = inputs
+        self.cached_data = cached_data
+        self.requires_grad = requires_grad
+
     def __len__(self):
         return len(self.realize_cached_data())
 
@@ -203,6 +234,9 @@ class TensorTuple(Tensor):
 
     def tuple(self):
         return tuple([x for x in self])
+
+    def __del__(self):
+        State.TENSOR_COUNT -= 1
 
     def __repr__(self):
         return "kim.TensorTuple" + str(self.tuple())
@@ -215,9 +249,34 @@ class TensorTuple(Tensor):
         assert len(self) == len(other)
         return kim.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
 
+    __radd__ = __add__
+
     def detach(self):
         return TensorTuple.make_const(self.realize_cached_data())
 
+    @staticmethod
+    def make_from_op(op: TensorTupleOp, inputs: List["TensorTuple"]):
+        tensor_tuple = TensorTuple.__new__(TensorTuple)
+        tensor_tuple.assign_params_and_record_creation(op=op, inputs=inputs)
+        if not State.LAZY_MODE:
+            if not tensor_tuple.requires_grad:
+                return tensor_tuple.detach()
+            tensor_tuple.realize_cached_data()
+        return tensor_tuple
+
+    @staticmethod
+    def make_const(
+        data: Union["TensorTuple", NDArray], 
+        requires_grad: bool = False
+    ) -> "TensorTuple":
+        tensor_tuple = TensorTuple.__new__(TensorTuple)
+        if isinstance(data, TensorTuple): data = data.realize_cached_data()
+        tensor_tuple.assign_params_and_record_creation(
+            op=None, inputs=[],
+            cached_data=data,
+            requires_grad=requires_grad
+        )
+        return tensor_tuple
 
 ##############################
 ####### Helper Methods #######
@@ -245,6 +304,7 @@ def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
         # assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node.dtype)
 
         if node.op:
+            # print(">>> gradient:", node, node.op)
             grads = node.op.gradient(node.grad, node)
             for k in range(len(node.inputs)):
                 try: output_grads[node.inputs[k]].append(grads[k])

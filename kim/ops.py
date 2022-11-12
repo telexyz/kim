@@ -13,6 +13,8 @@ class MakeTensorTuple(TensorTupleOp):
         return tuple(args)
 
     def gradient(self, out_grad, node):
+        print(">>> node:", type(node), len(node.inputs), isinstance(out_grad, TensorTuple))
+        # print(">>> out_grad:", out_grad, out_grad.shape, type(out_grad))
         assert isinstance(out_grad, TensorTuple)
         return tuple(*[out_grad[i] for i in range(len(out_grad))])
 
@@ -43,7 +45,7 @@ class TupleGetItem(TensorOp):
                 in_grad.append(zeros_like(value))
             else:
                 in_grad.append(out_grad)
-        return MakeTensorTuple()(*in_grad)
+        return make_tuple(*in_grad)
 
 
 def tuple_get_item(value, index):
@@ -503,8 +505,9 @@ class Stack(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
+        # print(">>> node:", type(node), len(node.inputs))
         a = split(out_grad, self.axis).realize_cached_data()
-        return make_tuple(*[Tensor(x) for x in a])
+        return make_tuple(*[Tensor(x) for x in a]),
         ### END YOUR SOLUTION
 
 

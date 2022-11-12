@@ -47,7 +47,7 @@ EWISE_OPS = {
 }
 EWISE_OP_FNS = [EWISE_OPS[k] for k in EWISE_OPS]
 EWISE_OP_NAMES = [k for k in EWISE_OPS]
-GENERAL_SHAPES = [(1, 1, 1), (4, 5, 6)]
+GENERAL_SHAPES = [(1, 1, 1), (4, 5, 6), (3, 1, 2), (1, 1), (8, 15, 1)]
 @pytest.mark.parametrize("fn", EWISE_OP_FNS, ids=EWISE_OP_NAMES)
 @pytest.mark.parametrize("shape", GENERAL_SHAPES)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import mugrade
 
-import kim as kim
+import kim
 from kim import backend_ndarray as nd
 
 

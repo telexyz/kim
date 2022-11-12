@@ -508,8 +508,7 @@ def test_relu_backward():
 
 
 # - - - - - - - - - - - - - - - - - -
-
-GENERAL_SHAPES = [(3, 1, 2), (1,1), (8, 15, 1)]
+GENERAL_SHAPES = [(1, 1, 1), (4, 5, 6), (3, 1, 2), (1, 1), (8, 15, 1)]
 
 @pytest.mark.parametrize("shape", GENERAL_SHAPES)
 def test_power(shape):

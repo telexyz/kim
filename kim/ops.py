@@ -7,6 +7,7 @@ from .autograd import TensorTuple, TensorTupleOp
 import numpy as np
 from kim import backend_ndarray as nd
 
+
 class MakeTensorTuple(TensorTupleOp):
     def compute(self, *args) -> tuple:
         return tuple(args)
@@ -460,15 +461,18 @@ class Tanh(TensorOp):
         # adjoin w.r.t x = out_grad * derivate(f(x))
         # d_tanh(x) = 1 - tanh(x)^2
         # d_x = out_grad * (1 - tanh(x)^2)
+
+        ### BEGIN YOUR SOLUTION
         x = node.inputs[0]
         y = 1 + negate(power_scalar(tanh(x), 2))
         return (out_grad * y,)
+        ### END YOUR SOLUTION
 
 def tanh(a):
     return Tanh()(a)
 
 
-# https://stackoverflow.com/questions/69220221/use-of-torch-stack
+# https://www.geeksforgeeks.org/python-pytorch-stack-method
 class Stack(TensorOp):
     def __init__(self, axis: int):
         """
@@ -481,20 +485,33 @@ class Stack(TensorOp):
 
     def compute(self, args: TensorTuple) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # print(">>> args:", len(args), args[0].shape, self.axis)
+        shape = list(args[0].shape) + [len(args)]
+        tmp = shape[self.axis]; shape[self.axis] = shape[-1]; shape[-1] = tmp;
+        idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
+        # print("@@@", idxs)
+        out = NDArray.make(shape, device=args[0].device)
+        # print(">>> out:", out.shape)
+        for i in range(len(args)):
+            assert args[0].shape == args[i].shape, "stacked tensors must be same shape"
+            idxs[self.axis] = slice(i,i+1,1)
+            # print(">>> slice:", idxs)
+            out.__setitem__(tuple(idxs), args[i])
+        return out
         ### END YOUR SOLUTION
 
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        a = split(out_grad, self.axis).realize_cached_data()
+        return make_tuple(*[Tensor(x) for x in a])
         ### END YOUR SOLUTION
 
 
 def stack(args, axis):
     return Stack(axis)(make_tuple(*args))
 
-
+import copy
 class Split(TensorTupleOp):
     def __init__(self, axis: int):
         """
@@ -507,7 +524,21 @@ class Split(TensorTupleOp):
 
     def compute(self, A):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # print(">>> A:", A.shape, self.axis)
+        shape = list(A.shape)
+        idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
+        b_idxs = copy.deepcopy(idxs)
+        del b_idxs[self.axis]
+        del shape[self.axis]
+        # print(">>> shape:", shape)
+        out = []
+        for i in range(shape[self.axis]):
+            idxs[self.axis] = slice(i,i+1,1)
+            a = A.__getitem__(tuple(idxs))
+            b = NDArray.make(shape)
+            b.__setitem__(tuple(b_idxs), a)
+            out.append(b)
+        return tuple(out)
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):

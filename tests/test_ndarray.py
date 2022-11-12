@@ -252,6 +252,7 @@ def test_reshape(device, params):
 
 
 getitem_params = [
+    {"fn": lambda X: X[-3:-1, -3:-1]},
     {"fn": lambda X: X[3:4, 3:4]},
     {"fn": lambda X: X[1:2, 1:3]},
     {"fn": lambda X: X[3:4, 1:4]},

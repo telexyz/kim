@@ -155,14 +155,18 @@ STACK_PARAMETERS = [((5, 5), 0, 1),
     ((1,5,7), 2, 5)]
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
-def test_stack(shape, axis, l, device):
+def test_stack_split(shape, axis, l, device):
     _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
     A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
     A_t = [torch.Tensor(_A[i]) for i in range(l)]
     out = kim.stack(A, axis=axis)
     out_t = torch.stack(A_t, dim=axis)
     np.testing.assert_allclose(out_t.numpy(), out.numpy(), atol=1e-5, rtol=1e-5)
-
+    
+    B = kim.split(out, axis=axis).realize_cached_data()
+    print(">>> B:", B[0])
+    for i, a in enumerate(A):
+        np.testing.assert_allclose(B[i].numpy(), a.numpy(), atol=1e-5, rtol=1e-5)
 
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)

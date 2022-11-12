@@ -216,7 +216,7 @@ class TensorTuple(Tensor):
         return kim.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
 
     def detach(self):
-        return Tuple.make_const(self.realize_cached_data())
+        return TensorTuple.make_const(self.realize_cached_data())
 
 
 ##############################

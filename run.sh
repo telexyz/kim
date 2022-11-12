@@ -5,6 +5,8 @@
 #######
 
 # https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
+# https://github.com/dlsyscourse/public_notebooks/blob/main/convolution_implementation.ipynb
+# https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb
 
 python3 -m pytest tests/test_nd_backend.py
 python3 -m pytest tests/test_cifar_ptb_data.py

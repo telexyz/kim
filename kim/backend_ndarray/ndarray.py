@@ -330,16 +330,15 @@ class NDArray:
         start, stop, step = sl.start, sl.stop, sl.step
 
         if start == None: start = 0
-        if start < 0: start += self.shape[dim]
-
         if stop == None: stop = self.shape[dim]
-        if stop < 0: stop += self.shape[dim]
-
         if step == None: step = 1
+
+        if start < 0: start += self.shape[dim]
+        if stop < 0: stop += self.shape[dim]
 
         # we're not gonna handle negative strides and that kind of thing
         assert stop > start, "Start must be less than stop"
-        assert step > 0, "No support for  negative increments"
+        assert step > 0, "No support for negative increments"
         return slice(start, stop, step)
 
     def __getitem__(self, idxs) -> "NDArray":
@@ -417,6 +416,7 @@ class NDArray:
         """Set the values of a view into an array, using the same semantics
         as __getitem__()."""
         view = self.__getitem__(idxs)
+        # print(">>> view:", view.shape)
         if isinstance(other, NDArray):
             assert prod(view.shape) == prod(other.shape)
             self.device.ewise_setitem(

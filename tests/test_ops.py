@@ -465,7 +465,7 @@ def test_matmul_2d3d_backward():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(2, 4)), 
         kim.Tensor(np.random.randn(7, 4, 2)))
 
-def test_matmul_backward_3d_4d():
+def test_matmul_backward_3d4d():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(3, 2, 1)), 
         kim.Tensor(np.random.randn(3, 3, 1, 2)))
 

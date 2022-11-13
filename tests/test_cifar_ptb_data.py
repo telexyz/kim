@@ -68,6 +68,19 @@ def test_ptb_dataset(batch_size, bptt, train, device):
     ntokens = len(corpus.dictionary)
     assert ntokens == 10000
 
+def test_dict():
+    a = kim.data.Dictionary()
+    chars = "wordswordswordswordswordswordswords"
+    for i in range(len(chars) - 2):
+        w = chars[0:i + 2]
+        print(">>>", w)
+        assert a.find(w) is None
+        a.add_word(w)
+        a.add_word(w)
+        a.add_word(w)
+        assert a.find(w) == i
+        assert a.lookup(i) == w
+        # if i == 10: assert False
 
 ### MUGRADE ###
 

@@ -198,7 +198,7 @@ labels -- a list of 10000 numbers in the range 0-9. The number at index i indica
 class CIFAR10Dataset(Dataset):
     def __init__(
         self,
-        base_folder: str = None,
+        base_folder: str = "data/cifar-10-batches-py",
         train: bool = True,
         p: Optional[int] = 0.5,
         transforms: Optional[List] = None
@@ -214,9 +214,6 @@ class CIFAR10Dataset(Dataset):
         """
         ### BEGIN YOUR SOLUTION
 
-        if base_folder is None: path = "data/cifar-10-batches-py"
-        else: path = base_folder
-
         if train is True:
             files = ["data_batch_1", "data_batch_2",
                 "data_batch_3", "data_batch_4", "data_batch_5"]
@@ -231,7 +228,7 @@ class CIFAR10Dataset(Dataset):
         self.length = 0
 
         for file in files:
-            datadict = pickle.load(open(f"{path}/{file}", "rb"), encoding='bytes')
+            datadict = pickle.load(open(f"{base_folder}/{file}","rb"),encoding='bytes')
             imgs = datadict[b'data'].reshape((-1,3,32,32)).astype('float32')/255
             self.labels.extend(datadict[b'labels'])
             self.images.extend(imgs)
@@ -264,6 +261,14 @@ class Dictionary(object):
         self.word2idx = {}
         self.idx2word = []
 
+    def find(self, word):
+        try: idx = self.word2idx[word]
+        except KeyError: idx = None
+        return idx
+
+    def lookup(self, idx):
+        return self.idx2word[idx]
+
     def add_word(self, word):
         """
         Input: word of type str
@@ -272,7 +277,11 @@ class Dictionary(object):
         Returns the word's unique ID.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        try: self.word2idx[word]
+        except KeyError:
+            n = len(self.idx2word)
+            self.word2idx[word] = n
+            self.idx2word.append(word)
         ### END YOUR SOLUTION
 
     def __len__(self):
@@ -280,7 +289,7 @@ class Dictionary(object):
         Returns the number of unique words in the dictionary.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return len(self.idx2word)
         ### END YOUR SOLUTION
 
 
@@ -307,7 +316,9 @@ class Corpus(object):
         ids: List of ids
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        txt = open(path).read()
+        lines = "\n".split(txt)
+        if max_lines is None: max_line = len(lines)
         ### END YOUR SOLUTION
 
 

@@ -12,10 +12,8 @@ class MakeTensorTuple(TensorTupleOp):
     def compute(self, *args) -> tuple: return tuple(args)
 
     def gradient(self, out_grad, node):
-        print(">>> node:", type(node), len(node.inputs), isinstance(out_grad, TensorTuple))
-        # print(">>> out_grad:", out_grad, out_grad.shape, type(out_grad))
         assert isinstance(out_grad, TensorTuple)
-        return tuple(*[out_grad[i] for i in range(len(out_grad))])
+        return tuple([out_grad[i] for i in range(len(out_grad))])
 
 def make_tuple(*args):
     return MakeTensorTuple()(*args)
@@ -321,7 +319,7 @@ class MatMul(TensorOp):
                 c[i] = (_a @ b).numpy()
             return nd.array(c)
 
-        print(a.shape, b.shape)
+        # print(a.shape, b.shape)
         # TODO impl matmul for (7, 2, 2) (7, 2, 4)
         # https://www.geeksforgeeks.org/numpy-3d-matrix-multiplication
         assert a.ndim == 3 and b.ndim == 3, "Only support 2D @ 2D, 3D @ 2D, and 3D @ 3D"

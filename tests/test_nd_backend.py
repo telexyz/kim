@@ -31,7 +31,7 @@ def backward_check(f, *args, **kwargs):
         np.linalg.norm(backward_grad[i].numpy() - numerical_grad[i])
         for i in range(len(args))
     )
-    assert error < 4.2e-1
+    assert error < 1.8e-2 # original is 4.2e-1
     return [g.numpy() for g in backward_grad]
 
 

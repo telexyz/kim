@@ -538,7 +538,7 @@ class Split(TensorTupleOp):
         for i in range(shape[self.axis]):
             idxs[self.axis] = slice(i,i+1,1)
             a = A.__getitem__(tuple(idxs))
-            b = NDArray.make(shape)
+            b = NDArray.make(shape, device=A.device)
             b.__setitem__(tuple(b_idxs), a)
             out.append(b)
         return tuple(out)

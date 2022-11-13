@@ -422,8 +422,8 @@ class NDArray:
             self.device.ewise_setitem(
                 other.compact()._handle,
                 view._handle,
-                view.shape,
-                view.strides,
+                view._shape,
+                view._strides,
                 view._offset,
             )
         else:
@@ -431,8 +431,8 @@ class NDArray:
                 prod(view.shape),
                 other,
                 view._handle,
-                view.shape,
-                view.strides,
+                view._shape,
+                view._strides,
                 view._offset,
             )
 

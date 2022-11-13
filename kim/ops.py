@@ -548,12 +548,13 @@ class Split(TensorTupleOp):
         # print(">>> node:", len(node), type(node))
         # print(">>> node.inputs:", len(node.inputs), type(node.inputs))
         ### BEGIN YOUR SOLUTION
-        A = node.inputs[0]
-        print("\n>>> out_grad:", out_grad.shape, out_grad, type(out_grad))
-        print(">>> A:", A.shape, type(A))
-        print(">>> axis:", self.axis)
-        n = A.shape[self.axis]
-        return stack([out_grad for i in range(n)], self.axis)
+        # A = node.inputs[0]
+        # print("\n>>> out_grad:", out_grad.shape, out_grad, type(out_grad))
+        # print(">>> A:", A.shape, type(A))
+        # print(">>> axis:", self.axis)
+        # n = A.shape[self.axis]
+        # return stack([out_grad for i in range(n)], self.axis)
+        raise NotImplementedError()
         ### END YOUR SOLUTION
 
 

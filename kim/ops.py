@@ -490,8 +490,10 @@ class Stack(TensorOp):
         # https://www.geeksforgeeks.org/python-pytorch-stack-method
         ### BEGIN YOUR SOLUTION
         # print(">>> args:", len(args), args[0].shape, self.axis)
-        shape = list(args[0].shape) + [len(args)]
-        tmp = shape[self.axis]; shape[self.axis] = shape[-1]; shape[-1] = tmp;
+        shape = list(args[0].shape)
+        # print("---", shape)
+        shape.insert(self.axis, len(args))
+        # print("+++", shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
         # print("@@@", idxs)
         out = NDArray.make(shape, device=args[0].device)
@@ -529,15 +531,15 @@ class Split(TensorTupleOp):
 
     def compute(self, A):
         ### BEGIN YOUR SOLUTION
-        # print(">>> A:", A.shape, self.axis)
+        print(">>> A:", A.shape, self.axis)
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
         b_idxs = copy.deepcopy(idxs)
         del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
         del shape[self.axis] # xóa phần tử thứ self.axis của shape
-        # print(">>> shape:", shape)
+        print(">>> shape:", shape)
         out = []
-        for i in range(shape[self.axis]):
+        for i in range(A.shape[self.axis]):
             idxs[self.axis] = slice(i,i+1,1)
             a = A.__getitem__(tuple(idxs))
             b = NDArray.make(shape, device=A.device)

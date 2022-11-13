@@ -15,12 +15,14 @@ def backward_check(f, *args, **kwargs):
     eps = 1e-3
     out = f(*args, **kwargs)
     c = np.random.randn(*out.shape)
-    is_stacked = False
-    if isinstance(args[0], list):
-        args = args[0]
-        is_stacked = True
+    
+    is_stacked = isinstance(args[0], list)
+    if is_stacked: args = args[0]
+    print(">>>", is_stacked, len(args), args[0].shape)
+
     numerical_grad = [np.zeros(a.shape) for a in args]
     num_args = len(args)
+
     for i in range(num_args):
         for j in range(args[i].realize_cached_data().size):
             args[i].realize_cached_data().flat[j] += eps
@@ -28,16 +30,21 @@ def backward_check(f, *args, **kwargs):
                 f1 = (f(args, **kwargs).numpy() * c).sum()
             else:
                 f1 = (f(*args, **kwargs).numpy() * c).sum()
+
             args[i].realize_cached_data().flat[j] -= 2 * eps
             if is_stacked:
                 f2 = (f(args, **kwargs).numpy() * c).sum()
             else:
                 f2 = (f(*args, **kwargs).numpy() * c).sum()
+
             args[i].realize_cached_data().flat[j] += eps
             numerical_grad[i].flat[j] = (f1 - f2) / (2 * eps)
-    backward_grad = kim.Tensor(c, device=args[0].device), out
+
+    backward_grad = out.op.gradient(kim.Tensor(c, device=args[0].device), out)
+
     if isinstance(backward_grad[0], kim.TensorTuple): # TODO keep this?
         backward_grad = backward_grad[0].tuple()
+
     error = sum(
         np.linalg.norm(backward_grad[i].numpy() - numerical_grad[i])
         for i in range(len(args))
@@ -50,8 +57,9 @@ stack_back_params = [
     ( (3, 4), 3, 0),
     ( (3, 4), 3, 1),
     ( (3, 4), 3, 2),
-    ( (3, 4), 5, 2),
     ( (3, 4), 1, 2),
+    ( (3, 4), 5, 2),
+    ( (3,), 1, 0),
 ]
 @pytest.mark.parametrize("device", _DEVICES)
 @pytest.mark.parametrize("shape, n, axis", stack_back_params)
@@ -65,7 +73,8 @@ stack_params = [
     {"shape": (10,3),    "n": 4, "axis": 0},
     {"shape": (4, 5, 6), "n": 5, "axis": 0},
     {"shape": (4, 5, 6), "n": 3, "axis": 1},
-    {"shape": (4, 5, 6), "n": 2, "axis": 2}
+    {"shape": (4, 5, 6), "n": 2, "axis": 2},
+    {"shape": (4, 5, 6), "n": 2, "axis": 3},
 ]
 @pytest.mark.parametrize("device", _DEVICES)
 @pytest.mark.parametrize("params", stack_params)

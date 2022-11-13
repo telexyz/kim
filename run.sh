@@ -8,17 +8,18 @@
 # https://github.com/dlsyscourse/public_notebooks/blob/main/convolution_implementation.ipynb
 # https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb
 
-python3 -m pytest tests/test_nd_backend.py
 python3 -m pytest tests/test_cifar_ptb_data.py
 python3 -m pytest tests/test_conv.py
 python3 -m pytest tests/test_sequence_models.py
 
 # DONE
+# python3 -m pytest tests/test_nd_backend.py
 python3 -m pytest \
 	tests/test_autograd.py \
 	tests/test_data.py \
 	tests/test_init.py \
 	tests/test_ndarray.py \
+	tests/test_nd_backend.py \
 	tests/test_nn.py \
 	tests/test_ops.py \
 	tests/test_optim.py

@@ -1,3 +1,4 @@
+import os
 import gzip
 import numpy as np
 from .autograd import Tensor
@@ -182,11 +183,23 @@ class NDArrayDataset(Dataset):
     def __getitem__(self, i) -> object:
         return tuple([a[i] for a in self.arrays])
 
+
+#########
+# cifar #
+#########
+
+import pickle
+'''
+data -- a 10000x3072 numpy array of uint8s. Each row of the array stores a 32x32 colour image. The first 1024 entries contain the red channel values, the next 1024 the green, and the final 1024 the blue.
+labels -- a list of 10000 numbers in the range 0-9. The number at index i indicates the label of the ith image in the array data.
+'''
+
+# https://www.cs.toronto.edu/~kriz/cifar.html
 class CIFAR10Dataset(Dataset):
     def __init__(
         self,
-        base_folder: str,
-        train: bool,
+        base_folder: str = None,
+        train: bool = True,
         p: Optional[int] = 0.5,
         transforms: Optional[List] = None
     ):
@@ -200,7 +213,29 @@ class CIFAR10Dataset(Dataset):
         y - numpy array of labels
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+
+        if base_folder is None: path = "data/cifar-10-batches-py"
+        else: path = base_folder
+
+        if train is True:
+            files = ["data_batch_1", "data_batch_2",
+                "data_batch_3", "data_batch_4", "data_batch_5"]
+        else:
+            files = ["test_batch"]
+
+        self.train = train
+        self.p = p
+        self.transforms = transforms
+        self.images = []
+        self.labels = []
+        self.length = 0
+
+        for file in files:
+            datadict = pickle.load(open(f"{path}/{file}", "rb"), encoding='bytes')
+            imgs = datadict[b'data'].reshape((-1,3,32,32)).astype('float32')/255
+            self.labels.extend(datadict[b'labels'])
+            self.images.extend(imgs)
+            self.length += len(imgs)
         ### END YOUR SOLUTION
 
     def __getitem__(self, index) -> object:
@@ -209,28 +244,11 @@ class CIFAR10Dataset(Dataset):
         Image should be of shape (3, 32, 32)
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        image = self.apply_transforms(self.images[index])
+        return (image, self.labels[index])
         ### END YOUR SOLUTION
 
-    def __len__(self) -> int:
-        """
-        Returns the total number of examples in the dataset
-        """
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
-
-
-class NDArrayDataset(Dataset):
-    def __init__(self, *arrays):
-        self.arrays = arrays
-
-    def __len__(self) -> int:
-        return self.arrays[0].shape[0]
-
-    def __getitem__(self, i) -> object:
-        return tuple([a[i] for a in self.arrays])
-
+    def __len__(self) -> int: return self.length
 
 
 class Dictionary(object):

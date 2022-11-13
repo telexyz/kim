@@ -4,7 +4,7 @@ import numpy
 from .tensor_tuple import TensorTuple, TensorTupleOp
 from .backend_selection import Device, array_api, NDArray, default_device
 
-class State:
+class CompGraph:
     LAZY_MODE = False
     TENSOR_COUNT = 0
     MAX_BACKWARD_TENSOR_COUNT = 0
@@ -27,7 +27,7 @@ class Tensor:
         return self.realize_cached_data().__str__()
 
     def __del__(self):
-        State.TENSOR_COUNT -= 1
+        CompGraph.TENSOR_COUNT -= 1
     
     cached_data: Optional[NDArray]
     grad: "Tensor" # lưu out_grad gradient của node
@@ -55,7 +55,7 @@ class Tensor:
         cached_data: Optional[NDArray] = None,
         requires_grad: bool = False
     ):
-        State.TENSOR_COUNT += 1
+        CompGraph.TENSOR_COUNT += 1
         if not requires_grad:
             requires_grad = any(x.requires_grad for x in inputs)
         self.op = op
@@ -87,7 +87,7 @@ class Tensor:
     def make_from_op(op: TensorOp, inputs: List["Tensor"]) -> "Tensor":
         tensor = Tensor.__new__(Tensor) # dùng __new__(cls, ..) để bỏ qua __init__
         tensor.assign_params_and_record_creation(op=op, inputs=inputs)
-        if not State.LAZY_MODE:
+        if not CompGraph.LAZY_MODE:
             if not tensor.requires_grad:
                 return tensor.detach() # tách tensor khỏi đồ thị tính toán
             tensor.realize_cached_data()
@@ -199,7 +199,7 @@ def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
         node.grad = sum(x for x in output_grads[node])
 
         # Detach grad from computational graph to save memory
-        if State.TENSOR_COUNT > State.MAX_BACKWARD_TENSOR_COUNT:
+        if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
             node.grad = node.grad.detach()
 
         # print(">>>", node.op) # bắt lỗi grad không phải float32

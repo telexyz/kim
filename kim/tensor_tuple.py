@@ -38,7 +38,7 @@ class TensorTuple:
         cached_data = None,
         requires_grad: bool = False
     ):
-        kim.State.TENSOR_COUNT += 1
+        kim.autograd.CompGraph.TENSOR_COUNT += 1
         if not requires_grad:
             requires_grad = any(x.requires_grad for x in inputs)
         self.op = op
@@ -56,7 +56,7 @@ class TensorTuple:
         return tuple([x for x in self])
 
     def __del__(self):
-        kim.State.TENSOR_COUNT -= 1
+        kim.autograd.CompGraph.TENSOR_COUNT -= 1
 
     def __repr__(self):
         return "kim.TensorTuple" + str(self.tuple())
@@ -78,7 +78,7 @@ class TensorTuple:
     def make_from_op(op: TensorTupleOp, inputs: List["TensorTuple"]):
         tensor_tuple = TensorTuple.__new__(TensorTuple)
         tensor_tuple.assign_params_and_record_creation(op=op, inputs=inputs)
-        if not kim.State.LAZY_MODE:
+        if not kim.autograd.CompGraph.LAZY_MODE:
             if not tensor_tuple.requires_grad:
                 return tensor_tuple.detach()
             tensor_tuple.realize_cached_data()

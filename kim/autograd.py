@@ -111,7 +111,7 @@ class Tensor:
 
     def backward(self, out_grad: Optional["Tensor"] = None):
         if out_grad is None:
-            out_grad = Tensor(default_device().ones(*self.shape, dtype="float32"))
+            out_grad = kim.init.ones(*self.shape, dtype=self.dtype, device=self.device)
         compute_gradient_of(self, out_grad)
 
     @property

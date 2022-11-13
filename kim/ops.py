@@ -6,6 +6,7 @@ from .autograd import TensorTuple, TensorTupleOp
 
 import numpy as np
 from kim import backend_ndarray as nd
+from kim import init
 
 
 class MakeTensorTuple(TensorTupleOp):
@@ -38,7 +39,7 @@ class TupleGetItem(TensorOp):
         in_grad = []
         for i, value in enumerate(node.inputs[0]):
             if i != index:
-                in_grad.append(zeros_like(value))
+                in_grad.append(init.zeros_like(value))
             else:
                 in_grad.append(out_grad)
         return make_tuple(*in_grad)
@@ -530,8 +531,8 @@ class Split(TensorTupleOp):
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
         b_idxs = copy.deepcopy(idxs)
-        del b_idxs[self.axis]
-        del shape[self.axis]
+        del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
+        del shape[self.axis] # xóa phần tử thứ self.axis của shape
         # print(">>> shape:", shape)
         out = []
         for i in range(shape[self.axis]):
@@ -544,8 +545,15 @@ class Split(TensorTupleOp):
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
+        # print(">>> node:", len(node), type(node))
+        # print(">>> node.inputs:", len(node.inputs), type(node.inputs))
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        A = node.inputs[0]
+        print("\n>>> out_grad:", out_grad.shape, out_grad, type(out_grad))
+        print(">>> A:", A.shape, type(A))
+        print(">>> axis:", self.axis)
+        n = A.shape[self.axis]
+        return stack([out_grad for i in range(n)], self.axis)
         ### END YOUR SOLUTION
 
 

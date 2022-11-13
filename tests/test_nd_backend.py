@@ -152,7 +152,7 @@ def test_tanh_backward(shape, device):
 
 STACK_PARAMETERS = [((5, 5), 0, 1),
     ((5, 5), 0, 2),
-    ((1,5,7), 2, 5)]
+    ((1,5,7), 2, 5), ((2, 3), 1, 2)]
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
 def test_stack_split(shape, axis, l, device):
@@ -167,20 +167,26 @@ def test_stack_split(shape, axis, l, device):
     print(">>> B:", B[0])
     for i, a in enumerate(A):
         np.testing.assert_allclose(B[i].numpy(), a.numpy(), atol=1e-5, rtol=1e-5)
-
+    
+    # TODO: test split backward
+    # kim.split(out, axis=axis).backward()
 
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
-def test_stack_backward(shape, axis, l, device):
+def test_stack_split_backward(shape, axis, l, device):
     _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
     A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
     A_t = [torch.Tensor(_A[i]) for i in range(l)]
-    for i in range(l):
-        A_t[i].requires_grad = True
+    for i in range(l): A_t[i].requires_grad = True
     kim.stack(A, axis=axis).sum().backward()
     torch.stack(A_t, dim=axis).sum().backward()
-    for i in range(l):
-        np.testing.assert_allclose(A_t[i].grad.numpy(), A[i].grad.numpy(), atol=1e-5, rtol=1e-5)
+    for i in range(l): np.testing.assert_allclose(A_t[i].grad.numpy(), A[i].grad.numpy(), atol=1e-5, rtol=1e-5)
+
+    # stacked = kim.stack(A, axis=axis).realize_cached_data()
+    # torch_stacked = torch.stack(A_t, dim=axis)
+    # torch_splited = torch.split(torch_stacked, axis)
+    # print(">>>", torch_splited)
+    # for x in torch_splited: x.backward()
 
 
 SUMMATION_PARAMETERS = [((1, 1, 1), None),

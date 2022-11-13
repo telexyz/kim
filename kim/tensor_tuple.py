@@ -93,3 +93,12 @@ class TensorTuple:
             requires_grad=requires_grad
         )
         return tensor_tuple
+
+
+    def backward(self, out_grad=None):
+        if out_grad is None:
+            for tensor in self: tensor.backward()
+        else:
+            assert len(out_grad) == len(self)
+            for i in range(len(out_grad)):
+                self[i].backward(out_grad[i])

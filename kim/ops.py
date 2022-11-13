@@ -9,15 +9,13 @@ from kim import backend_ndarray as nd
 
 
 class MakeTensorTuple(TensorTupleOp):
-    def compute(self, *args) -> tuple:
-        return tuple(args)
+    def compute(self, *args) -> tuple: return tuple(args)
 
     def gradient(self, out_grad, node):
         print(">>> node:", type(node), len(node.inputs), isinstance(out_grad, TensorTuple))
         # print(">>> out_grad:", out_grad, out_grad.shape, type(out_grad))
         assert isinstance(out_grad, TensorTuple)
         return tuple(*[out_grad[i] for i in range(len(out_grad))])
-
 
 def make_tuple(*args):
     return MakeTensorTuple()(*args)
@@ -50,6 +48,9 @@ class TupleGetItem(TensorOp):
 
 def tuple_get_item(value, index):
     return TupleGetItem(index)(value)
+
+
+# - - - - - - - - - - - -
 
 
 class FusedAddScalars(TensorTupleOp):

@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 import kim
 
 ################################
@@ -12,6 +12,7 @@ class TensorTupleOp:
 
 
 class TensorTuple:
+    # Internal Data
     op: Optional[TensorTupleOp]
     inputs: List["TensorTuple"]
     cached_data: Optional["TensorTuple"]
@@ -33,18 +34,16 @@ class TensorTuple:
             return data.numpy()
 
     def assign_params_and_record_creation(
-        self, op: Optional[TensorTupleOp],
-        inputs: List["TensorTuple"],
-        cached_data = None,
-        requires_grad: bool = False
+        self, op: Optional[TensorTupleOp]=None,
+        inputs: List["TensorTuple"]=[],
+        cached_data=None,
+        requires_grad=False
     ):
-        kim.autograd.CompGraph.TENSOR_COUNT += 1
-        if not requires_grad:
-            requires_grad = any(x.requires_grad for x in inputs)
+        kim.autograd.CompGraph.TENSOR_COUNT += 1 # record new tensor creation
         self.op = op
         self.inputs = inputs
         self.cached_data = cached_data
-        self.requires_grad = requires_grad
+        self.requires_grad = requires_grad or any(x.requires_grad for x in inputs)
 
     def __len__(self):
         return len(self.realize_cached_data())
@@ -56,7 +55,7 @@ class TensorTuple:
         return tuple([x for x in self])
 
     def __del__(self):
-        kim.autograd.CompGraph.TENSOR_COUNT -= 1
+        kim.autograd.CompGraph.TENSOR_COUNT -= 1 # record tensor destruction
 
     def __repr__(self):
         return "kim.TensorTuple" + str(self.tuple())

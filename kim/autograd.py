@@ -56,12 +56,10 @@ class Tensor:
         requires_grad: bool = False
     ):
         CompGraph.TENSOR_COUNT += 1
-        if not requires_grad:
-            requires_grad = any(x.requires_grad for x in inputs)
         self.op = op
         self.inputs = inputs
         self.cached_data = cached_data
-        self.requires_grad = requires_grad
+        self.requires_grad = requires_grad or any(x.requires_grad for x in inputs)
 
     def __init__(self, array: Union["Tensor", NDArray], 
         device: Optional[Device] = None,

@@ -277,11 +277,12 @@ class Dictionary(object):
         Returns the word's unique ID.
         """
         ### BEGIN YOUR SOLUTION
-        try: self.word2idx[word]
+        try: n = self.word2idx[word]
         except KeyError:
             n = len(self.idx2word)
             self.word2idx[word] = n
             self.idx2word.append(word)
+        return n
         ### END YOUR SOLUTION
 
     def __len__(self):
@@ -298,7 +299,7 @@ class Corpus(object):
     """
     Creates corpus from train, and test txt files.
     """
-    def __init__(self, base_dir, max_lines=None):
+    def __init__(self, base_dir="./data/ptb", max_lines=None):
         self.dictionary = Dictionary()
         self.train = self.tokenize(os.path.join(base_dir, 'train.txt'), max_lines)
         self.test = self.tokenize(os.path.join(base_dir, 'test.txt'), max_lines)
@@ -317,9 +318,22 @@ class Corpus(object):
         """
         ### BEGIN YOUR SOLUTION
         txt = open(path).read()
-        lines = "\n".split(txt)
-        if max_lines is None: max_line = len(lines)
+        lines = txt.split("\n")
+        if max_lines is None: max_lines = len(lines) - 1 # remove last blank line
+        assert max_lines < len(lines)
+
+        eos_id = self.dictionary.add_word('<eos>')
+        ids = []
+        for i in range(max_lines):
+            words = lines[i].split(" ")[1:-1] # remove first and last blank words
+            for word in words:
+                if len(word) > 0: ids.append(self.dictionary.add_word(word))
+            ids.append(eos_id)
+        return ids
         ### END YOUR SOLUTION
+
+    def lookup(self, idx):
+        return self.dictionary.idx2word[idx]
 
 
 def batchify(data, batch_size, device, dtype):
@@ -332,14 +346,18 @@ def batchify(data, batch_size, device, dtype):
     │ d j p v │
     │ e k q w │
     └ f l r x ┘.
+
     These columns are treated as independent by the model, which means that the
     dependence of e. g. 'g' on 'f' cannot be learned, but allows more efficient
     batch processing.
+
     If the data cannot be evenly divided by the batch size, trim off the remainder.
     Returns the data as a numpy array of shape (nbatch, batch_size).
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    nbatch = len(data) // batch_size
+    n = nbatch * batch_size
+    return np.array(data[0:n]).astype(dtype).reshape((nbatch, batch_size))
     ### END YOUR SOLUTION
 
 
@@ -350,18 +368,29 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     a bptt-limit of 2, we'd get the following two Variables for i = 0:
     ┌ a g m s ┐ ┌ b h n t ┐
     └ b h n t ┘ └ c i o u ┘
+
     Note that despite the name of the function, the subdivison of data is not
     done along the batch dimension (i.e. dimension 1), since that was handled
     by the batchify function. The chunks are along dimension 0, corresponding
     to the seq_len dimension in the LSTM or RNN.
+
     Inputs:
-    batches - numpy array returned from batchify function
-    i - index
-    bptt - Sequence length
+        * batches - numpy array returned from batchify function
+        * i - index
+        * bptt - Sequence length
+
     Returns:
-    data - Tensor of shape (bptt, bs) with cached data as NDArray
-    target - Tensor of shape (bptt*bs,) with cached data as NDArray
+        * data - Tensor of shape (bptt, bs) with cached data as NDArray
+        * target - Tensor of shape (bptt * bs,) with cached data as NDArray
     """
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    n = batches.shape[0]
+    assert i < n
+    assert bptt > 0 and bptt < batches.shape[0] - i
+    
+    data = batches[i:i+bptt,:]
+    i += 1
+    target = batches[i:i+bptt,:].flatten()
+
+    return Tensor(data, device=device, dtype=dtype), Tensor(target, device=device, dtype=dtype)
     ### END YOUR SOLUTION

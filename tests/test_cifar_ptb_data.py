@@ -75,12 +75,22 @@ def test_dict():
         w = chars[0:i + 2]
         print(">>>", w)
         assert a.find(w) is None
-        a.add_word(w)
-        a.add_word(w)
-        a.add_word(w)
+        assert a.add_word(w) == i
+        assert a.add_word(w) == i
+        assert a.add_word(w) == i
         assert a.find(w) == i
         assert a.lookup(i) == w
-        # if i == 10: assert False
+
+    for i in range(len(chars) - 2):
+        w = chars[0:i + 2]
+        print(">>>", w)
+        assert a.find(w) is i
+        assert a.add_word(w) == i
+        assert a.add_word(w) == i
+        assert a.add_word(w) == i
+        assert a.find(w) == i
+        assert a.lookup(i) == w
+
 
 ### MUGRADE ###
 

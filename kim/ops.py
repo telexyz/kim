@@ -299,29 +299,32 @@ def summation(a, axes=None, keepdims=False):
 
 class MatMul(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
-        if array_api == np: return a @ b # numpy_backend
+        ### numpy_backend
+        if array_api == np: return a @ b
 
-        # ndarray_backend
+        ### ndarray_backend
+        # 2D @ 2D
         if a.ndim == 2 and b.ndim == 2: return a @ b
-
+        
+        # 2D @ 3D
         if a.ndim == 2 and b.ndim == 3:
             assert a.shape[1] == b.shape[1], "Matrix sizes not matched"
             c = np.zeros((b.shape[0], a.shape[0], b.shape[2])).astype(a.dtype)
             for i in range(b.shape[0]):
                 _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
                 c[i] = (a @ _b).numpy()
-            return nd.array(c)
-
+            return nd.array(c, device=a.device)
+        
+        # 3D @ 2D
         if a.ndim == 3 and b.ndim == 2:
             assert a.shape[2] == b.shape[0], "Matrix sizes not matched"
             c = np.zeros((a.shape[0], a.shape[1], b.shape[1])).astype(a.dtype)
             for i in range(a.shape[0]):
                 _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
                 c[i] = (_a @ b).numpy()
-            return nd.array(c)
+            return nd.array(c, device=a.device)
 
-        # print(a.shape, b.shape)
-        # TODO impl matmul for (7, 2, 2) (7, 2, 4)
+        # 3D @ 3D
         # https://www.geeksforgeeks.org/numpy-3d-matrix-multiplication
         assert a.ndim == 3 and b.ndim == 3, "Only support 2D @ 2D, 3D @ 2D, and 3D @ 3D"
         assert a.shape[2] == b.shape[1], "Matrix sizes not matched"
@@ -331,7 +334,8 @@ class MatMul(TensorOp):
             _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
             _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
             c[i] = (_a @ _b).numpy()
-        return nd.array(c)
+        return nd.array(c, device=a.device)
+
 
     def gradient(self, out_grad, node):
         a, b = node.inputs 
@@ -460,21 +464,18 @@ class Tanh(TensorOp):
         return array_api.tanh(a)
 
     def gradient(self, out_grad, node):
-        # adjoin w.r.t x = out_grad * derivate(f(x))
-        # d_tanh(x) = 1 - tanh(x)^2
-        # d_x = out_grad * (1 - tanh(x)^2)
-
-        ### BEGIN YOUR SOLUTION
+        '''adjoin w.r.t x = out_grad * derivate(f(x))
+        d_tanh(x) = 1 - tanh(x)^2
+        d_x = out_grad * (1 - tanh(x)^2)
+        '''
         x = node.inputs[0]
         y = 1 + negate(power_scalar(tanh(x), 2))
         return (out_grad * y,)
-        ### END YOUR SOLUTION
 
 def tanh(a):
     return Tanh()(a)
 
 
-# https://www.geeksforgeeks.org/python-pytorch-stack-method
 class Stack(TensorOp):
     def __init__(self, axis: int):
         """
@@ -486,6 +487,7 @@ class Stack(TensorOp):
         self.axis = axis
 
     def compute(self, args: TensorTuple) -> Tensor:
+        # https://www.geeksforgeeks.org/python-pytorch-stack-method
         ### BEGIN YOUR SOLUTION
         # print(">>> args:", len(args), args[0].shape, self.axis)
         shape = list(args[0].shape) + [len(args)]

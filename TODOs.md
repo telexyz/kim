@@ -1,12 +1,10 @@
-- [ ] hw4
+- [-] hw4
 
 - [ ] Finish Paper [Sparse GPU Kernels for Deep Learning](docs/sparse.pdf)
 
 - [ ] Finish Lec14 [Training Large Models](https://www.youtube.com/watch?v=HSzVogM5IPo)
 
-- [-] Integrate CUDA backend to autograd
-
-- [-] Integrate CUDA selected ops like matmul
+- [x] Integrate CUDA backend to autograd
 
 - - -
 

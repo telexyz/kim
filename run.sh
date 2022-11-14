@@ -1,6 +1,20 @@
 # pip3 install --upgrade --no-deps git+https://github.com/dlsys10714/mugrade.git
 # pip3 install pytest numpy numdifftools pybind11 requests
 
+python3 -m pytest \
+	tests/test_autograd.py \
+	tests/test_cifar_ptb_data.py \
+	tests/test_init.py \
+	tests/test_ndarray.py \
+	tests/test_nd_backend.py \
+	tests/test_nn.py \
+	tests/test_ops.py \
+	tests/test_optim.py
+
+# Slow and require alot of memory (exceed 3050ti 4Gb => use cpu instead of cuda)
+# KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py tests/test_data.py
+
+
 #######
 # hw4 #
 #######
@@ -15,26 +29,12 @@
 # https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb
 # https://youtu.be/7kclgMIcMq0?t=2354 => conv via matmul
 
-# python3 -m pytest tests/test_conv.py
-# python3 -m pytest tests/test_sequence_models.py
+python3 -m pytest tests/test_conv.py
+python3 -m pytest tests/test_sequence_models.py
 
 # DONE
 # python3 -m pytest tests/test_nd_backend.py
 # python3 -m pytest tests/test_cifar_ptb_data.py
-
-python3 -m pytest \
-	tests/test_autograd.py \
-	tests/test_init.py \
-	tests/test_ndarray.py \
-	tests/test_nd_backend.py \
-	tests/test_nn.py \
-	tests/test_ops.py \
-	tests/test_optim.py
-
-# Slow and require alot of memory (exceed 3050ti 4Gb)
-KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py \
-	tests/test_simple_nn.py \
-	tests/test_data.py
 
 #######
 # hw3 #

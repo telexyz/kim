@@ -602,7 +602,7 @@ class Dilate(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return undilate(out_grad, self.axes, self.dilation),
         ### END YOUR SOLUTION
 
 def dilate(a, axes, dilation):
@@ -616,7 +616,15 @@ class UnDilate(TensorOp):
 
     def compute(self, a):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        new_shape = list(a.shape)
+        idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
+        for axis in self.axes:
+            new_shape[axis] //= (self.dilation + 1)
+            # 1 cho phần tử gốc và self.dilation cho 0 padding
+            idxs[axis] = slice(0, a.shape[axis], self.dilation + 1)
+
+        out = a.compact().__getitem__(tuple(idxs))
+        return out.compact()
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):

@@ -620,7 +620,6 @@ class UnDilate(TensorOp):
         idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
         for axis in self.axes:
             new_shape[axis] //= (self.dilation + 1)
-            # 1 cho phần tử gốc và self.dilation cho 0 padding
             idxs[axis] = slice(0, a.shape[axis], self.dilation + 1)
 
         out = a.compact().__getitem__(tuple(idxs))
@@ -647,7 +646,7 @@ class Conv(TensorOp):
         raise NotImplementedError()
         ### END YOUR SOLUTION
 
-    def gradient(self, out_grad, node):
+    def gradient(self, out_grad, onde):
         ### BEGIN YOUR SOLUTION
         raise NotImplementedError()
         ### END YOUR SOLUTION

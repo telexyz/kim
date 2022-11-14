@@ -4,6 +4,7 @@ from functools import reduce
 import numpy as np
 from . import ndarray_backend_numpy
 from . import ndarray_backend_cpu
+import os
 
 # math.prod not in Python 3.7
 def prod(x):
@@ -81,9 +82,12 @@ def cpu():
 
 
 def default_device():
-    # return cpu_numpy()
-    return cpu()
-    # return cuda()
+    DEVICE = os.environ.get("KIM_BACKEND_DEVICE", "cuda")
+    if DEVICE == "cpu" and cuda().mod is None:
+        return cpu()
+    else:
+        print(">>> USING CUDA <<<")
+        return cuda()
 
 
 def all_devices():

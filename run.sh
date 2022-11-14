@@ -13,6 +13,7 @@
 # https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
 # https://github.com/dlsyscourse/public_notebooks/blob/main/convolution_implementation.ipynb
 # https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb
+# https://youtu.be/7kclgMIcMq0?t=2354 => conv via matmul
 
 # python3 -m pytest tests/test_conv.py
 # python3 -m pytest tests/test_sequence_models.py
@@ -30,11 +31,17 @@ python3 -m pytest \
 	tests/test_ops.py \
 	tests/test_optim.py
 
-# Slow
-# python3 -m pytest \
-# 	tests/test_data.py \
-# 	tests/test_mlp_resnet.py \
-#   tests/test_simple_nn.py
+# Slow and require alot of memory (exceed 3050ti 4Gb)
+set KIM_BACKEND_DEVICE=cuda
+echo $KIM_BACKEND_DEVICE
+
+python3 -m pytest \
+	tests/test_data.py \
+	tests/test_mlp_resnet.py \
+	tests/test_simple_nn.py
+
+set KIM_BACKEND_DEVICE=cuda
+echo $KIM_BACKEND_DEVICE
 
 #######
 # hw3 #

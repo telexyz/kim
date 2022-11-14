@@ -28,13 +28,13 @@ python3 -m pytest \
 	tests/test_nd_backend.py \
 	tests/test_nn.py \
 	tests/test_ops.py \
-	tests/test_optim.py \
-    tests/test_simple_nn.py
+	tests/test_optim.py
 
 # Slow
-python3 -m pytest \
-	tests/test_data.py \
-	tests/test_mlp_resnet.py
+# python3 -m pytest \
+# 	tests/test_data.py \
+# 	tests/test_mlp_resnet.py \
+#   tests/test_simple_nn.py
 
 #######
 # hw3 #

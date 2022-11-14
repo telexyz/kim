@@ -50,7 +50,7 @@ CudaDims CudaOneDim(size_t size) {
 #define MAX_VEC_SIZE 8
 struct CudaVec {
   uint32_t size;
-  uint32_t data[MAX_VEC_SIZE];
+  int32_t data[MAX_VEC_SIZE];
 };
 
 CudaVec VecToCuda(const std::vector<uint32_t>& x) {
@@ -103,7 +103,7 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size,
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
   if (gid < size) {
     /// BEGIN YOUR SOLUTION
-    size_t a_idx = 0; 
+    size_t a_idx = offset; 
     size_t remain = gid;
     size_t stride = size;
     size_t indexx = 0;
@@ -113,13 +113,13 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size,
       remain = remain % stride;
       a_idx += strides.data[i] * indexx;
     }
-    out[gid] = a[a_idx + offset];
+    out[gid] = a[a_idx];
     /// END YOUR SOLUTION
   }
 }
 
 void Compact(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
-             std::vector<uint32_t> strides, size_t offset) {
+             std::vector<int32_t> strides, size_t offset) {
   /**
    * Compact an array in memory. Unlike the C++ version, in CUDA this will 
    * primarily call the relevant CUDA kernel. In this case, we illustrate 
@@ -146,7 +146,7 @@ __global__ void EwiseSetitemKernel(const scalar_t* a, scalar_t* out, size_t size
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
   if (gid < size) {
     /// BEGIN YOUR SOLUTION
-    size_t out_idx = 0;
+    size_t out_idx = offset;
     size_t remain = gid;
     size_t stride = size;
     size_t indexx = 0;
@@ -157,13 +157,13 @@ __global__ void EwiseSetitemKernel(const scalar_t* a, scalar_t* out, size_t size
       remain = remain % stride;
       out_idx += strides.data[i] * indexx;
     }
-    out[out_idx + offset] = a[gid];
+    out[out_idx] = a[gid];
     /// END YOUR SOLUTION
   }
 }
 
 void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<uint32_t> shape,
-                  std::vector<uint32_t> strides, size_t offset) {
+                  std::vector<int32_t> strides, size_t offset) {
   /**
    * Set items in a (non-compact) array using CUDA. 
    * You will most likely want to implement a EwiseSetitemKernel() function, 
@@ -189,7 +189,7 @@ __global__ void ScalarSetitemKernel(const scalar_t val, scalar_t* out, size_t si
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
   if (gid < size) {
     /// BEGIN YOUR SOLUTION
-    size_t out_idx = 0;
+    size_t out_idx = offset;
     size_t remain = gid;
     size_t stride = size;
     size_t indexx = 0;
@@ -200,13 +200,13 @@ __global__ void ScalarSetitemKernel(const scalar_t val, scalar_t* out, size_t si
       remain = remain % stride;
       out_idx += strides.data[i] * indexx;
     }
-    out[out_idx + offset] = val;
+    out[out_idx] = val;
     /// END YOUR SOLUTION
   }
 }
 
 
-void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32_t> shape, std::vector<uint32_t> strides, size_t offset) {
+void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<uint32_t> shape, std::vector<int32_t> strides, size_t offset) {
   /**
    * Set items is a (non-compact) array
    * 

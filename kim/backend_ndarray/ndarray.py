@@ -221,7 +221,8 @@ class NDArray:
         else:
             '''Tạo một compact NDArray mới và copy dữ liệu sang'''
             out = NDArray.make(self.shape, device=self.device)
-            # print(">>> Compact", self.shape, self.strides, self.offset);raise ValueError
+            print(">>> Compact", self.shape, self.strides, self._offset);
+            # raise ValueError
             self.device.compact(self._handle, out._handle, 
                 self._shape, self._strides, self._offset)
             return out
@@ -629,12 +630,14 @@ class NDArray:
             new_strides[a] *= -1
             # (shape[0]) - 1)*shape[1]*shape[2] => a = 0
             offset = x.shape[a] - 1
-            for b in range(len(x.shape)-a): offset *= x.shape[a + b]
+            for b in range(len(x.shape) - a - 1): offset *= x.shape[a + b + 1]
+            # print(">>> offset:", offset)
             new_offset += offset
-        return NDArray.make(
+        out = NDArray.make(
             x.shape, strides=tuple(new_strides), device=x.device, 
             handle=x._handle, offset=new_offset
         )
+        return out.compact()
         ### END YOUR SOLUTION
 
 

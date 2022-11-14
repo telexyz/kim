@@ -32,16 +32,15 @@ python3 -m pytest \
 	tests/test_optim.py
 
 # Slow and require alot of memory (exceed 3050ti 4Gb)
-set KIM_BACKEND_DEVICE=cuda
-echo $KIM_BACKEND_DEVICE
+# export KIM_BACKEND_DEVICE=cpu
+# echo $KIM_BACKEND_DEVICE
 
-python3 -m pytest \
-	tests/test_data.py \
-	tests/test_mlp_resnet.py \
-	tests/test_simple_nn.py
+KIM_BACKEND_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py \
+	tests/test_simple_nn.py \
+	tests/test_data.py
 
-set KIM_BACKEND_DEVICE=cuda
-echo $KIM_BACKEND_DEVICE
+# export KIM_BACKEND_DEVICE=cuda
+# echo $KIM_BACKEND_DEVICE
 
 #######
 # hw3 #

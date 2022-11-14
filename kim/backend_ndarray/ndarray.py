@@ -83,7 +83,7 @@ def cpu():
 
 def default_device():
     DEVICE = os.environ.get("KIM_BACKEND_DEVICE", "cuda")
-    if DEVICE == "cpu" and cuda().mod is None:
+    if DEVICE == "cpu" or cuda().mod is None:
         return cpu()
     else:
         print(">>> USING CUDA <<<")

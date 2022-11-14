@@ -184,7 +184,7 @@ class Tensor:
 
 def get_array_from_numpy(numpy_array, device, dtype):
     if array_api is numpy: return numpy.array(numpy_array, dtype=dtype)
-    else: return array_api.array(numpy_array, device=device, dtype=dtype)
+    else: return array_api.array(numpy_array, device=device, dtype="float32")
 
 
 def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):

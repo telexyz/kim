@@ -622,7 +622,19 @@ class NDArray:
         Note: compact() before returning.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        x = self.compact()
+        new_offset = 0
+        new_strides = list(x.strides)
+        for a in axes:
+            new_strides[a] *= -1
+            # (shape[0]) - 1)*shape[1]*shape[2] => a = 0
+            offset = x.shape[a] - 1
+            for b in range(len(x.shape)-a): offset *= x.shape[a + b]
+            new_offset += offset
+        return NDArray.make(
+            x.shape, strides=tuple(new_strides), device=x.device, 
+            handle=x._handle, offset=new_offset
+        )
         ### END YOUR SOLUTION
 
 

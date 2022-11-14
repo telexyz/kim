@@ -209,31 +209,36 @@ def test_dilate_forward(device):
 
     _A = np.random.randint(1, 10, size=(2, 5))
     A = kim.Tensor(_A, device=device)
-    assert np.linalg.norm(kim.dilate(A, dilation=0, axes=(0,)).numpy() - np.array([[6., 1., 4., 4., 8.],
+    assert np.linalg.norm(kim.dilate(A, dilation=0, axes=(0,)).numpy() - np.array(
+      [[6., 1., 4., 4., 8.],
        [4., 6., 3., 5., 8.]])) < 1e-5 
 
     _A = np.random.randint(1, 10, size=(2, 5))
     A = kim.Tensor(_A, device=device)
-    assert np.linalg.norm(kim.dilate(A, dilation=1, axes=(0,)).numpy() - np.array([[7., 9., 9., 2., 7.],
+    assert np.linalg.norm(kim.dilate(A, dilation=1, axes=(0,)).numpy() - np.array(
+      [[7., 9., 9., 2., 7.],
        [0., 0., 0., 0., 0.],
        [8., 8., 9., 2., 6.],
        [0., 0., 0., 0., 0.]])) < 1e-5
 
     _A = np.random.randint(1, 10, size=(2, 5))
     A = kim.Tensor(_A, device=device)
-    assert np.linalg.norm(kim.dilate(A, dilation=1, axes=(1,)).numpy() - np.array([[9., 0., 5., 0., 4., 0., 1., 0., 4., 0.],
+    assert np.linalg.norm(kim.dilate(A, dilation=1, axes=(1,)).numpy() - np.array(
+      [[9., 0., 5., 0., 4., 0., 1., 0., 4., 0.],
        [6., 0., 1., 0., 3., 0., 4., 0., 9., 0.]])) < 1e-5
 
     _A = np.random.randint(1, 10, size=(2, 5))
     A = kim.Tensor(_A, device=device)
-    assert np.linalg.norm(kim.dilate(A, dilation=1, axes=(0,1)).numpy() - np.array([[2., 0., 4., 0., 4., 0., 4., 0., 8., 0.],
+    assert np.linalg.norm(kim.dilate(A, dilation=1, axes=(0,1)).numpy() - np.array(
+      [[2., 0., 4., 0., 4., 0., 4., 0., 8., 0.],
        [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
        [1., 0., 2., 0., 1., 0., 5., 0., 8., 0.],
        [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])) < 1e-5
 
     _A = np.random.randint(1, 10, size=(2, 2))
     A = kim.Tensor(_A, device=device)
-    assert np.linalg.norm(kim.dilate(A, dilation=2, axes=(0,1)).numpy() - np.array([[4., 0., 0., 3., 0., 0.],
+    assert np.linalg.norm(kim.dilate(A, dilation=2, axes=(0,1)).numpy() - np.array(
+      [[4., 0., 0., 3., 0., 0.],
        [0., 0., 0., 0., 0., 0.],
        [0., 0., 0., 0., 0., 0.],
        [8., 0., 0., 3., 0., 0.],

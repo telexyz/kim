@@ -4,6 +4,11 @@
 # hw4 #
 #######
 
+# !python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "new_nd_backend"
+# !python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "cifar10"
+# !python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "new_ops"
+
+
 # https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
 # https://github.com/dlsyscourse/public_notebooks/blob/main/convolution_implementation.ipynb
 # https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb

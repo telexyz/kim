@@ -574,9 +574,7 @@ class Flip(TensorOp):
         return a.flip(self.axes)
 
     def gradient(self, out_grad, node):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        return flip(out_grad, self.axes),
 
 
 def flip(a, axes):

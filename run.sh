@@ -28,15 +28,13 @@ python3 -m pytest \
 	tests/test_nd_backend.py \
 	tests/test_nn.py \
 	tests/test_ops.py \
-	tests/test_optim.py
+	tests/test_optim.py \
+    tests/test_simple_nn.py
 
-	# tests/test_data.py \
-
-# !! SKIP: Khi dùng ndarray_backend quá nhiều phép toán lồng nhau (deep layers) khiến sai số với numpy_backend bị trượt dài nên tham số test gốc với model không còn đúng !!
-# - - -
-# python3 -m pytest tests/test_simple_nn.py
-# python3 -m pytest tests/test_mlp_resnet.py
-
+# Slow
+python3 -m pytest \
+	tests/test_data.py \
+	tests/test_mlp_resnet.py
 
 #######
 # hw3 #

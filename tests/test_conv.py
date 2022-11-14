@@ -95,6 +95,7 @@ def test_stack_forward(params, device):
 pad_params = [
     {"shape": (10, 32, 32, 8), "padding": ( (0, 0), (2, 2), (2, 2), (0, 0) )},
     {"shape": (10, 32, 32, 8), "padding": ( (0, 0), (0, 0), (0, 0), (0, 0) )},
+    {"shape": (10, 32, 32, 8), "padding": ( (0, 2), (1, 10), (3, 8), (2, 12) )},
 ]
 @pytest.mark.parametrize("device", [nd.cpu()])
 @pytest.mark.parametrize("params", pad_params)

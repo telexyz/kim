@@ -633,13 +633,23 @@ class NDArray:
         axes = ( (0, 0), (1, 1), (0, 0)) pads the middle axis with a 0 on the left and right side.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        idx = ()
+        shape = list(self.shape)
+        for i in range(len(axes)):
+            l = axes[i][0]
+            shape[i] += l
+            idx = idx + (slice(l, shape[i], 1), )
+            shape[i] += axes[i][1]
+
+        out = self.device.zeros(*shape)
+        out.__setitem__(idx, self.compact())
+        return out
         ### END YOUR SOLUTION
 
 
 def array(a, dtype="float32", device=None):
     """ Convenience methods to match numpy a bit more closely."""
-    dtype = "float32" if dtype is None else dtype
+    if dtype is None: dtype = "float32"
     assert dtype == "float32"
     return NDArray(a, device=device)
 

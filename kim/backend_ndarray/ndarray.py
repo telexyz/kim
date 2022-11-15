@@ -598,8 +598,10 @@ class NDArray:
             axes = (axis,)
 
         # Create view
-        new_axes = tuple([a for a in range(self.ndim) if a not in axes]) + axes
-        view = self.permute(new_axes)
+        fixed_axes = tuple([a for a in range(self.ndim) if a not in axes])
+        new_shape = tuple([self.shape[x] for x in fixed_axes])
+        new_shape = new_shape + (prod([self.shape[x] for x in axes]),)
+        view = self.permute(fixed_axes + axes).compact().reshape(new_shape)
 
         # Create out
         if keepdims:

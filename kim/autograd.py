@@ -175,6 +175,9 @@ class Tensor:
     def broadcast_to(self, shape):
         return kim.ops.BroadcastTo(shape)(self)
 
+    def transpose(self, axes=None):
+        return kim.ops.Transpose(axes)(self)
+
     __radd__ = __add__
     __rmul__ = __mul__
 

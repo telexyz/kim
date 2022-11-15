@@ -403,13 +403,13 @@ def test_matmul_simple_backward():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(5, 4)), kim.Tensor(np.random.randn(4, 5)))
 
 
-def test_matmul_batched_backward_2d3d():
+def test_matmul_backward_2d3d():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 5, 4)), kim.Tensor(np.random.randn(6, 4, 3)))
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 5, 4)), kim.Tensor(np.random.randn(4, 9)))
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 5)), kim.Tensor(np.random.randn(3, 5, 6)))
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(5, 4)), kim.Tensor(np.random.randn(4, 9)))
 
-def test_matmul_batched_backward_3d4d():
+def test_matmul_backward_3d4d():
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 6, 5, 4)), kim.Tensor(np.random.randn(6, 6, 4, 3)))
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(6, 6, 5, 4)), kim.Tensor(np.random.randn(4, 3)))
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(5, 4)), kim.Tensor(np.random.randn(6, 6, 4, 3)))

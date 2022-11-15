@@ -309,32 +309,26 @@ class MatMul(TensorOp):
         # 2D @ 3D
         if a.ndim == 2 and b.ndim == 3:
             assert a.shape[1] == b.shape[1], "Matrix sizes not matched"
-            c = np.zeros((b.shape[0], a.shape[0], b.shape[2])).astype(a.dtype)
-            for i in range(b.shape[0]):
-                _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
-                c[i] = (a @ _b).numpy()
-            return nd.array(c, device=a.device)
-        
+            c = b.permute((1,2,0)).compact().reshape((b.shape[1], b.shape[2]*b.shape[0]))
+            return (a @ c).reshape((a.shape[0], b.shape[2], b.shape[0])).permute((2,0,1))
+
         # 3D @ 2D
         if a.ndim == 3 and b.ndim == 2:
             assert a.shape[2] == b.shape[0], "Matrix sizes not matched"
-            c = np.zeros((a.shape[0], a.shape[1], b.shape[1])).astype(a.dtype)
-            for i in range(a.shape[0]):
-                _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
-                c[i] = (_a @ b).numpy()
-            return nd.array(c, device=a.device)
+            c = a.reshape((a.shape[0]*a.shape[1], a.shape[2]))
+            return (c @ b).reshape((a.shape[0], a.shape[1], b.shape[1]))
 
         # 3D @ 3D
         # https://www.geeksforgeeks.org/numpy-3d-matrix-multiplication
         assert a.ndim == 3 and b.ndim == 3, "Only support 2D @ 2D, 3D @ 2D, and 3D @ 3D"
         assert a.shape[2] == b.shape[1], "Matrix sizes not matched"
         assert a.shape[0] == b.shape[0], "Batch need to be same size"
-        c = np.zeros((a.shape[0], a.shape[1], b.shape[2])).astype(a.dtype)
+        c = NDArray.make((a.shape[0], a.shape[1], b.shape[2]), device=a.device)
         for i in range(a.shape[0]):
             _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
             _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
-            c[i] = (_a @ _b).numpy()
-        return nd.array(c, device=a.device)
+            c[i,:,:] = (_a @ _b).reshape((1, a.shape[1], b.shape[2]))
+        return c
 
 
     def gradient(self, out_grad, node):

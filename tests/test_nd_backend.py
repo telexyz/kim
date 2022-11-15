@@ -99,6 +99,25 @@ def test_matmul(m, n, p, device):
     np.testing.assert_allclose(_A @ _B, (A @ B).numpy(), atol=1e-5, rtol=1e-5)
 
 
+@pytest.mark.parametrize("m,n,p", MATMUL_DIMS)
+@pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
+def test_batch_matmul(m, n, p, device):
+    b = 6
+    _A = np.random.randn(m, n).astype(np.float32)
+    _B = np.random.randn(n, p).astype(np.float32)
+    A = kim.Tensor(nd.array(_A), device=device)
+    B = kim.Tensor(nd.array(_B), device=device)
+
+    _Ab = np.random.randn(b, m, n).astype(np.float32)
+    _Bb = np.random.randn(b, n, p).astype(np.float32)
+    Ab = kim.Tensor(nd.array(_Ab), device=device)
+    Bb = kim.Tensor(nd.array(_Bb), device=device)
+
+    np.testing.assert_allclose(_Ab @ _B, (Ab @ B).numpy(), atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(_A @ _Bb, (A @ Bb).numpy(), atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(_Ab @ _Bb, (Ab @ Bb).numpy(), atol=1e-5, rtol=1e-5)
+
+
 @pytest.mark.parametrize("shape", GENERAL_SHAPES)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
 def test_power(shape, device):

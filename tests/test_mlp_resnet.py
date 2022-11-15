@@ -122,9 +122,8 @@ def test_mlp_train_epoch_1():
     np.testing.assert_allclose(train_epoch_1(5, 256, kim.optim.Adam, lr=0.01, weight_decay=0.1),
         np.array([0.675267, 1.84043]), rtol=0.0001, atol=0.0001)
 
-def test_mlp_train_epoch_2():
-    np.testing.assert_allclose(train_epoch_1(16, 128, kim.optim.Adam, lr=0.01, weight_decay=0.1),
-        np.array([0.675267, 1.84043]), rtol=0.0001, atol=0.0001)
+def test_mlp_train_speed():
+    np.testing.assert_allclose(train_epoch_1(16, 256, kim.optim.Adam, lr=0.01, weight_decay=0.1),
 
 def test_mlp_eval_epoch_1():
     np.testing.assert_allclose(eval_epoch_1(10, 150),

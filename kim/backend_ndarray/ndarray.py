@@ -81,14 +81,17 @@ def cpu():
     return BackendDevice("cpu", ndarray_backend_cpu)
 
 
+PREV_DEVICE=None
 def default_device():
-    DEVICE = os.environ.get("KIM_DEVICE", "cuda")
-    if DEVICE == "cpu" or cuda().mod is None:
+    global PREV_DEVICE
+    device = os.environ.get("KIM_DEVICE", "cuda")
+    if device == "cpu" or cuda().mod is None:
+        PREV_DEVICE = device
         return cpu()
     else:
-        print(">>> USING CUDA <<<")
+        if PREV_DEVICE != device: print(">>> USING CUDA <<<")
+        PREV_DEVICE = device
         return cuda()
-
 
 def all_devices():
     """return a list of all available devices"""

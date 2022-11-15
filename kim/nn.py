@@ -268,13 +268,33 @@ class Conv(Module):
         self.stride = stride
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        shape = (kernel_size, kernel_size, in_channels, out_channels)
+        weight_init = init.kaiming_uniform(in_channels, out_channels, 
+            shape=shape, dtype=dtype, device=device)
+        self.weight = Parameter(weight_init)
+
+        x = 1.0/(in_channels * kernel_size**2)**0.5
+        bias_init = init.randn(out_channels, mean=0.0, std=x, dtype=dtype, device=device)
+        self.bias = Parameter(bias_init)
         ### END YOUR SOLUTION
 
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # print(">>>", self.kernel_size, self.in_channels, self.out_channels)
+        # print(">>>", x.shape)
+        # if x.shape[1] == self.in_channels and self.in_channels != x.shape[3]:
+        x = x.transpose(axes=(1,2)).transpose(axes=(2,3))
+        # print(">>>", x.shape, self.weight.shape)
+        out = ops.conv(x, self.weight, padding=self.kernel_size//2, stride=self.stride)
+        out = out.transpose(axes=(2,3)).transpose(axes=(1,2))
+        bias = self.bias.reshape((1,self.out_channels, 1,1))
+        print(">>>", bias.shape, out.shape)
+        bias = bias.broadcast_to(out.shape)
+        out = out + bias
+        return out
         ### END YOUR SOLUTION
+        # Ensure nn.Conv works for (N, C, H, W) tensors even though we implemented 
+        #          the conv op for (N, H, W, C) tensors
 
 
 class RNNCell(Module):

@@ -10,12 +10,11 @@ Especially to save memory when dealing with large model or to utilize small mem 
 
 - [ ] Use triton do utilize tensor cores for matmul and mixed precision (like PyTorch AMP)
 
-- [ ] https://github.com/TimDettmers/bitsandbytes
-
 - [ ] Try flash attention triton version on rtx 3050ti
 
 - [ ] Impl spmm (spare matmul) in triton
 
+- [ ] Try https://github.com/TimDettmers/bitsandbytes
 
 - - -
 

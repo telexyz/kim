@@ -16,6 +16,9 @@ namespace cuda {
 const size_t L = 16 * TILE; // => 16 * 16 = 256 threads
 const size_t S =  4 * TILE; // => 2 * 16*4 * 4*4 * 4-byte = 8.1k shared memory
 
+// const size_t L = 4 * TILE; // => 4 * 4 = 16 threads
+// const size_t S = 4 * TILE; // => 2 * 4*4 * 4*4 * 4-byte = 2.1k shared memory
+
 typedef float scalar_t;
 const size_t ELEM_SIZE = sizeof(scalar_t);
 

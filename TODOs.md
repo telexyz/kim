@@ -1,15 +1,27 @@
+## Project: GPU techniques and tools to turbocharge deep learning
+
+Motivation: simple GPU backend implementation like cuda nd_backend in hw3 did not yied much difference from numpy cpu backend. To make Needle to be helpful in real datasets and problems, we need to speed it up more by digging into GPU advanced techniques and tools to utilize it 100%.
+
 - [-] hw4
 
-- [ ] Finish Paper [Sparse GPU Kernels for Deep Learning](docs/sparse.pdf)
+- [ ] Impl triton backend for ndarray
 
-- [ ] Finish Lec14 [Training Large Models](https://www.youtube.com/watch?v=HSzVogM5IPo)
+- [ ] Use triton do utilize tensor cores for matmul and mixed precision (like PyTorch AMP)
 
-- [x] Integrate CUDA backend to autograd
+- [ ] Try flash attention triton version on rtx 3050ti
+
+- [ ] Impl spmm (spare matmul) in triton
+
 
 - - -
 
+
+- [ ] Finish Paper [Sparse GPU Kernels for Deep Learning](docs/sparse.pdf)
+
 - [ ] Impl [conv2d](https://github.com/dlsyscourse/public_notebooks/blob/main/convolution_implementation.ipynb)
+
+- [ ] Impl    [rnn](https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb)
 
 - [x] Impl    [gan](https://github.com/dlsyscourse/public_notebooks/blob/main/17_generative_adversarial_networks_implementation.ipynb)
 
-- [ ] Impl    [rnn](https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb)
+- [x] Integrate CUDA backend to autograd

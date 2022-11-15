@@ -255,8 +255,8 @@ class NDArray:
         Returns:
             NDArray: reshaped array; this will point to the same memory as the original NDArray.
         """
-
-        if new_shape[0] == -1 and len(new_shape) == 2 and new_shape[1] > 0:
+        # print(">>>", new_shape)
+        if len(new_shape) == 2 and new_shape[0] == -1 and new_shape[1] > 0:
             new_shape = (prod(self.shape) // new_shape[1], new_shape[1])
         # if prod(self.shape) != prod(new_shape): raise ValueError
         assert prod(self.shape) == prod(new_shape), "%s shape != new_shape" % (new_shape)

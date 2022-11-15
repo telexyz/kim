@@ -591,7 +591,7 @@ class Dilate(TensorOp):
             idxs[axis] = slice(0, new_shape[axis], self.dilation + 1)
         out = a.device.zeros(*new_shape)
         out.__setitem__(tuple(idxs), a.compact())
-        return out.compact()
+        return out
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
@@ -609,16 +609,7 @@ class UnDilate(TensorOp):
         self.dilation = dilation
 
     def compute(self, a):
-        ### BEGIN YOUR SOLUTION
-        new_shape = list(a.shape)
-        idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
-        for axis in self.axes:
-            new_shape[axis] //= (self.dilation + 1)
-            idxs[axis] = slice(0, a.shape[axis], self.dilation + 1)
-
-        out = a.compact().__getitem__(tuple(idxs))
-        return out.compact()
-        ### END YOUR SOLUTION
+        return a.undilate(self.axes, self.dilation)
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
@@ -636,15 +627,26 @@ class Conv(TensorOp):
         self.padding = padding
 
     def compute(self, Z, weight):
+        # print(">>>", Z.shape, weight.shape)
+        assert len(Z.shape) == 4 and len(weight.shape) == 4, "ops.Conv only accept 4D, 4D args"
+        # padding
+        if isinstance(self.padding, int) and self.padding > 0:
+            Z = Z.pad(( (0,0), (self.padding,self.padding), (self.padding,self.padding), (0,0) ))
+        # init params
         N,H,W,C_in = Z.shape
         K,_,_,C_out = weight.shape
         Ns, Hs, Ws, Cs = Z.strides
-        
+        # img2col multi-channel conv
         inner_dim = K * K * C_in
-        A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns,Hs,Ws,Hs,Ws,Cs))
-        A = A.compact().reshape((-1,inner_dim))
-        out = A @ weight.reshape((-1, C_out))
-        return out.reshape((N,H-K+1,W-K+1,C_out))
+        A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
+        A = A.compact().reshape((-1, inner_dim))
+        mm = A @ weight.reshape((-1, C_out))
+        out = mm.reshape((N, H-K+1, W-K+1, C_out))
+        # stride
+        if isinstance(self.stride, int) and self.stride > 1:
+            return out.undilate((1,2), self.stride-1)
+        return out
+
 
     def gradient(self, out_grad, onde):
         ### BEGIN YOUR SOLUTION

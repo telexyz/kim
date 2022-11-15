@@ -8,3 +8,19 @@ And it could happen not only when dividing float32 by int32, but in any other ca
 
 np.result_type('float32', 'int32') results in float64
 
+## conv
+
+```py
+import numpy as np
+import ctypes
+A = np.arange(36, dtype=np.float32).reshape(6,6)
+
+# 4*(np.array((6,1,6,1)))
+B = np.lib.stride_tricks.as_strided(A, shape=(4,4,3,3), strides=(24, 4, 24, 4))
+
+C = B.reshape(16,9)
+
+W = np.arange(9, dtype=np.float32).reshape(3,3)
+
+(B.reshape(16,9) @ W.reshape(9)).reshape(4,4)
+[```

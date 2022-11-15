@@ -256,10 +256,12 @@ class NDArray:
             NDArray: reshaped array; this will point to the same memory as the original NDArray.
         """
 
+        if new_shape[0] == -1 and len(new_shape) == 2 and new_shape[1] > 0:
+            new_shape = (prod(self.shape) // new_shape[1], new_shape[1])
         # if prod(self.shape) != prod(new_shape): raise ValueError
-        assert prod(self.shape) == prod(new_shape), "%s shape != new_shape" % (self)
+        assert prod(self.shape) == prod(new_shape), "%s shape != new_shape" % (new_shape)
         # if not self.is_compact(): raise ValueError
-        assert self.is_compact(), "%s is not compact" % (self)
+        assert self.is_compact(), "%s is not compact" % (self.shape)
         new_strides = self.compact_strides(new_shape)
         return self.as_strided(new_shape, new_strides)
 

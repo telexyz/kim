@@ -635,10 +635,16 @@ class Conv(TensorOp):
         self.stride = stride
         self.padding = padding
 
-    def compute(self, A, B):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+    def compute(self, Z, weight):
+        N,H,W,C_in = Z.shape
+        K,_,_,C_out = weight.shape
+        Ns, Hs, Ws, Cs = Z.strides
+        
+        inner_dim = K * K * C_in
+        A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns,Hs,Ws,Hs,Ws,Cs))
+        A = A.compact().reshape((-1,inner_dim))
+        out = A @ weight.reshape((-1, C_out))
+        return out.reshape((N,H-K+1,W-K+1,C_out))
 
     def gradient(self, out_grad, onde):
         ### BEGIN YOUR SOLUTION

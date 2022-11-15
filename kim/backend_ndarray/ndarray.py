@@ -590,23 +590,22 @@ class NDArray:
                 out = NDArray.make((), device=self.device)
             return view, out
 
-        ### axist is not None
+        ### axis is not None
         # Validate input params
         if isinstance(axis, (tuple, list)):
-            assert len(axis) == 1, "Only support reduction over a single axis"
-            axis = axis[0]
-
-        assert isinstance(axis, int), "reduced axis must be integer"
+            axes = tuple(axis)
+        else:
+            axes = (axis,)
 
         # Create view
-        new_axes = tuple([a for a in range(self.ndim) if a != axis]) + (axis,)
+        new_axes = tuple([a for a in range(self.ndim) if a not in axes]) + axes
         view = self.permute(new_axes)
 
         # Create out
         if keepdims:
-            new_shape = [1 if i == axis else s for i, s in enumerate(self.shape)]
+            new_shape = [1 if i in axes else s for i, s in enumerate(self.shape)]
         else:
-            new_shape = [s for i, s in enumerate(self.shape) if i != axis]
+            new_shape = [s for i, s in enumerate(self.shape) if i not in axes]
 
         out = NDArray.make(tuple(new_shape), device=self.device)
 

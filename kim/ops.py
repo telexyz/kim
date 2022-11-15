@@ -274,15 +274,14 @@ class Summation(TensorOp):
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]
-        new_shape = out_grad.shape
         
         axes = self.axes
-        if axes is None: axes = ()        
-        # Trường hợp axes là int thì convert về tuple
-        if not isinstance(axes, tuple): axes = (axes,)
+        if axes is None: axes = ()
+        if isinstance(axes, int): axes = (axes,)
+        axes = tuple(axes)
 
-        for i in range(len(axes)):
-            idx = axes[i]
+        new_shape = out_grad.shape
+        for idx in axes:
             new_shape = new_shape[0:idx] + (1,) + new_shape[idx:]        
         # Các thao tác trên chỉ để tính new_shape
 
@@ -290,7 +289,7 @@ class Summation(TensorOp):
             x = out_grad
         else:
             x = reshape(out_grad, new_shape)
-
+        # 
         return broadcast_to(x, a.shape),
 
 def summation(a, axes=None, keepdims=False):

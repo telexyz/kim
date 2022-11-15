@@ -4,3 +4,4 @@ build
 kim/backend_ndarray/*.so
 *.pyc
 data
+.ipynb_checkpoints

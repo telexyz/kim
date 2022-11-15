@@ -303,33 +303,51 @@ class MatMul(TensorOp):
         if array_api == np: return a @ b
 
         ### ndarray_backend
+        assert a.shape[-1] == b.shape[-2], "Matrix sizes not matched"
+
         # 2D @ 2D
         if a.ndim == 2 and b.ndim == 2: return a @ b
         
-        # 2D @ 3D
-        if a.ndim == 2 and b.ndim == 3:
-            assert a.shape[1] == b.shape[1], "Matrix sizes not matched"
+        # 2D @ nD
+        if a.ndim == 2:
+            assert b.ndim == 3, "Only support 2D @ 3D MatMul"
             c = b.permute((1,2,0)).compact().reshape((b.shape[1], b.shape[2]*b.shape[0]))
             return (a @ c).reshape((a.shape[0], b.shape[2], b.shape[0])).permute((2,0,1))
 
-        # 3D @ 2D
-        if a.ndim == 3 and b.ndim == 2:
-            assert a.shape[2] == b.shape[0], "Matrix sizes not matched"
-            c = a.reshape((a.shape[0]*a.shape[1], a.shape[2]))
-            return (c @ b).reshape((a.shape[0], a.shape[1], b.shape[1]))
+        # nD @ 2D
+        if b.ndim == 2:
+            assert a.ndim >= 3, "Not ndim shape for matmul"
+            c = a.reshape((-1, a.shape[-1]))
+            shape = list(a.shape)
+            shape[-1] = b.shape[1]
+            return (c @ b).reshape(tuple(shape))
 
         # 3D @ 3D
         # https://www.geeksforgeeks.org/numpy-3d-matrix-multiplication
-        assert a.ndim == 3 and b.ndim == 3, "Only support 2D @ 2D, 3D @ 2D, and 3D @ 3D"
-        assert a.shape[2] == b.shape[1], "Matrix sizes not matched"
-        assert a.shape[0] == b.shape[0], "Batch need to be same size"
-        c = NDArray.make((a.shape[0], a.shape[1], b.shape[2]), device=a.device)
-        for i in range(a.shape[0]):
-            _a = a[i,:,:].compact().reshape((a.shape[1], a.shape[2]))
-            _b = b[i,:,:].compact().reshape((b.shape[1], b.shape[2]))
-            c[i,:,:] = (_a @ _b).reshape((1, a.shape[1], b.shape[2]))
-        return c
+        if a.ndim == 3 and b.ndim == 3:
+            assert a.shape[0] == b.shape[0], "Batch need to be same size"
+            c = NDArray.make((a.shape[0], a.shape[-2], b.shape[-1]), device=a.device)
+            for i in range(a.shape[0]):
+                _a = a[i,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
+                _b = b[i,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
+                c[i,:,:] = (_a @ _b).reshape((1, a.shape[-2], b.shape[-1]))
+            return c
 
+        print(">>>", a.shape, b.shape)
+        assert False, "Only support 2D @ 2D, nD @ 2D, 2D @ 3D, and 3D @ 3D"
+
+        # # 4D @ 4D
+        # if a.ndim == 4 and b.ndim == 4:
+        #     assert a.shape[0] == b.shape[0], "Batch need to be same size"
+        #     assert a.shape[1] == b.shape[1], "Batch need to be same size"
+        #     c = NDArray.make((a.shape[0], a.shape[1], a.shape[-2], b.shape[-1]), device=a.device)
+        #     for i in range(a.shape[0]):
+        #         for j in range(a.shape[1]):
+        #             _a = a[i,j,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
+        #             _b = b[i,j,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
+        #             c[i,j,:,:] = (_a @ _b).reshape((1, a.shape[-2], b.shape[-1]))
+        #     return c
+        # assert False, "Only support 2D @ 2D, nD @ 2D, 2D @ 3D, 3D @ 3D and 4D @ 4D"
 
     def gradient(self, out_grad, node):
         a, b = node.inputs 

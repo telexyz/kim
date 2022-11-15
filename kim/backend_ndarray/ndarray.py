@@ -591,7 +591,6 @@ class NDArray:
             return view, out
 
         ### axis is not None
-        # Validate input params
         if isinstance(axis, (tuple, list)):
             axes = tuple(axis)
         else:
@@ -601,7 +600,9 @@ class NDArray:
         fixed_axes = tuple([a for a in range(self.ndim) if a not in axes])
         new_shape = tuple([self.shape[x] for x in fixed_axes])
         new_shape = new_shape + (prod([self.shape[x] for x in axes]),)
-        view = self.permute(fixed_axes + axes).compact().reshape(new_shape)
+
+        view = self.permute(fixed_axes + axes)
+        if len(axes) > 1: view = view.compact().reshape(new_shape)
 
         # Create out
         if keepdims:

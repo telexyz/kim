@@ -8,11 +8,11 @@ python3 -m pytest \
 	tests/test_nd_backend.py \
 	tests/test_nn.py \
 	tests/test_ops.py \
-	tests/test_optim.py \
-	tests/test_cifar_ptb_data.py
+	tests/test_optim.py
 
 # Slow and require alot of memory (exceed 3050ti 4Gb => use cpu instead of cuda)
-# KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py tests/test_data.py
+KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py \
+	tests/test_data.py tests/test_cifar_ptb_data.py
 
 #######
 # hw4 #

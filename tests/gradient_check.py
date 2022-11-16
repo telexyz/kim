@@ -47,4 +47,5 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
         print(">>>", np.array2string(computed_grads[i].flatten()[0:8], precision=5, separator=' '))
         print("")
     assert error < tol
+    # if n == 2 and args[0].shape == (6, 5, 4) and args[1].shape == (6, 4, 3): assert False # to show above print
     return computed_grads

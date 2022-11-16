@@ -10,8 +10,24 @@ KIM_BACKEND=nd KIM_DEVICE=cuda python3 -m pytest \
 	tests/test_ops.py \
 	tests/test_optim.py
 
+
+KIM_BACKEND=nd KIM_DEVICE=cpu python3 -m pytest \
+	tests/test_autograd.py \
+	tests/test_init.py \
+	tests/test_nn.py \
+	tests/test_ops.py \
+	tests/test_optim.py
+
+
+KIM_BACKEND=nd KIM_DEVICE=cpu_numpy python3 -m pytest \
+	tests/test_autograd.py \
+	tests/test_init.py \
+	tests/test_nn.py \
+	tests/test_ops.py \
+	tests/test_optim.py
+
+
 KIM_BACKEND=np python3 -m pytest \
-	tests/test_ndarray.py \
 	tests/test_autograd.py \
 	tests/test_init.py \
 	tests/test_nn.py \
@@ -22,7 +38,11 @@ KIM_BACKEND=np python3 -m pytest \
 KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py \
 	tests/test_data.py tests/test_cifar_ptb_data.py
 
-KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_mnist_1"
+KIM_DEVICE=cpu_numpy python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py \
+	tests/test_data.py tests/test_cifar_ptb_data.py
+
+time KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_mnist_1"
+time KIM_DEVICE=cpu_numpy python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_mnist_1"
 
 #######
 # hw4 #

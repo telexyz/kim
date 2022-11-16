@@ -4,7 +4,7 @@ import kim
 # `tests/test_nd_backend.py` gradient check use `assert error < 4.2e-1`
 def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
     if kim.array_api == np: tol = 1e-6 # numpy_backend
-    else: tol = 3.2e-1
+    else: tol = .1
     eps = 1e-4 # = 1^(-4)
     # Khởi tạo mảng numerical_grads = [0..] có shapes tương ứng với 
     # từng args đầu vào của hàm `f`
@@ -35,13 +35,16 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
         out.backward()
         computed_grads = [a.grad.numpy() for a in args]
 
+    n = len(args)
     error = sum(
         np.linalg.norm(computed_grads[i] - numerical_grads[i])
-        for i in range(len(args))
-    )
+        for i in range(n)
+    ) / n
 
-    # print(">>>", f, args, kwargs)
-    # print(">>>", numerical_grads)
-    # print(">>>", computed_grads)
+    print(">>>", f, args[0].shape, args[1].shape if n > 1 else "")
+    for i in range(n):
+        print(">>>", np.array2string(numerical_grads[i].flatten()[0:8], precision=5, separator=' '))
+        print(">>>", np.array2string(computed_grads[i].flatten()[0:8], precision=5, separator=' '))
+        print("")
     assert error < tol
     return computed_grads

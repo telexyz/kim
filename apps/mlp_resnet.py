@@ -33,7 +33,7 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
 def epoch(dataloader, model, opt=None):
     np.random.seed(4)
     loss_func = nn.SoftmaxLoss()
-    training = not (opt == None)
+    training = (opt is not None)
 
     if training:
         model.train()
@@ -57,6 +57,10 @@ def epoch(dataloader, model, opt=None):
             loss.backward()
             opt.step()
 
+        x.detach()
+        y.detach()
+        loss.detach()
+        out.detach()
     return errors / counts, losses / (i + 1)
 
 

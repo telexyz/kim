@@ -681,7 +681,7 @@ class Conv(TensorOp):
         inner_dim = K * K * C_in
         A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
         A = A.compact().reshape((-1, inner_dim))
-        mm = A @ weight.reshape((-1, C_out))
+        mm = A @ weight.compact().reshape((-1, C_out))
         out = mm.reshape((N, H-K+1, W-K+1, C_out))
         # stride
         if isinstance(self.stride, int) and self.stride > 1:
@@ -689,9 +689,25 @@ class Conv(TensorOp):
         return out
 
 
-    def gradient(self, out_grad, onde):
+    def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # raise NotImplementedError()
+        X, W = node.inputs
+        print(">>> conv_backward:", out_grad.shape, X.shape, W.shape, self.stride, self.padding)
+        if self.stride > 1: grad = dilate(out_grad, (1,2), self.stride-1)
+        else: grad = out_grad
+        X_grad = conv(grad, transpose(W), padding=self.padding)
+
+        grad = transpose(grad, axes=(0,2))
+        XT = transpose(X, axes=(0,3))
+        print(">>>", W.shape, XT.shape, grad.shape)
+        # >>> (3, 3, 16, 8) (1, 14, 14, 16) (1, 14, 14, 8)
+        # >>> (3, 3, 16, 8) (1, 14, 14, 16) (14, 14, 1, 8)
+        # >>> (3, 3, 16, 8) (16, 14, 14, 1) (14, 14, 1, 8)
+        W_grad = conv(XT, grad, padding=self.padding)
+        W_grad = transpose(W_grad, axes=(0,2))
+        print(">>> X,W_grad:", X_grad.shape, W_grad.shape)
+        return X_grad, W_grad
         ### END YOUR SOLUTION
 
 

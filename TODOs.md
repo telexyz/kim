@@ -10,20 +10,22 @@ Especially to save memory when dealing with large model or to utilize small mem 
 
 - [ ] Use triton do utilize tensor cores for matmul and mixed precision (like PyTorch AMP)
 
-- [ ] Try flash attention triton version on rtx 3050ti
-
-- [ ] Impl spmm (spare matmul) in triton
-
-- [ ] Try https://github.com/TimDettmers/bitsandbytes
 
 - - -
 
 
 - [ ] Finish Paper [Sparse GPU Kernels for Deep Learning](docs/sparse.pdf)
 
-- [ ] Impl [conv2d](https://github.com/dlsyscourse/public_notebooks/blob/main/convolution_implementation.ipynb)
+- [ ] Impl spmm (spare matmul) in triton
 
-- [ ] Impl    [rnn](https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb)
+- [ ] Try https://github.com/TimDettmers/bitsandbytes
+
+
+- - -
+
+- [ ] [Transformer](https://github.com/dlsyscourse/public_notebooks/blob/main/transformer_implementation.ipynb)
+
+- [ ] Try flash attention triton version on rtx 3050ti
 
 - [x] Impl    [gan](https://github.com/dlsyscourse/public_notebooks/blob/main/17_generative_adversarial_networks_implementation.ipynb)
 

@@ -309,13 +309,17 @@ class MatMul(TensorOp):
         
         # 2D @ nD
         if a.ndim == 2:
-            assert b.ndim == 3, "Only support 2D @ 3D MatMul"
-            c = b.permute((1,2,0)).compact().reshape((b.shape[1], b.shape[2]*b.shape[0]))
-            return (a @ c).reshape((a.shape[0], b.shape[2], b.shape[0])).permute((2,0,1))
+            if b.ndim == 3:
+                c = b.permute((1,2,0)).compact().reshape((b.shape[1], b.shape[2]*b.shape[0]))
+                return (a @ c).reshape((a.shape[0], b.shape[2], b.shape[0])).permute((2,0,1))
+
+            assert b.ndim == 4, "Only support 2D @ 3,4D MatMul"
+            c = b.permute((2,3,0,1)).compact().reshape((b.shape[2], b.shape[3]*b.shape[0]*b.shape[1]))
+            return (a @ c).reshape((a.shape[0], b.shape[3], b.shape[0], b.shape[1])).permute((3,0,1,2))
 
         # nD @ 2D
         if b.ndim == 2:
-            assert a.ndim >= 3, "Not ndim shape for matmul"
+            assert a.ndim >= 3, "a.ndim must >= 3 for nD @ 2D MatMul"
             c = a.reshape((-1, a.shape[-1]))
             shape = list(a.shape)
             shape[-1] = b.shape[1]
@@ -330,6 +334,26 @@ class MatMul(TensorOp):
                 _a = a[i,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
                 _b = b[i,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
                 c[i,:,:] = (_a @ _b).reshape((1, a.shape[-2], b.shape[-1]))
+            return c
+
+        # >>> (3, 2, 1) (3, 3, 1, 2)
+        if b.ndim == 4 and a.ndim == 3 and b.shape[1] == a.shape[0]:
+            c = NDArray.make((b.shape[0], a.shape[-3], a.shape[-2], b.shape[-1]), device=a.device)
+            for i in range(a.shape[0]):
+                _a = a[i,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
+                for j in range(b.shape[0]):
+                    _b = b[j,i,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
+                    c[j,i,:,:] = (_a @ _b).reshape((1, 1, a.shape[-2], b.shape[-1]))
+            return c
+
+        # >>> (3, 3, 2, 2) (3, 3, 2, 1)
+        if b.ndim == 4 and a.ndim == 4 and b.shape[0] == a.shape[0] and b.shape[1] == a.shape[1]:
+            c = NDArray.make((a.shape[-4], a.shape[-3], a.shape[-2], b.shape[-1]), device=a.device)
+            for i in range(a.shape[0]):
+                for j in range(b.shape[1]):
+                    _a = a[i,j,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
+                    _b = b[i,j,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
+                    c[i,j,:,:] = (_a @ _b).reshape((1, 1, a.shape[-2], b.shape[-1]))
             return c
 
         print(">>>", a.shape, b.shape)

@@ -13,13 +13,11 @@ if BACKEND == "nd":
         default_device,
         BackendDevice as Device,
     )
-
     NDArray = array_api.NDArray
 
 elif BACKEND == "np":
     import numpy as array_api
     from .backend_numpy import all_devices, cpu, default_device, Device
-
     NDArray = array_api.ndarray
 
 else:

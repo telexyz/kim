@@ -302,7 +302,7 @@ class MatMul(TensorOp):
         if array_api == np: return a @ b
 
         ### ndarray_backend
-        assert a.shape[-1] == b.shape[-2], "Matrix sizes not matched"
+        assert a.shape[-1] == b.shape[-2], "Sizes not matched %s @ %s" % (a.shape, b.shape)
 
         # 2D @ 2D
         if a.ndim == 2 and b.ndim == 2: return a @ b

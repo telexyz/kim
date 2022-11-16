@@ -691,7 +691,7 @@ PYBIND11_MODULE(ndarray_backend_cuda, m) {
 
     /* copy memory to host */
 
-    // khởi tạo vùng nhớ mới trong hosst
+    // khởi tạo vùng nhớ mới trong host
     scalar_t* host_ptr = (scalar_t*)std::malloc(a.size * ELEM_SIZE);
     if (host_ptr == 0) { throw std::bad_alloc(); }
 

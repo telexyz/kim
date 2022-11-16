@@ -160,7 +160,7 @@ class NDArray:
         # khởi tạo giá trị cho các tham số chưa được khởi tạo
         if strides is None: strides = NDArray.compact_strides(shape)
         if device is None: device = default_device()
-        if handle is None: handle = device.Array(prod(shape))
+        if handle is None: handle = device.Array(prod(shape)) # tạo vùng nhớ mới trong device
         
         # gán các tham số vào thuộc tính của instance mới
         array._shape = tuple(shape)
@@ -261,9 +261,8 @@ class NDArray:
             new_shape = (prod(self.shape) // new_shape[1], new_shape[1])
         # if prod(self.shape) != prod(new_shape): raise ValueError
         assert prod(self.shape) == prod(new_shape), "%s shape != new_shape" % (new_shape)
-        # if not self.is_compact(): raise ValueError
-        assert self.is_compact(), "%s is not compact" % (self.shape)
-        new_strides = self.compact_strides(new_shape)
+        # assert self.is_compact(), "%s is not compact" % ("self") # (self)
+        new_strides = self.compact().compact_strides(new_shape)
         return self.as_strided(new_shape, new_strides)
 
 

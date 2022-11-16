@@ -82,10 +82,10 @@ class Linear(Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype)
+        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype, device=device)
         self.weight = Parameter(weight_init)
         if bias is True:
-            bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype)
+            bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype, device=device)
             self.bias = Parameter(ops.transpose(bias_init))
         else:
             self.bias = None
@@ -99,7 +99,8 @@ class Linear(Module):
 
 
 class Flatten(Module):
-    # Takes in a tensor of shape (B,X_0,X_1,...), and flattens all non-batch dimensions so that the output is of shape (B, X_0 * X_1 * ...)
+    # Takes in a tensor of shape (B,X_0,X_1,...), and flattens all non-batch dimensions 
+    # so that the output is of shape (B, X_0 * X_1 * ...)
     def forward(self, X):
         m = 1
         for i in range(len(X.shape)-1):
@@ -160,10 +161,10 @@ class BatchNorm1d(Module):
         self.dim = dim
         self.eps = eps
         self.momentum = momentum
-        self.weight = Parameter(init.ones(1, self.dim, dtype=dtype))
-        self.bias = Parameter(init.zeros(1, self.dim, dtype=dtype))
-        self.running_mean = init.zeros(self.dim, dtype=dtype)
-        self.running_var = init.ones(self.dim, dtype=dtype)
+        self.weight = Parameter(init.ones(1, self.dim, dtype=dtype, device=device))
+        self.bias = Parameter(init.zeros(1, self.dim, dtype=dtype, device=device))
+        self.running_mean = init.zeros(self.dim, dtype=dtype, device=device)
+        self.running_var = init.ones(self.dim, dtype=dtype, device=device)
 
     def forward(self, x: Tensor) -> Tensor:
         batch, dim = x.shape
@@ -198,8 +199,8 @@ class LayerNorm1d(Module):
         super().__init__()
         self.dim = dim
         self.eps = eps
-        self.weight = Parameter(init.ones(1, self.dim, dtype=dtype))
-        self.bias = Parameter(init.zeros(1, self.dim, dtype=dtype))
+        self.weight = Parameter(init.ones(1, self.dim, dtype=dtype, device=device))
+        self.bias = Parameter(init.zeros(1, self.dim, dtype=dtype, device=device))
 
     def forward(self, x: Tensor) -> Tensor:
         batch, dim = x.shape
@@ -221,10 +222,7 @@ class LayerNorm1d(Module):
 
 class Tanh(Module):
     def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
-
+        return ops.tanh(x)
 
 class Sigmoid(Module):
     def __init__(self):

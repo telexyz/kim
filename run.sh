@@ -22,6 +22,8 @@ KIM_BACKEND=np python3 -m pytest \
 KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py \
 	tests/test_data.py tests/test_cifar_ptb_data.py
 
+KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_mnist_1"
+
 #######
 # hw4 #
 #######

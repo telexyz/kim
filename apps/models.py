@@ -7,16 +7,49 @@ import numpy as np
 np.random.seed(0)
 
 
+def ConvBN(in_channels, out_channels, kernel_size, stride, dtype="float32", device=None):
+    return nn.Sequential(
+        nn.Conv(in_channels, out_channels, kernel_size, stride=stride, device=device),
+        # nn.Flatten(),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(),
+    )
+
 class ResNet9(kim.nn.Module):
     def __init__(self, device=None, dtype="float32"):
         super().__init__()
         ### BEGIN YOUR SOLUTION ###
-        raise NotImplementedError() ###
+        self.model = nn.Sequential(
+            # 
+            ConvBN(3,16,7,4, dtype=dtype,device=device),
+            ConvBN(16,32,3,2, dtype=dtype,device=device),
+            nn.Residual(
+                nn.Sequential(
+                    ConvBN(32,32,3,1, dtype=dtype,device=device),
+                    ConvBN(32,32,3,1, dtype=dtype,device=device),
+                ),
+            ),
+            # 
+            ConvBN(32,64,3,2, dtype=dtype,device=device),
+            ConvBN(64,128,3,2, dtype=dtype,device=device),
+            nn.Residual(
+                nn.Sequential(
+                    ConvBN(128,128,3,1, dtype=dtype,device=device),
+                    ConvBN(128,128,3,1, dtype=dtype,device=device),
+                ),
+            ),
+            # 
+            nn.Linear(128,128, dtype=dtype,device=device),
+            nn.ReLU(),
+            nn.Linear(128,10, dtype=dtype,device=device),
+        )
         ### END YOUR SOLUTION
+
 
     def forward(self, x):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        print(">>> ResNet9 forward:", x.shape)
+        return self.model(x)
         ### END YOUR SOLUTION
 
 

@@ -71,6 +71,15 @@ def cuda():
         return BackendDevice("cuda", None)
 
 
+def cuda_triton():
+    """Use triton to implement cuda device"""
+    if cuda().enabled():
+        from . import ndarray_backend_triton
+        return BackendDevice("cuda_triton", ndarray_backend_triton)
+    else:
+        return BackendDevice("cuda_triton", None)
+
+
 def cpu_numpy():
     """Use numpy as a cpu device"""
     return BackendDevice("cpu_numpy", ndarray_backend_numpy)
@@ -96,7 +105,7 @@ def default_device():
 
 def all_devices():
     """return a list of all available devices"""
-    return [cpu(), cuda(), cpu_numpy()]
+    return [cpu(), cuda(), cpu_numpy(), cuda_triton()]
 
 
 class NDArray:
@@ -525,6 +534,7 @@ class NDArray:
         self.device.ewise_tanh(self.compact()._handle, out._handle)
         return out
 
+
     ### Matrix multiplication
     def __matmul__(self, other) -> "NDArray":
         """Matrix multiplication of two arrays.  This requires that both arrays
@@ -543,7 +553,7 @@ class NDArray:
         the GPU version will just work natively by tiling any input size).
         """
 
-        assert self.ndim == 2 and other.ndim == 2, "__matmul__ 2D arrays only"
+        assert self.ndim == 2 and other.ndim == 2, "matmul 2D arrays only"
         assert self.shape[1] == other.shape[0]
 
         m, n, p = self.shape[0], self.shape[1], other.shape[1]

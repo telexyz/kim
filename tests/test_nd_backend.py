@@ -9,8 +9,12 @@ import torch
 import kim
 from kim import backend_ndarray as nd
 
+CPU_CUDA = ["cpu_numpy", "cpu", "cuda"]
+
+_DEVICES = [nd.cpu_numpy(), nd.cpu(), pytest.param(nd.cuda(),
+    marks=pytest.mark.skipif(not nd.cuda().enabled(), reason="No GPU"))]
+
 np.random.seed(1)
-CPU_CUDA = ["cpu", "cuda"]
 
 def backward_check(f, *args, **kwargs):
     eps = 1e-5
@@ -31,12 +35,9 @@ def backward_check(f, *args, **kwargs):
         np.linalg.norm(backward_grad[i].numpy() - numerical_grad[i])
         for i in range(len(args))
     )
-    assert error < 3e-2 # original is 4.2e-1
+    assert error < 2.5e-2 # original is 4.2e-1
     return [g.numpy() for g in backward_grad]
 
-
-_DEVICES = [kim.nd.cpu(), pytest.param(kim.nd.cuda(),
-    marks=pytest.mark.skipif(not kim.nd.cuda().enabled(), reason="No GPU"))]
 
 
 EWISE_OPS = {

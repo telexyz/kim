@@ -39,7 +39,7 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
     error = sum(
         np.linalg.norm(computed_grads[i] - numerical_grads[i])
         for i in range(n)
-    ) / n
+    )
 
     print(">>>", f, args[0].shape, args[1].shape if n > 1 else "")
     for i in range(n):

@@ -85,12 +85,13 @@ PREV_DEVICE=None
 def default_device():
     global PREV_DEVICE
     device = os.environ.get("KIM_DEVICE", "cuda")
-    if device == "cpu" or cuda().mod is None:
+    if device == "cpu" or not cuda().enabled():
         PREV_DEVICE = device
         return cpu()
     else:
-        if PREV_DEVICE != device: print(">>> USING CUDA <<<")
-        PREV_DEVICE = device
+        if PREV_DEVICE != device:
+            print(">>> USING CUDA <<<")
+            PREV_DEVICE = device
         return cuda()
 
 def all_devices():

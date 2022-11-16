@@ -1,7 +1,7 @@
 # pip3 install --upgrade --no-deps git+https://github.com/dlsys10714/mugrade.git
 # pip3 install pytest numpy numdifftools pybind11 requests
 
-KIM_BACKEND=nd python3 -m pytest \
+KIM_BACKEND=nd KIM_DEVICE=cuda python3 -m pytest \
 	tests/test_ndarray.py \
 	tests/test_autograd.py \
 	tests/test_init.py \
@@ -18,7 +18,7 @@ KIM_BACKEND=np python3 -m pytest \
 	tests/test_ops.py \
 	tests/test_optim.py
 
-# Slow and require alot of memory (exceed 3050ti 4Gb => use cpu instead of cuda)
+# BUG: that increase computational graph tensors that exceed GPU memory => use cpu
 KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py \
 	tests/test_data.py tests/test_cifar_ptb_data.py
 

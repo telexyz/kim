@@ -93,7 +93,7 @@ def cpu():
 PREV_DEVICE=None
 def default_device():
     global PREV_DEVICE
-    device = os.environ.get("KIM_DEVICE", "cuda")
+    device = os.environ.get("KIM_DEVICE", "cuda_triton")
 
     if device == "cpu":
         if PREV_DEVICE != device: PREV_DEVICE = device; print(">>> USING CPU <<<")

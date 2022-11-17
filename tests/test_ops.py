@@ -392,10 +392,14 @@ def test_power_scalar_backward():
 def test_divide_backward():
     gradient_check(kim.divide, kim.Tensor(np.random.randn(5, 4)),
         kim.Tensor(5 + np.random.randn(5, 4)))
+    gradient_check(kim.divide, kim.Tensor(np.random.randn(3, 5)), 
+        kim.Tensor(6 + np.random.randn(3, 5)))
 
 
 def test_divide_scalar_backward():
     gradient_check(kim.divide_scalar, kim.Tensor(np.random.randn(5, 4)),
+        scalar=np.random.randn(1)[0])
+    gradient_check(kim.divide_scalar, kim.Tensor(np.random.randn(3, 5)), 
         scalar=np.random.randn(1)[0])
 
 
@@ -459,15 +463,8 @@ def test_summation_backward_multi_axes():
     gradient_check(kim.summation, kim.Tensor(np.random.randn(5,4,5)), axes=(0,1,2))
 
 
-
 def test_matmul_2d3d_backward():
     np.random.seed(0)
-    gradient_check(kim.divide, kim.Tensor(np.random.randn(3, 5)), 
-        kim.Tensor(6 + np.random.randn(3, 5)))
-
-    gradient_check(kim.divide_scalar, kim.Tensor(np.random.randn(3, 5)), 
-        scalar=np.random.randn(1))
-
     gradient_check(kim.matmul, kim.Tensor(np.random.randn(1, 5)), 
         kim.Tensor(np.random.randn(5, 1)))
 

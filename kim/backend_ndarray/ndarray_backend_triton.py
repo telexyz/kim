@@ -28,12 +28,10 @@ def fill(out, val): out.array.fill_(val)
 def compact(a, out, shape, strides, offset):
     from_numpy(to_numpy(a, shape, strides, offset).flatten(), out)
 
-def ewise_setitem(a, out, shape, strides, offset):
-    # cheating, we use torch function instead of writing our own triton kernel
-    torch.as_strided(out.array, shape, strides, offset)[:] = a.array.reshape(shape)
-
+''' Triton ops
+'''
 def scalar_setitem(size, val, out, shape, strides, offset):
-    # this is our fisrt super simple triton kernel, just to show how to use triton with our backend
+    # super simple triton kernel integration, just to show how to use triton with our backend
     a = Array(prod(shape)) # init an empty array, then set it's all elems to val
     grid = lambda meta: (triton.cdiv(a.size, meta['BLOCK_SIZE']),)
     simple_scalar_setitem_kernel[grid](a.array, a.size, val, BLOCK_SIZE=512)
@@ -41,11 +39,58 @@ def scalar_setitem(size, val, out, shape, strides, offset):
     ewise_setitem(a, out, shape, strides, offset)
 
 
-##################
-#                #
-# TRITON KERNELS #
-#                #
-##################
+''' Use Torch functions to pass the tests first
+'''
+def ewise_setitem(a, out, shape, strides, offset):
+    torch.as_strided(out.array, shape, strides, offset)[:] = a.array.reshape(shape)
+
+def ewise_add(a, b, out): out.array[:] = a.array + b.array
+
+def scalar_add(a, val, out): out.array[:] = a.array + val
+
+def ewise_mul(a, b, out): out.array[:] = a.array * b.array
+
+def scalar_mul(a, val, out): out.array[:] = a.array * val
+
+def ewise_div(a, b, out): out.array[:] = a.array / b.array
+
+def scalar_div(a, val, out): out.array[:] = a.array / val
+
+def scalar_power(a, val, out): out.array[:] = a.array ** val
+
+def ewise_maximum(a, b, out): out.array[:] = torch.maximum(a.array, b.array)
+
+def scalar_maximum(a, val, out): out.array[:] = torch.clamp(a.array, min=val)
+
+def ewise_eq(a, b, out): out.array[:] = (a.array == b.array)
+
+def scalar_eq(a, val, out): out.array[:] = (a.array == val)
+
+def ewise_ge(a, b, out): out.array[:] = (a.array >= b.array)
+
+def scalar_ge(a, val, out): out.array[:] = (a.array >= val)
+
+def ewise_log(a, out): out.array[:] = torch.log(a.array)
+
+def ewise_exp(a, out): out.array[:] = torch.exp(a.array)
+
+def ewise_tanh(a, out): out.array[:] = torch.tanh(a.array)
+
+def matmul(a, b, out, m, n, p):
+    out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
+
+def reduce_max(a, out, reduce_size):
+    out.array[:] = a.array[:].reshape(-1, reduce_size).max(axis=1).values
+
+def reduce_sum(a, out, reduce_size):
+    out.array[:] = a.array[:].reshape(-1, reduce_size).sum(axis=1)
+
+
+######################
+#                    #
+#   TRITON KERNELS   #
+#                    #
+######################
 
 '''This kernel simply set all value of an output vector to a scalar value'''
 @triton.jit
@@ -101,7 +146,9 @@ def matmul_advanced_kernel(
     stride_bk, stride_bn,
     stride_cm, stride_cn,
     # Meta-parameters
-    BLOCK_SIZE_M: tl.constexpr, BLOCK_SIZE_N: tl.constexpr, BLOCK_SIZE_K: tl.constexpr,
+    BLOCK_SIZE_M: tl.constexpr,
+    BLOCK_SIZE_N: tl.constexpr,
+    BLOCK_SIZE_K: tl.constexpr,
     GROUP_SIZE_M: tl.constexpr,
     ACTIVATION: tl.constexpr,
 ):

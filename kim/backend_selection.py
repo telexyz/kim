@@ -8,6 +8,7 @@ if BACKEND == "nd":
     from .backend_ndarray import (
         all_devices,
         cuda,
+        cuda_triton,
         cpu,
         cpu_numpy,
         default_device,

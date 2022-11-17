@@ -4,29 +4,20 @@
 
 Especially to save memory when dealing with large model or to utilize small mem GPUs better, `mix-presision`, `quantization` and `sparsity` are very promissing.
 
-- [-] hw4
+- [ ] Finish hw4
 
 - [ ] Impl triton backend for ndarray to test the water
 
-- [ ] Use triton do utilize tensor cores for matmul and mixed precision (like PyTorch AMP)
-
-
-- - -
-
-
-- [ ] Finish Paper [Sparse GPU Kernels for Deep Learning](docs/sparse.pdf)
-
-- [ ] Impl spmm (spare matmul) in triton
-
-- [ ] Try https://github.com/TimDettmers/bitsandbytes
-
+- [ ] Use triton for matmul and mixed precision (like PyTorch AMP)
 
 - - -
 
-- [ ] [Transformer](https://github.com/dlsyscourse/public_notebooks/blob/main/transformer_implementation.ipynb)
+- [ ] Finish paper [Sparse GPU Kernels for Deep Learning](docs/sparse.pdf)
+
+- [ ] Impl spmm (spare matmul) in triton?
+
+- - -
+
+- [ ] https://github.com/dlsyscourse/public_notebooks/blob/main/transformer_implementation.ipynb
 
 - [ ] Try flash attention triton version on rtx 3050ti
-
-- [x] Impl    [gan](https://github.com/dlsyscourse/public_notebooks/blob/main/17_generative_adversarial_networks_implementation.ipynb)
-
-- [x] Integrate CUDA backend to autograd

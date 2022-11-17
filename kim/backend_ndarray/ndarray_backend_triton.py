@@ -1,15 +1,16 @@
-import numpy as np
+import numpy as np # ndarray use numpy as intermediate medium
 import triton
 import triton.language as tl
-import torch
+import torch # triton use torch as a CUDA data storage
 
-cuda = torch.device("cuda")
+cuda = torch.device("cuda") # to init torch.Tensor in CUDA
 
 import operator
 from functools import reduce
-def prod(x): return reduce(operator.mul, x, 1)
+def prod(x): return reduce(operator.mul, x, 1) # utility function
 
 class Array:
+    ''' Like triton, our Array class use torch.Tensor as a data storage too '''
     def __init__(self, size: int) -> torch.Tensor:
         self.array = torch.empty(size, dtype=torch.float32, device=cuda)
 
@@ -28,12 +29,15 @@ def compact(a, out, shape, strides, offset):
     from_numpy(to_numpy(a, shape, strides, offset).flatten(), out)
 
 def ewise_setitem(a, out, shape, strides, offset):
+    # cheating, we use torch function instead of writing our own triton kernel
     torch.as_strided(out.array, shape, strides, offset)[:] = a.array.reshape(shape)
 
 def scalar_setitem(size, val, out, shape, strides, offset):
-    a = Array(prod(shape))
+    # this is our fisrt super simple triton kernel, just to show how to use triton with our backend
+    a = Array(prod(shape)) # init an empty array, then set it's all elems to val
     grid = lambda meta: (triton.cdiv(a.size, meta['BLOCK_SIZE']),)
     simple_scalar_setitem_kernel[grid](a.array, a.size, val, BLOCK_SIZE=512)
+    # then using ewise_setitem to assign them to out
     ewise_setitem(a, out, shape, strides, offset)
 
 
@@ -43,11 +47,12 @@ def scalar_setitem(size, val, out, shape, strides, offset):
 #                #
 ##################
 
+'''This kernel simply set all value of an output vector to a scalar value'''
 @triton.jit
 def simple_scalar_setitem_kernel(
     output_ptr,  # *Pointer* to output vector.
     n_elements,  # Size of the vector.
-    val,
+    value,
     BLOCK_SIZE: tl.constexpr,  # Number of elements each program should process.
 ):
     pid = tl.program_id(axis=0)  # We use a 1D launch grid so axis is 0.
@@ -55,24 +60,18 @@ def simple_scalar_setitem_kernel(
     offsets = block_start + tl.arange(0, BLOCK_SIZE)
     mask = offsets < n_elements
     output = tl.load(output_ptr + offsets, mask=mask)
-    output = val
+    output = value
     tl.store(output_ptr + offsets, output, mask=mask)
 
 
-#################
-# matmul simple #
-#################
-
-
-################
-# matmul tiled #
-################
+''' INTERESTING TRITON KERNELS ''' 
+''' TO BE IMPLEMENTED OR INTEGRATED LATER '''
 
 
 ###################
 # matmul advanced #
 ###################
-
+# Copy from https://github.com/openai/triton/blob/master/python/tutorials/03-matrix-multiplication.py 
 @triton.autotune(
     configs=[
         triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=3, num_warps=8),

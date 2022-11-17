@@ -1,10 +1,6 @@
 import numpy as np
 
-
-__device_name__ = "numpy"
-_datatype = np.float32
-_datetype_size = np.dtype(_datatype).itemsize
-
+_datatype_size = np.dtype(np.float32).itemsize
 
 class Array:
     def __init__(self, size):
@@ -17,7 +13,7 @@ class Array:
 
 def to_numpy(a, shape, strides, offset):
     return np.lib.stride_tricks.as_strided(
-        a.array[offset:], shape, tuple([s * _datetype_size for s in strides])
+        a.array[offset:], shape, tuple([s * _datatype_size for s in strides])
     )
 
 

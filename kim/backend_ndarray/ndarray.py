@@ -73,11 +73,11 @@ def cuda():
 
 def cuda_triton():
     """Use triton to implement cuda device"""
-    if cuda().enabled():
-        from . import ndarray_backend_triton
-        return BackendDevice("cuda_triton", ndarray_backend_triton)
-    else:
-        return BackendDevice("cuda_triton", None)
+    import torch # triton use torch to store data in GPU just like cpu_numpy use numpy to store data
+    if not torch.cuda.is_available(): return BackendDevice("cuda_triton", None)
+    # If torch can use cuda then use triton backend
+    from . import ndarray_backend_triton
+    return BackendDevice("cuda_triton", ndarray_backend_triton)
 
 
 def cpu_numpy():

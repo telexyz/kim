@@ -1,13 +1,30 @@
 import numpy as np
 import triton
 import triton.language as tl
-import numpy as np
+import torch
+
+cuda = torch.device("cuda")
+
+class Array:
+    def __init__(self, size: int) -> torch.Tensor:
+        self.array = torch.empty(size, dtype=torch.float32, device=cuda)
+
+    @property
+    def size(self) -> int: return self.array.size()[0]
 
 
-__device_name__ = "numpy"
-_datatype = np.float32
-_datetype_size = np.dtype(_datatype).itemsize
+def to_numpy(a, shape, strides, offset) -> np.ndarray:
+    return torch.as_strided(a.array, shape, strides, storage_offset=offset).cpu().numpy()
 
+def from_numpy(a, out): out.array[:] = torch.from_numpy(a.flatten())
+
+def fill(out, val): out.array.fill_(val)
+
+def compact(a, out, shape, strides, offset):
+    from_numpy(to_numpy(a, shape, strides, offset).flatten(), out)
+
+def ewise_setitem(a, out, shape, strides, offset):
+    torch.as_strided(out.array, shape, strides, offset)[:] = a.array.reshape(shape)
 
 #################
 # matmul simple #

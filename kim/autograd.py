@@ -158,6 +158,12 @@ class Tensor:
         else:
             return kim.ops.AddScalar(-other)(self)
 
+    def __rsub__(self, other):
+        if isinstance(other, Tensor):
+            return kim.ops.EWiseAdd()(kim.ops.Negate()(self), other)
+        else:
+            return kim.ops.AddScalar(-self)(other)
+
     def __truediv__(self, other):
         if isinstance(other, Tensor): return kim.ops.EWiseDiv()(self, other)
         else: return kim.ops.DivScalar(other)(self)

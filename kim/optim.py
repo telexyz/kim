@@ -24,18 +24,15 @@ class SGD(Optimizer):
         self.weight_decay = weight_decay
         self.u = {}
         for w in self.params:
-            self.u[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
+            self.u[w] = kim.Tensor(kim.default_device().zeros(*w.shape))
 
     def step(self):
         for w in self.params:
-            grad = (w.grad.data + w.data * self.weight_decay).detach()
-            self.u[w].data = (self.momentum*self.u[w].data + (1 - self.momentum)*grad).detach()
-            w.data = (w.data - self.lr * self.u[w].data).detach()
+            grad = (w.grad + w * self.weight_decay).detach()
+            self.u[w].data = (self.momentum*self.u[w] + (1 - self.momentum)*grad).detach()
+            w.data = (w - self.lr * self.u[w]).detach()
             
-            self.u[w].grad = None
-            w.grad = None
-            grad = None
-        print(">>> step, TENSOR_COUNT:", self.t, kim.autograd.CompGraph.TENSOR_COUNT)
+        print(">>> SGD step, TENSOR_COUNT:", self.t, kim.autograd.CompGraph.TENSOR_COUNT)
         self.t += 1
 
 class Adam(Optimizer):
@@ -59,8 +56,8 @@ class Adam(Optimizer):
         self.u = {}
         self.v = {}
         for w in self.params:
-            self.u[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
-            self.v[w] = kim.Tensor(kim.cpu().zeros(*w.shape))
+            self.u[w] = kim.Tensor(kim.default_device().zeros(*w.shape))
+            self.v[w] = kim.Tensor(kim.default_device().zeros(*w.shape))
 
 
     def step(self):
@@ -76,4 +73,4 @@ class Adam(Optimizer):
 
             update = u_hat / ((v_hat ** 0.5) + self.eps)
             w.data = w.data - self.lr * update.data
-        # print(">>> TENSOR_COUNT:", kim.autograd.CompGraph.TENSOR_COUNT)
+        print(">>> Adam step, TENSOR_COUNT:", self.t, kim.autograd.CompGraph.TENSOR_COUNT)

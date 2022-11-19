@@ -1,5 +1,5 @@
-DEFAULT_DEVICE = "cuda"
-# DEFAULT_DEVICE = "cuda_triton"
+# DEFAULT_DEVICE = "cuda"
+DEFAULT_DEVICE = "cuda_triton"
 
 import operator
 import math

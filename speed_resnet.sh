@@ -2,7 +2,7 @@ time KIM_BACKEND=np python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_trai
 echo "^^^numpy_backend^^^"
 echo ""
 
-time KIM_BACKEND=nd KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_speed"
+time KIM_BACKEND=nd KIM_DEVICE=cuda_triton python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_speed"
 echo "^^^cpu_backend^^^"
 echo ""
 

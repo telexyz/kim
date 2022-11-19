@@ -3,6 +3,7 @@ import triton
 import triton.language as tl
 import torch # triton use torch as a CUDA data storage
 
+
 cuda = torch.device("cuda") # to init torch.Tensor in CUDA
 
 import operator
@@ -37,6 +38,13 @@ def scalar_setitem(size, val, out, shape, strides, offset):
     simple_scalar_setitem_kernel[grid](a.array, a.size, val, BLOCK_SIZE=512)
     # then using ewise_setitem to assign them to out
     ewise_setitem(a, out, shape, strides, offset)
+
+from .triton_matmul import matmul as triton_matmul
+def matmul(a, b, out, m, n, p):
+    if m % 32 == 0 and n % 32 == 0 and p % 32 == 0:
+        out.array[:] = triton_matmul(a.array.reshape(m, n), b.array.reshape(n, p)).reshape(-1)
+    else:
+        out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
 
 
 ''' Use Torch functions to pass the tests first. Will re-implement them in Triton,
@@ -77,14 +85,12 @@ def ewise_exp(a, out): out.array[:] = torch.exp(a.array)
 
 def ewise_tanh(a, out): out.array[:] = torch.tanh(a.array)
 
-def matmul(a, b, out, m, n, p):
-    out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
-
 def reduce_max(a, out, reduce_size):
     out.array[:] = a.array[:].reshape(-1, reduce_size).max(axis=1).values
 
 def reduce_sum(a, out, reduce_size):
     out.array[:] = a.array[:].reshape(-1, reduce_size).sum(axis=1)
+
 
 
 ######################

@@ -523,7 +523,6 @@ class Stack(TensorOp):
 
     def compute(self, args: TensorTuple) -> Tensor:
         # https://www.geeksforgeeks.org/python-pytorch-stack-method
-        ### BEGIN YOUR SOLUTION
         # print(">>> args:", len(args), args[0].shape, self.axis)
         shape = list(args[0].shape)
         # print("---", shape)
@@ -539,15 +538,12 @@ class Stack(TensorOp):
             # print(">>> slice:", idxs)
             out.__setitem__(tuple(idxs), args[i])
         return out
-        ### END YOUR SOLUTION
 
 
     def gradient(self, out_grad, node):
-        ### BEGIN YOUR SOLUTION
         # print(">>> node:", type(node), len(node.inputs))
         a = split(out_grad, self.axis).realize_cached_data()
         return make_tuple(*[Tensor(x) for x in a]),
-        ### END YOUR SOLUTION
 
 
 def stack(args, axis):
@@ -565,7 +561,6 @@ class Split(TensorTupleOp):
         self.axis = axis
 
     def compute(self, A):
-        ### BEGIN YOUR SOLUTION
         print(">>> A:", A.shape, self.axis)
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
@@ -581,12 +576,10 @@ class Split(TensorTupleOp):
             b.__setitem__(tuple(b_idxs), a)
             out.append(b)
         return tuple(out)
-        ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         # print(">>> node:", len(node), type(node))
         # print(">>> node.inputs:", len(node.inputs), type(node.inputs))
-        ### BEGIN YOUR SOLUTION
         # A = node.inputs[0]
         # print("\n>>> out_grad:", out_grad.shape, out_grad, type(out_grad))
         # print(">>> A:", A.shape, type(A))
@@ -594,7 +587,6 @@ class Split(TensorTupleOp):
         # n = A.shape[self.axis]
         # return stack([out_grad for i in range(n)], self.axis)
         raise NotImplementedError()
-        ### END YOUR SOLUTION
 
 
 def split(a, axis):
@@ -623,7 +615,6 @@ class Dilate(TensorOp):
         self.dilation = dilation
 
     def compute(self, a):
-        ### BEGIN YOUR SOLUTION
         new_shape = list(a.shape)
         idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
         for axis in self.axes:
@@ -633,12 +624,10 @@ class Dilate(TensorOp):
         out = a.device.zeros(*new_shape)
         out.__setitem__(tuple(idxs), a.compact())
         return out
-        ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
-        ### BEGIN YOUR SOLUTION
         return undilate(out_grad, self.axes, self.dilation),
-        ### END YOUR SOLUTION
+
 
 def dilate(a, axes, dilation):
     return Dilate(axes, dilation)(a)
@@ -653,9 +642,7 @@ class UnDilate(TensorOp):
         return a.undilate(self.axes, self.dilation)
 
     def gradient(self, out_grad, node):
-        ### BEGIN YOUR SOLUTION
         raise NotImplementedError()
-        ### END YOUR SOLUTION
 
 
 def undilate(a, axes, dilation):
@@ -670,73 +657,50 @@ class Conv(TensorOp):
     def compute(self, Z, weight):
         # print(">>>", Z.shape, weight.shape)
         assert len(Z.shape) == 4 and len(weight.shape) == 4, "ops.Conv only accept 4D, 4D args"
+
         # padding
-        if isinstance(self.padding, int) and self.padding > 0:
-            Z = Z.pad(( (0,0), (self.padding,self.padding), (self.padding,self.padding), (0,0) ))
+        pad = self.padding
+        if pad > 0: Z = Z.pad(( (0, 0), (pad, pad), (pad, pad), (0, 0) ))
+
         # init params
         N,H,W,C_in = Z.shape
         K,_,_,C_out = weight.shape
         Ns, Hs, Ws, Cs = Z.strides
+
         # img2col multi-channel conv
         inner_dim = K * K * C_in
         A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
         A = A.compact().reshape((-1, inner_dim))
-        mm = A @ weight.compact().reshape((-1, C_out))
-        out = mm.reshape((N, H-K+1, W-K+1, C_out))
-        # stride
+
+        out = A @ weight.compact().reshape((-1, C_out))
+        out = out.reshape((N, H-K+1, W-K+1, C_out))
+
+        # stride or not stride
         if isinstance(self.stride, int) and self.stride > 1:
-            return out.undilate((1,2), self.stride-1)
-        return out
+            return out.undilate((1, 2), self.stride - 1)
+        else:
+            return out
 
 
     def gradient(self, out_grad, node):
-        ### BEGIN YOUR SOLUTION
         X, W = node.inputs
-        print(">>> conv_backward:", out_grad.shape, X.shape, W.shape, self.stride, self.padding)
-
-        ''' HINTS
-        X.grad: The convolution of out_grad and W, with some operations applied to those
-
-        * If the convolution is strided, increase the size of out_grad with a corresponding dilation
-        * W should be flipped over both the kernel dimensions
-        * Do an example to analyze dimensions:
-            note the shape you want for X.grad, and think about how you must permute/transpose
-            the arguments and add padding to the convolution to achieve this shape
-        * This padding depends on both the kernel size and the padding argument to the convolution
-        '''
+        # print(">>> conv_backward:", out_grad.shape, X.shape, W.shape, self.stride, self.padding)
 
         # If the convolution is strided, increase the size of out_grad with a corresponding dilation
         if self.stride > 1: out_grad = dilate(out_grad, (1,2), self.stride-1) # NWHC
 
         # This padding depends on both the kernel size and the padding argument to the convolution
         pad = X.shape[1] - out_grad.shape[1] + self.padding
-        # print(">>> pad:", pad)
 
         # W should be flipped over both the kernel dimensions then transpose
         X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=pad)
-        # print(">>> X_grad:", X_grad.shape)
  
-        ''' HINTS
-        W.grad: The convolution of X and out_grad, with some operations applied to those
-        The gradients of W must be accumulated over the batches; how can you make the conv operator 
-            itself do this accumulation?
-
-        * Consider turning batches into channels via transpose/permute
-        * Analyze dimensions: how can you modify X and out_grad so that the shape of their convolution
-            matches the shape of W? You may need to transpose/permute the result.
-        * Remember to account for the padding argument passed to convolution
-        '''
-
+        # You can "permute" axes with multiple calls to transpose
         out_grad = out_grad.transpose(axes=(0,2)).transpose(axes=(0,1))
-        X = X.transpose(axes=(0,3))
-        # print(">>>", W.shape, X.shape, out_grad.shape)
-
-        W_grad = conv(X, out_grad, padding=self.padding)
+        W_grad = conv(X.transpose(axes=(0,3)), out_grad, padding=self.padding)
         W_grad = transpose(W_grad, axes=(0,2)).transpose(axes=(0,1))
-        # print(">>> X,W_grad:", X_grad.shape, W_grad.shape)
 
         return X_grad, W_grad
-        ### END YOUR SOLUTION
 
 
 def conv(a, b, stride=1, padding=1):

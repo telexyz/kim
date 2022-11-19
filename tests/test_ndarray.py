@@ -19,8 +19,10 @@ def compare_strides(a_np, a_nd):
 
 
 def check_same_memory(original, view):
-    # assert original._handle.ptr() == view._handle.ptr()
-    assert original._handle == view._handle
+    if hasattr(original, "ptr"):
+        assert original._handle.ptr() == view._handle.ptr()
+    else:
+        assert original._handle == view._handle
 
 
 # TODO test permute, broadcast_to, reshape, getitem, some combinations thereof
@@ -142,6 +144,11 @@ def test_setitem_ewise(params, device):
     _A[lhs_slices] = _B[rhs_slices]
     # end_ptr = A._handle.ptr()
     end_ptr = A._handle
+
+    if hasattr(start_ptr, "ptr"):
+        start_ptr = start_ptr.ptr()
+        end_ptr = end_ptr.ptr()
+
     assert start_ptr == end_ptr, "you should modify in-place"
     compare_strides(_A, A)
     np.testing.assert_allclose(A.numpy(), _A, atol=1e-5, rtol=1e-5)

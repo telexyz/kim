@@ -9,9 +9,9 @@ import itertools
 
 
 _DEVICES = [ nd.cpu_numpy(), 
-    nd.cpu(), 
-    pytest.param(nd.cuda(), marks=pytest.mark.skipif(not nd.cuda().enabled(), reason="No GPU")),
-    pytest.param(nd.cuda_triton(), marks=pytest.mark.skipif(not nd.cuda_triton().enabled(), reason="No GPU"))
+    # nd.cpu(), 
+    # pytest.param(nd.cuda(), marks=pytest.mark.skipif(not nd.cuda().enabled(), reason="No GPU")),
+    # pytest.param(nd.cuda_triton(), marks=pytest.mark.skipif(not nd.cuda_triton().enabled(), reason="No GPU"))
 ]
 
 def backward_check(f, *args, **kwargs):

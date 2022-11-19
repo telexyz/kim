@@ -5,7 +5,7 @@
 python3 -m pytest \
 	tests/test_ndarray.py \
 	tests/test_nd_backend.py \
-	# tests/test_conv.py
+	tests/test_conv.py
 
 # Test for a specific backend
 KIM_BACKEND=nd KIM_DEVICE=cuda_triton ./fast_tests.sh

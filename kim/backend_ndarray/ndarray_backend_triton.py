@@ -41,10 +41,11 @@ def scalar_setitem(size, val, out, shape, strides, offset):
 
 from .triton_matmul import matmul as triton_matmul
 def matmul(a, b, out, m, n, p):
-    if m % 32 == 0 and n % 32 == 0 and p % 32 == 0:
-        out.array[:] = triton_matmul(a.array.reshape(m, n), b.array.reshape(n, p)).reshape(-1)
-    else:
-        out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
+    # if m % 32 == 0 and n % 32 == 0 and p % 32 == 0:
+    #     out.array[:] = triton_matmul(a.array.reshape(m, n), b.array.reshape(n, p)).reshape(-1)
+    # else:
+    #     out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
+    out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
 
 
 ''' Use Torch functions to pass the tests first. Will re-implement them in Triton,

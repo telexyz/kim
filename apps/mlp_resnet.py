@@ -30,42 +30,39 @@ def MLPResNet(dim, hidden_dim=100, num_blocks=3, num_classes=10, norm=nn.BatchNo
     return f
 # https://raw.githubusercontent.com/dlsyscourse/hw2/32490e61fbae67d2b77eb48187824ca87ed1a95c/figures/mlp_resnet.png
 
-def epoch(dataloader, model, opt=None):
+def epoch(dataloader, model, optim=None):
     np.random.seed(4)
     loss_func = nn.SoftmaxLoss()
-    training = (opt is not None)
+    training = (optim is not None)
 
-    if training:
+    if training: # model forward computation for train and eval will be (slightly) difference
         model.train()
     else:
         model.eval()
 
+    # int metrics
     losses = 0
     errors = 0
     counts = 0
 
-    for i, batch in enumerate(dataloader):
-        x, y = batch[0], batch[1]
-        out = model(x)
-        loss = loss_func(out, y)
-        errors += (out.numpy().argmax(axis=1) != y.numpy()).sum()
+    for step, (inputs, labels) in enumerate(dataloader):
+        predicts = model(inputs)
+        loss = loss_func(predicts, labels)
+
+        # update metrics
+        errors += (predicts.numpy().argmax(axis=1) != labels.numpy()).sum()
         losses += loss.numpy()
-        counts += y.shape[0]
+        counts += inputs.shape[0]
         
         if training:
-            opt.reset_grad()
-            loss.backward()
-            opt.step()
+            optim.reset_grad()
+            loss.backward() # backward for all nodes of computational graph, including model's params
+            optim.step()    # update model's params
 
-        # Try to free mem
-        x = None
-        y = None
-        out = None
-        opt.reset_grad()
-        loss.grad = None
-        loss = None
+        # print(">>> step, TENSOR_COUNT:", step, kim.autograd.CompGraph.TENSOR_COUNT)
 
-    return errors / counts, losses / (i + 1)
+    # return metrics after consume all data
+    return errors / counts, losses / (step + 1)
 
 
 def train_mnist(batch_size=100, epochs=10, optimizer=kim.optim.Adam,
@@ -88,9 +85,9 @@ def train_mnist(batch_size=100, epochs=10, optimizer=kim.optim.Adam,
              shuffle=True)
 
     model = MLPResNet(784, hidden_dim)
-    opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay)
+    optim = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay)
     for _ in range(epochs):
-        train = epoch(train_dataloader, model, opt)
+        train = epoch(train_dataloader, model, optim)
     return train + epoch(test_dataloader, model)
 
 

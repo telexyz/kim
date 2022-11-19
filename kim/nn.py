@@ -176,8 +176,8 @@ class BatchNorm1d(Module):
             mean_full = mean.reshape((1, dim)).broadcast_to(x.shape)
             var = ops.summation((x - mean_full) ** 2, axes=0) / batch
 
-            self.running_mean = (1-self.momentum)*self.running_mean + self.momentum*mean
-            self.running_var  = (1-self.momentum)*self.running_var  + self.momentum*var
+            self.running_mean = ((1-self.momentum)*self.running_mean + self.momentum*mean).detach()
+            self.running_var  = ((1-self.momentum)*self.running_var  + self.momentum*var).detach()
         else:
             # inference use running_mean and running_var estimated in training
             mean_full = self.running_mean.reshape((1, dim)).broadcast_to(x.shape)

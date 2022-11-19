@@ -18,7 +18,6 @@ class Optimizer:
 class SGD(Optimizer):
     def __init__(self, params, lr=0.01, momentum=0.0, weight_decay=0.0):
         super().__init__(params)
-        self.t = 0
         self.lr = lr
         self.momentum = momentum
         self.weight_decay = weight_decay
@@ -31,9 +30,6 @@ class SGD(Optimizer):
             grad = (w.grad + w * self.weight_decay).detach()
             self.u[w].data = (self.momentum*self.u[w] + (1 - self.momentum)*grad).detach()
             w.data = (w - self.lr * self.u[w]).detach()
-            
-        print(">>> SGD step, TENSOR_COUNT:", self.t, kim.autograd.CompGraph.TENSOR_COUNT)
-        self.t += 1
 
 class Adam(Optimizer):
     def __init__(
@@ -73,4 +69,3 @@ class Adam(Optimizer):
 
             update = u_hat / ((v_hat ** 0.5) + self.eps)
             w.data = w.data - self.lr * update.data
-        print(">>> Adam step, TENSOR_COUNT:", self.t, kim.autograd.CompGraph.TENSOR_COUNT)

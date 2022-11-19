@@ -5,7 +5,8 @@ import torch
 import triton
 import triton.language as tl
 
-# inputs must be torch.float13 in-order to autotune works !!!
+# inputs must be torch.float16 in-order to autotune works !!!
+# more then one configs will make test code slow !!!
 @triton.autotune(
     configs=[
         # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=3, num_warps=8),
@@ -46,15 +47,34 @@ def matmul_kernel(
     # -----------------------------------------------------------
     # Map program ids `pid` to the block of C it should compute.
     # This is done in a grouped ordering to promote L2 data reuse
-    # See above `L2 Cache Optimizations` section for details
+    # Details https://triton-lang.org/master/getting-started/tutorials/03-matrix-multiplication.html#l2-cache-optimizations
+
+    # program ID
     pid = tl.program_id(axis=0)
+
+    # number of program ids along the M axis
     num_pid_m = tl.cdiv(M, BLOCK_SIZE_M)
+
+    # number of programs ids along the N axis
     num_pid_n = tl.cdiv(N, BLOCK_SIZE_N)
+
+    # number of programs in group
     num_pid_in_group = GROUP_SIZE_M * num_pid_n
+
+    # id of the group this program is in
     group_id = pid // num_pid_in_group
+
+    # row-id of the first program in the group
     first_pid_m = group_id * GROUP_SIZE_M
+
+    # if `num_pid_m` isn't divisible by `GROUP_SIZE_M`, the last group is smaller
     group_size_m = min(num_pid_m - first_pid_m, GROUP_SIZE_M)
+
+    # *within groups*, programs are ordered in a column-major order
+    # row-id of the program in the *launch grid*
     pid_m = first_pid_m + (pid % group_size_m)
+
+    # col-id of the program in the *launch grid*
     pid_n = (pid % num_pid_in_group) // group_size_m
 
     # ----------------------------------------------------------
@@ -63,12 +83,13 @@ def matmul_kernel(
     # and accumulate
     # a_ptrs is a block of [BLOCK_SIZE_M, BLOCK_SIZE_K] pointers
     # b_ptrs is a block of [BLOCK_SIZE_K, BLOCK_SIZE_n] pointers
-    # see above `Pointer Arithmetics` section for details
+    # Details https://triton-lang.org/master/getting-started/tutorials/03-matrix-multiplication.html#pointer-arithmetics
+
     offs_am = pid_m * BLOCK_SIZE_M + tl.arange(0, BLOCK_SIZE_M)
     offs_bn = pid_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
-    offs_k = tl.arange(0, BLOCK_SIZE_K)
-    a_ptrs = a_ptr + (offs_am[:, None] * stride_am + offs_k[None, :] * stride_ak)
-    b_ptrs = b_ptr + (offs_k[:, None] * stride_bk + offs_bn[None, :] * stride_bn)
+    offs_kk = tl.arange(0, BLOCK_SIZE_K)
+    a_ptrs = a_ptr + (offs_am[:, None] * stride_am + offs_kk[None, :] * stride_ak)
+    b_ptrs = b_ptr + (offs_kk[:, None] * stride_bk + offs_bn[None, :] * stride_bn)
 
     # -----------------------------------------------------------
     # Iterate to compute a block of the C matrix
@@ -88,6 +109,7 @@ def matmul_kernel(
         # Advance the ptrs to the next K block
         a_ptrs += BLOCK_SIZE_K * stride_ak
         b_ptrs += BLOCK_SIZE_K * stride_bk
+
     # you can fuse arbitrary activation functions here
     # while the accumulator is still in FP32!
     if ACTIVATION == "leaky_relu":

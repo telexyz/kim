@@ -41,7 +41,7 @@ def scalar_setitem(size, val, out, shape, strides, offset):
 
 from .triton_matmul import matmul as triton_matmul
 def matmul(a, b, out, m, n, p):
-    if m % 32 == 0 and n % 32 == 0 and p % 32 == 0:
+    if n % 32 == 0:
         # triton_matmul use torch.float16 so need to convert input into half first
         c = triton_matmul(a.array.reshape(m, n).half(), b.array.reshape(n, p).half())
         out.array[:] = c.reshape(-1)

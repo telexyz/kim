@@ -47,7 +47,6 @@ def matmul(a, b, out, m, n, p):
         out.array[:] = c.reshape(-1)
     else:
         out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
-    # out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
 
 
 ''' Use Torch functions to pass the tests first. Will re-implement them in Triton,

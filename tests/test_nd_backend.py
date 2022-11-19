@@ -191,7 +191,7 @@ def test_stack_split(shape, axis, l, device):
 
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
-def test_stack_split_backward(shape, axis, l, device):
+def test_stack_backward(shape, axis, l, device):
     _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
     A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
     A_t = [torch.Tensor(_A[i]) for i in range(l)]

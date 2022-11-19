@@ -198,13 +198,17 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
-        node.grad = kim.init.zeros(*node.shape, dtype=node.dtype, device=node.device)
-        for x in output_grads[node]:
-            node.grad = node.grad + x
-            # Keep this condition to pass grad-of-grad test
-            if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
-                # Detach grad from computational graph to save memory
-                node.grad = node.grad.detach()
+        # node.grad = kim.init.zeros(*node.shape, dtype=node.dtype, device=node.device)
+        # for x in output_grads[node]:
+        #     node.grad = node.grad + x
+        #     # Keep this condition to pass grad-of-grad test
+        #     if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
+        #         # Detach grad from computational graph to save memory
+        #         node.grad = node.grad.detach()
+
+        node.grad = sum(x for x in output_grads[node])
+        if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
+            node.grad = node.grad.detach()
 
         # print(">>>", node.op) # bắt lỗi grad không phải float32
         # assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node.dtype)

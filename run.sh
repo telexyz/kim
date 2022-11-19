@@ -6,9 +6,9 @@ python3 -m pytest tests/test_ndarray.py -k "triton"
 
 KIM_BACKEND=nd KIM_DEVICE=cuda_triton python3 -m pytest \
 	tests/test_ndarray.py \
+	tests/test_nd_backend.py \
 	tests/test_autograd.py \
 	tests/test_init.py \
-	tests/test_nd_backend.py \
 	tests/test_nn.py \
 	tests/test_ops.py \
 	tests/test_optim.py
@@ -16,15 +16,17 @@ KIM_BACKEND=nd KIM_DEVICE=cuda_triton python3 -m pytest \
 
 KIM_BACKEND=nd KIM_DEVICE=cuda python3 -m pytest \
 	tests/test_ndarray.py \
+	tests/test_nd_backend.py \
 	tests/test_autograd.py \
 	tests/test_init.py \
-	tests/test_nd_backend.py \
 	tests/test_nn.py \
 	tests/test_ops.py \
 	tests/test_optim.py
 
 
 KIM_BACKEND=nd KIM_DEVICE=cpu python3 -m pytest \
+	tests/test_ndarray.py \
+	tests/test_nd_backend.py \
 	tests/test_autograd.py \
 	tests/test_init.py \
 	tests/test_nn.py \

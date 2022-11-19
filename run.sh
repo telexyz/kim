@@ -1,11 +1,17 @@
 # pip3 install --upgrade --no-deps git+https://github.com/dlsys10714/mugrade.git
 # pip3 install pytest numpy numdifftools pybind11 requests
 
+# Test for all ndarray backends
+python3 -m pytest \
+	tests/test_ndarray.py \
+	tests/test_nd_backend.py
+
+# Test for a specific backend
 KIM_BACKEND=nd KIM_DEVICE=cuda_triton ./fast_tests.sh
-# KIM_BACKEND=nd KIM_DEVICE=cuda ./fast_tests.sh
-# KIM_BACKEND=nd KIM_DEVICE=cpu ./fast_tests.sh
-# KIM_BACKEND=nd KIM_DEVICE=cpu_numpy ./fast_tests.sh
-# KIM_BACKEND=np ./fast_tests.sh
+KIM_BACKEND=nd KIM_DEVICE=cuda ./fast_tests.sh
+KIM_BACKEND=nd KIM_DEVICE=cpu ./fast_tests.sh
+KIM_BACKEND=nd KIM_DEVICE=cpu_numpy ./fast_tests.sh
+KIM_BACKEND=np ./fast_tests.sh
 
 # Heavy tests
 # python3 -m pytest tests/test_simple_nn.py \

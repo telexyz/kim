@@ -16,20 +16,22 @@ class Optimizer:
 
 
 class SGD(Optimizer):
-    def __init__(self, params, lr=0.01, momentum=0.0, weight_decay=0.0):
+    def __init__(self, params, lr=0.01, momentum=0.0, weight_decay=0.0, device=None):
         super().__init__(params)
+        if device is None: device = kim.default_device()
         self.lr = lr
         self.momentum = momentum
         self.weight_decay = weight_decay
         self.u = {}
         for w in self.params:
-            self.u[w] = kim.Tensor(kim.default_device().zeros(*w.shape))
+            self.u[w] = kim.Tensor(device.zeros(*w.shape), device=device)
 
     def step(self):
         for w in self.params:
             grad = (w.grad + w * self.weight_decay).detach()
             self.u[w].data = (self.momentum*self.u[w] + (1 - self.momentum)*grad).detach()
             w.data = (w - self.lr * self.u[w]).detach()
+
 
 class Adam(Optimizer):
     def __init__(
@@ -40,8 +42,10 @@ class Adam(Optimizer):
         beta2=0.999,
         eps=1e-8,
         weight_decay=0.0,
+        device=None,
     ):
         super().__init__(params)
+        if device is None: device = kim.default_device()
         self.lr = lr
         self.beta1 = beta1
         self.beta2 = beta2
@@ -52,8 +56,8 @@ class Adam(Optimizer):
         self.u = {}
         self.v = {}
         for w in self.params:
-            self.u[w] = kim.Tensor(kim.default_device().zeros(*w.shape))
-            self.v[w] = kim.Tensor(kim.default_device().zeros(*w.shape))
+            self.u[w] = kim.Tensor(device.zeros(*w.shape), device=device)
+            self.v[w] = kim.Tensor(device.zeros(*w.shape), device=device)
 
 
     def step(self):

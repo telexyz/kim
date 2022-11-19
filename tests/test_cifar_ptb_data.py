@@ -12,9 +12,16 @@ from kim import backend_ndarray as nd
 np.random.seed(2)
 
 
-_DEVICES = [kim.cpu(), pytest.param(kim.cuda(),
-    marks=pytest.mark.skipif(not kim.cuda().enabled(), reason="No GPU"))]
-
+_DEVICES = [ nd.cpu_numpy(), 
+    # nd.cpu(), 
+    # pytest.param(nd.cuda(), marks=pytest.mark.skipif(not nd.cuda().enabled(), reason="No GPU")),
+    # pytest.param(nd.cuda_triton(), marks=pytest.mark.skipif(not nd.cuda_triton().enabled(), reason="No GPU"))
+]
+CPU_CUDA = [ "cpu_numpy",
+    # "cpu", 
+    # "cuda",
+    # "cuda_triton",
+]
 
 TRAIN = [True, False]
 @pytest.mark.parametrize("train", TRAIN)
@@ -34,7 +41,7 @@ def test_cifar10_dataset(train):
 BATCH_SIZES = [1, 15]
 @pytest.mark.parametrize("batch_size", BATCH_SIZES)
 @pytest.mark.parametrize("train", TRAIN)
-@pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
+@pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
 def test_cifar10_loader(batch_size, train, device):
     cifar10_train_dataset = kim.data.CIFAR10Dataset("data/cifar-10-batches-py", train=True)
     train_loader = kim.data.DataLoader(cifar10_train_dataset, batch_size)
@@ -50,7 +57,7 @@ BPTT = [3, 32]
 @pytest.mark.parametrize("batch_size", BATCH_SIZES)
 @pytest.mark.parametrize("bptt", BPTT)
 @pytest.mark.parametrize("train", TRAIN)
-@pytest.mark.parametrize("device", _DEVICES, ids=["cpu", "cuda"])
+@pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
 def test_ptb_dataset(batch_size, bptt, train, device):
     # TODO update with more tests?
     corpus = kim.data.Corpus("data/ptb")

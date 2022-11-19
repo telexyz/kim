@@ -100,8 +100,9 @@ class DataLoader:
         dataset: Dataset,
         batch_size: Optional[int] = 1,
         shuffle: bool = False,
+        device=None,
     ):
-
+        self.device = device
         self.dataset = dataset
         self.shuffle = shuffle
         self.batch_size = batch_size
@@ -125,12 +126,12 @@ class DataLoader:
         self.n += 1
 
         batch_xy = [self.dataset[i] for i in order]
-        batch_x = Tensor([xy[0] for xy in batch_xy])
+        batch_x = Tensor([xy[0] for xy in batch_xy], device=self.device)
 
         if len(batch_xy[0]) == 1:
             return (batch_x,)
         else:
-            batch_y = Tensor([xy[1] for xy in batch_xy])
+            batch_y = Tensor([xy[1] for xy in batch_xy], device=self.device)
             return (batch_x, batch_y)
         ### END YOUR SOLUTION
 

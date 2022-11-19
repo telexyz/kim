@@ -442,8 +442,8 @@ class ReLU(TensorOp):
 
     def gradient(self, out_grad, node):
         a = node.inputs[0].realize_cached_data()
-        relu_a = Tensor(a > 0)
-        return Tensor(out_grad * relu_a),
+        relu_a = Tensor(a > 0, device=out_grad.device)
+        return Tensor(out_grad * relu_a, device=out_grad.device),
 
 def relu(a):
     return ReLU()(a)
@@ -462,10 +462,8 @@ class LogSumExp(TensorOp):
 
     def gradient(self, out_grad, node):
         a = node.inputs[0].realize_cached_data()
-        # print(">>>", array_api, array_api.max, type(a))
         m = a.max(axis=self.axes, keepdims=True)
-        # print(">>>", a.shape, m.shape)
-        exp_a = exp(Tensor(a - array_api.broadcast_to(m, a.shape)))
+        exp_a = exp(Tensor(a - array_api.broadcast_to(m, a.shape), device=out_grad.device))
         # 
         new_shape = self.new_shape(a.shape)
         sum_exp_a = summation(exp_a, self.axes)
@@ -544,7 +542,7 @@ class Stack(TensorOp):
     def gradient(self, out_grad, node):
         # print(">>> node:", type(node), len(node.inputs))
         a = split(out_grad, self.axis).realize_cached_data()
-        return make_tuple(*[Tensor(x) for x in a]),
+        return make_tuple(*[Tensor(x, device=out_grad.device) for x in a]),
 
 
 def stack(args, axis):

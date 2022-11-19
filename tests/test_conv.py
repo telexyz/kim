@@ -8,8 +8,11 @@ import mugrade
 import itertools
 
 
-_DEVICES = [kim.cpu(), pytest.param(kim.cuda(),
-    marks=pytest.mark.skipif(not kim.cuda().enabled(), reason="No GPU"))]
+_DEVICES = [ nd.cpu_numpy(), 
+    nd.cpu(), 
+    pytest.param(nd.cuda(), marks=pytest.mark.skipif(not nd.cuda().enabled(), reason="No GPU")),
+    pytest.param(nd.cuda_triton(), marks=pytest.mark.skipif(not nd.cuda_triton().enabled(), reason="No GPU"))
+]
 
 def backward_check(f, *args, **kwargs):
     eps = 1e-3
@@ -473,13 +476,14 @@ def test_train_cifar10(device):
              shuffle=False,
              # collate_fn=kim.data.collate_ndarray,
              # drop_last=False,
-             # device=device,
+             device=device,
              # dtype="float32"
              )
     from apps.models import ResNet9
     np.random.seed(0)
     model = ResNet9(device=device, dtype="float32")
-    out = one_iter_of_cifar10_training(dataloader, model, niter=1, opt=kim.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001), device=device)
+    opt = kim.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001, device=device)
+    out = one_iter_of_cifar10_training(dataloader, model, niter=1, opt=opt, device=device)
     assert np.linalg.norm(np.array(list(out)) - np.array([0.09375, 3.5892258])) < 1e-2
 
 
@@ -488,18 +492,15 @@ def one_iter_of_cifar10_training(dataloader, model, niter=1, loss_fn=kim.nn.Soft
     model.train()
     correct, total_loss = 0, 0
     i = 1
-    for batch in dataloader:
+    for (X, y) in dataloader:
         opt.reset_grad()
-        X, y = batch
-        X, y = kim.Tensor(X, device=device), kim.Tensor(y, device=device)
         out = model(X)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
         loss = loss_fn(out, y)
         total_loss += loss.data.numpy() * y.shape[0]
         loss.backward()
         opt.step()
-        if i >= niter:
-            break
+        if i >= niter: break
         i += 1
     return correct/(y.shape[0]*niter), total_loss/(y.shape[0]*niter)
 

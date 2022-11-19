@@ -39,7 +39,8 @@ def scalar_setitem(size, val, out, shape, strides, offset):
     ewise_setitem(a, out, shape, strides, offset)
 
 
-''' Use Torch functions to pass the tests first
+''' Use Torch functions to pass the tests first. Will re-implement them in Triton,
+see backend_ndarray/triton_*.py for advanced triton kernels.
 '''
 def ewise_setitem(a, out, shape, strides, offset):
     torch.as_strided(out.array, shape, strides, offset)[:] = a.array.reshape(shape)

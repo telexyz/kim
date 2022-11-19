@@ -470,7 +470,7 @@ def test_train_cifar10(device):
     dataloader = kim.data.DataLoader(\
              dataset=dataset,
              batch_size=128,
-             shuffle=False
+             shuffle=False,
              # collate_fn=kim.data.collate_ndarray,
              # drop_last=False,
              # device=device,

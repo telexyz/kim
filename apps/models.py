@@ -17,7 +17,6 @@ def ConvBN(in_channels, out_channels, kernel_size, stride, dtype="float32", devi
 class ResNet9(kim.nn.Module):
     def __init__(self, device=None, dtype="float32"):
         super().__init__()
-        ### BEGIN YOUR SOLUTION ###
         self.model = nn.Sequential(
             # 
             ConvBN(3,16,7,4, dtype=dtype,device=device),
@@ -42,14 +41,11 @@ class ResNet9(kim.nn.Module):
             nn.ReLU(),
             nn.Linear(128,10, dtype=dtype,device=device),
         )
-        ### END YOUR SOLUTION
 
 
     def forward(self, x):
-        ### BEGIN YOUR SOLUTION
         print(">>> ResNet9 forward:", x.shape)
         return self.model(x)
-        ### END YOUR SOLUTION
 
 
 class LanguageModel(nn.Module):

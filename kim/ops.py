@@ -694,36 +694,47 @@ class Conv(TensorOp):
         X, W = node.inputs
         print(">>> conv_backward:", out_grad.shape, X.shape, W.shape, self.stride, self.padding)
 
-        # If the convolution is strided, increase the size of out_grad with a corresponding dilation
-        if self.stride > 1: out_grad = dilate(out_grad, (1,2), self.stride-1)
+        ''' HINTS
+        X.grad: The convolution of out_grad and W, with some operations applied to those
 
-        ''' X.grad: The convolution of out_grad and W, with some operations applied to those
-
+        * If the convolution is strided, increase the size of out_grad with a corresponding dilation
         * W should be flipped over both the kernel dimensions
         * Do an example to analyze dimensions:
             note the shape you want for X.grad, and think about how you must permute/transpose
             the arguments and add padding to the convolution to achieve this shape
         * This padding depends on both the kernel size and the padding argument to the convolution
         '''
-        W_ = flip(W, axes=(0,1))
-        X_grad = conv(out_grad, W_, padding=self.padding)
 
-        '''
+        # If the convolution is strided, increase the size of out_grad with a corresponding dilation
+        if self.stride > 1: out_grad = dilate(out_grad, (1,2), self.stride-1) # NWHC
+
+        # This padding depends on both the kernel size and the padding argument to the convolution
+        pad = X.shape[1] - out_grad.shape[1] + self.padding
+        # print(">>> pad:", pad)
+
+        # W should be flipped over both the kernel dimensions then transpose
+        X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=pad)
+        # print(">>> X_grad:", X_grad.shape)
+ 
+        ''' HINTS
         W.grad: The convolution of X and out_grad, with some operations applied to those
-
-        * The gradients of W must be accumulated over the batches; how can you make the conv operator 
+        The gradients of W must be accumulated over the batches; how can you make the conv operator 
             itself do this accumulation?
+
         * Consider turning batches into channels via transpose/permute
         * Analyze dimensions: how can you modify X and out_grad so that the shape of their convolution
             matches the shape of W? You may need to transpose/permute the result.
         * Remember to account for the padding argument passed to convolution
         '''
-        out_grad = transpose(out_grad, axes=(0,2))
-        XT = transpose(X, axes=(0,3))
-        print(">>>", W.shape, XT.shape, out_grad.shape)
-        W_grad = conv(XT, out_grad, padding=self.padding)
-        W_grad = transpose(W_grad, axes=(0,2))
-        print(">>> X,W_grad:", X_grad.shape, W_grad.shape)
+
+        out_grad = out_grad.transpose(axes=(0,2)).transpose(axes=(0,1))
+        X = X.transpose(axes=(0,3))
+        # print(">>>", W.shape, X.shape, out_grad.shape)
+
+        W_grad = conv(X, out_grad, padding=self.padding)
+        W_grad = transpose(W_grad, axes=(0,2)).transpose(axes=(0,1))
+        # print(">>> X,W_grad:", X_grad.shape, W_grad.shape)
+
         return X_grad, W_grad
         ### END YOUR SOLUTION
 

@@ -81,15 +81,15 @@ stack_params = [
 def test_stack_forward(params, device):
     np.random.seed(0)
     shape, n, axis = params['shape'], params['n'], params['axis']
-    to_stack_ndl = []
+    to_stack_kim = []
     to_stack_npy = []
     for i in range(n):
         _A = np.random.randn(*shape)
-        to_stack_ndl += [kim.Tensor(_A, device=device)]
+        to_stack_kim += [kim.Tensor(_A, device=device)]
         to_stack_npy += [_A]
 
     lhs = np.stack(to_stack_npy, axis=axis)
-    rhs = kim.stack(to_stack_ndl, axis=axis)
+    rhs = kim.stack(to_stack_kim, axis=axis)
 
 
 pad_params = [
@@ -319,23 +319,23 @@ def test_stack_vs_pytorch():
     C = np.random.randn(5, 5)
     D = np.random.randn(15, 5)
 
-    Andl = kim.Tensor(A, requires_grad=True)
-    Bndl = kim.Tensor(B, requires_grad=True)
-    Cndl = kim.Tensor(C, requires_grad=True)
-    Dndl = kim.Tensor(D, requires_grad=True)
+    Akim = kim.Tensor(A, requires_grad=True)
+    Bkim = kim.Tensor(B, requires_grad=True)
+    Ckim = kim.Tensor(C, requires_grad=True)
+    Dkim = kim.Tensor(D, requires_grad=True)
 
     Atch = torch.tensor(A, requires_grad=True)
     Btch = torch.tensor(B, requires_grad=True)
     Ctch = torch.tensor(C, requires_grad=True)
     Dtch = torch.tensor(D, requires_grad=True)
 
-    Xndl = kim.stack([Andl, Cndl @ Bndl, Cndl], axis=1)
+    Xkim = kim.stack([Akim, Ckim @ Bkim, Ckim], axis=1)
     Xtch = torch.stack([Atch, Ctch @ Btch, Ctch], dim=1)
 
     assert Xkim.shape == Xtch.shape
     assert np.linalg.norm(Xkim.numpy() - Xtch.detach().numpy()) < 1e-3
 
-    Yndl = (Dndl @ Xkim.reshape((5, 15)) @ Dndl).sum()
+    Ykim = (Dkim @ Xkim.reshape((5, 15)) @ Dkim).sum()
     Ytch = (Dtch @ Xtch.reshape(5, 15) @ Dtch).sum()
 
     assert np.linalg.norm(Ykim.numpy() - Ytch.detach().numpy()) < 1e-3

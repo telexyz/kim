@@ -1,3 +1,6 @@
+DEFAULT_DEVICE = "cuda"
+# DEFAULT_DEVICE = "cuda_triton"
+
 import operator
 import math
 from functools import reduce
@@ -93,7 +96,7 @@ def cpu():
 PREV_DEVICE=None
 def default_device():
     global PREV_DEVICE
-    device = os.environ.get("KIM_DEVICE", "cuda_triton")
+    device = os.environ.get("KIM_DEVICE", DEFAULT_DEVICE)
 
     if device == "cpu":
         if PREV_DEVICE != device: PREV_DEVICE = device; print("((( USING CPU )))")

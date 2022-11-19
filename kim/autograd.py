@@ -162,7 +162,7 @@ class Tensor:
         if isinstance(other, Tensor):
             return kim.ops.EWiseAdd()(kim.ops.Negate()(self), other)
         else:
-            return kim.ops.AddScalar(-self)(other)
+            return kim.ops.AddScalar(other)(-self)
 
     def __truediv__(self, other):
         if isinstance(other, Tensor): return kim.ops.EWiseDiv()(self, other)

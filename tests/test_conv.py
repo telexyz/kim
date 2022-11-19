@@ -109,8 +109,7 @@ def test_pad_forward(params, device):
     _B = np.pad(_A, padding)
     A = nd.NDArray(_A, device=device)
     B = A.pad(padding)
-
-    assert np.linalg.norm(A.numpy() - _A) < 1e-4
+    assert np.linalg.norm(B.numpy() - _B) < 1e-4
 
 
 flip_forward_params = [
@@ -134,8 +133,7 @@ def test_flip_forward(params, device):
     _B = np.flip(_A, axes)
     A = kim.Tensor(_A, device=device)
     B = kim.flip(A, axes=axes)
-
-    assert np.linalg.norm(A.numpy() - _A) < 1e-4
+    assert np.linalg.norm(B.numpy() - _B) < 1e-4
 
 
 flip_backward_params = [

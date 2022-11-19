@@ -32,10 +32,9 @@ class SGD(Optimizer):
             self.u[w].data = (self.momentum*self.u[w].data + (1 - self.momentum)*grad).detach()
             w.data = (w.data - self.lr * self.u[w].data).detach()
             
-            self.u[w].detach()
-            w.grad.detach()
-            grad.detach()
-            w.detach()
+            self.u[w].grad = None
+            w.grad = None
+            grad = None
         print(">>> step, TENSOR_COUNT:", self.t, kim.autograd.CompGraph.TENSOR_COUNT)
         self.t += 1
 

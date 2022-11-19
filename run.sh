@@ -47,12 +47,13 @@ KIM_BACKEND=np python3 -m pytest \
 	tests/test_ops.py \
 	tests/test_optim.py
 
-# BUG: that increase computational graph tensors that exceed GPU memory => use cpu
-KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py \
-	tests/test_data.py tests/test_cifar_ptb_data.py
+# BUG: that increase computational graph tensors that exceed GPU memory
+# => put test_mlp_resnet at last and/or use cpu
+KIM_DEVICE=cpu python3 -m pytest tests/test_simple_nn.py \
+	tests/test_data.py tests/test_cifar_ptb_data.py tests/test_mlp_resnet.py
 
-KIM_DEVICE=cpu_numpy python3 -m pytest tests/test_mlp_resnet.py tests/test_simple_nn.py \
-	tests/test_data.py tests/test_cifar_ptb_data.py
+KIM_DEVICE=cpu_numpy python3 -m pytest tests/test_simple_nn.py \
+	tests/test_data.py tests/test_cifar_ptb_data.py tests/test_mlp_resnet.py
 
 time KIM_DEVICE=cpu python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_mnist_1"
 time KIM_DEVICE=cpu_numpy python3 -m pytest tests/test_mlp_resnet.py -k "test_mlp_train_mnist_1"

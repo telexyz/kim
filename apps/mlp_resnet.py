@@ -57,10 +57,14 @@ def epoch(dataloader, model, opt=None):
             loss.backward()
             opt.step()
 
-        x.detach()
-        y.detach()
-        loss.detach()
-        out.detach()
+        # Try to free mem
+        x = None
+        y = None
+        out = None
+        opt.reset_grad()
+        loss.grad = None
+        loss = None
+
     return errors / counts, losses / (i + 1)
 
 

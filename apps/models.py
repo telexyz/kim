@@ -9,8 +9,7 @@ np.random.seed(0)
 
 def ConvBN(in_channels, out_channels, kernel_size, stride, dtype="float32", device=None):
     return nn.Sequential(
-        nn.Conv(in_channels, out_channels, kernel_size, stride=stride, device=device),
-        # nn.Flatten(),
+        nn.Conv(in_channels, out_channels, kernel_size, stride=stride, dtype=dtype,device=device),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(),
     )

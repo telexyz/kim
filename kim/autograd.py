@@ -71,9 +71,14 @@ class Tensor:
             if dtype is None: dtype = array.dtype
             if device == array.device and dtype == array.dtype:
                 cached_data = array.realize_cached_data()
+            else:
+                # fall back, copy through numpy conversion
+                cached_data = make_array_from_numpy(
+                    array.numpy(), device=device, dtype=dtype
+                )
         else:
             if device is None: device = default_device()
-            cached_data = get_array_from_numpy(array, device=device, dtype=dtype)
+            cached_data = make_array_from_numpy(array, device=device, dtype=dtype)
         
         self.assign_params_and_record_creation(
             op=None, inputs=[],
@@ -185,7 +190,7 @@ class Tensor:
 ####### Helper Methods #######
 ##############################
 
-def get_array_from_numpy(numpy_array, device, dtype):
+def make_array_from_numpy(numpy_array, device, dtype):
     if array_api is numpy: return numpy.array(numpy_array, dtype=dtype)
     else: return array_api.array(numpy_array, device=device, dtype="float32")
 

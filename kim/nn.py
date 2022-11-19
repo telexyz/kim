@@ -87,15 +87,17 @@ class Linear(Module):
         if bias is True:
             bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype, device=device)
             self.bias = Parameter(ops.transpose(bias_init))
-        else:
-            self.bias = None
+        else: self.bias = None
 
     def forward(self, X: Tensor) -> Tensor:
-        mm = ops.matmul(X, self.weight)
-        if self.bias is None:
-            return mm
-        else:
-            return mm + ops.broadcast_to(self.bias, mm.shape)
+        # Handle Resnet9 (2, 128, 1, 1) @ (128, 128)
+        if any(dim == 1 for dim in X.shape):
+            new_shape = [dim for dim in X.shape if dim != 1]
+            X = X.reshape(tuple(new_shape))
+        out = ops.matmul(X, self.weight)
+        if self.bias is not None: out += ops.broadcast_to(self.bias, out.shape)
+        print(">>> nn.Linear:", X.shape, "->", out.shape)
+        return out
 
 
 class Flatten(Module):
@@ -111,7 +113,9 @@ class Flatten(Module):
 
 class ReLU(Module):
     def forward(self, x: Tensor) -> Tensor:
-        return ops.relu(x)
+        out = ops.relu(x)
+        # print(">>> nn.ReLU", x.shape, "->", out.shape)
+        return out
 
 
 class Sequential(Module):
@@ -254,45 +258,44 @@ class Conv(Module):
     No grouped convolution or dilation
     Only supports square kernels
     """
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, device=None, dtype="float32"):
-        super().__init__()
-        if isinstance(kernel_size, tuple):
-            kernel_size = kernel_size[0]
-        if isinstance(stride, tuple):
-            stride = stride[0]
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.kernel_size = kernel_size
+    def __init__(self, i, o, k, stride=1, bias=True, device=None, dtype="float32"):
+        super().__init__() # normalize kernel_size and stride so that:
+        if isinstance(k, tuple): k = k[0] # Only supports square kernels and padding=same
+        if isinstance(stride, tuple): stride = stride[0]
+
+        self.in_channels = i
+        self.out_channels = o
+        self.kernel_size = k
         self.stride = stride
 
-        ### BEGIN YOUR SOLUTION
-        shape = (kernel_size, kernel_size, in_channels, out_channels)
-        weight_init = init.kaiming_uniform(in_channels, out_channels, 
-            shape=shape, dtype=dtype, device=device)
+        # Initialize the (k, k, i, o) weight tensor using Kaiming uniform initialization 
+        # with default settings
+        weight_init = init.kaiming_uniform(i, o, shape=(k, k, i, o), dtype=dtype,device=device)
         self.weight = Parameter(weight_init)
 
-        x = 1.0/(in_channels * kernel_size**2)**0.5
-        bias_init = init.randn(out_channels, mean=0.0, std=x, dtype=dtype, device=device)
-        self.bias = Parameter(bias_init)
-        ### END YOUR SOLUTION
+        if bias:
+            # Initialize the (o,) bias tensor using uniform initialization on the interval 
+            #                             1.0/(in_channels * kernel_size**2)**0.5
+            bias_init = init.randn(o, mean=0.0, std=1.0/(i * k**2)**0.5, dtype=dtype,device=device)
+            self.bias = Parameter(bias_init)
+        else: self.bias = None
 
     def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        # print(">>>", self.kernel_size, self.in_channels, self.out_channels)
-        # print(">>>", x.shape)
-        # if x.shape[1] == self.in_channels and self.in_channels != x.shape[3]:
-        x = x.transpose(axes=(1,2)).transpose(axes=(2,3))
-        # print(">>>", x.shape, self.weight.shape)
-        out = ops.conv(x, self.weight, padding=self.kernel_size//2, stride=self.stride)
-        out = out.transpose(axes=(2,3)).transpose(axes=(1,2))
-        bias = self.bias.reshape((1,self.out_channels, 1,1))
-        print(">>>", bias.shape, out.shape)
-        bias = bias.broadcast_to(out.shape)
-        out = out + bias
-        return out
-        ### END YOUR SOLUTION
         # Ensure nn.Conv works for (N, C, H, W) tensors even though we implemented 
         #          the conv op for (N, H, W, C) tensors
+        xt = x.transpose(axes=(1,2)).transpose(axes=(2,3))
+
+        # Calculate the appropriate padding to ensure input and output dimensions are the same
+        out = ops.conv(xt, self.weight, padding=self.kernel_size//2, stride=self.stride)
+        out = out.transpose(axes=(2,3)).transpose(axes=(1,2))
+
+        # Calculate the convolution, then add the properly-broadcasted bias term if present
+        if self.bias is not None:
+            bias = self.bias.reshape((1, self.out_channels, 1, 1))
+            out += bias.broadcast_to(out.shape)
+
+        print(">>> nn.Conv",self.in_channels,self.out_channels,self.kernel_size,self.stride,x.shape,"->",out.shape)
+        return out
 
 
 class RNNCell(Module):

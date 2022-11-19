@@ -194,10 +194,11 @@ def test_resnet9(device):
     _A = np.random.randn(2, 3, 32, 32)
     A = kim.Tensor(_A, device=device)
     y = model(A)
-
-    assert np.linalg.norm(np.array([[-1.8912625 ,  0.64833605,  1.9400386 ,  1.1435282 ,  1.89777   ,
+    print(">>> test_resnet9:", A.shape, "->", y.shape)
+    assert np.linalg.norm(np.array([
+        [-1.8912625 ,  0.64833605,  1.9400386 ,  1.1435282 ,  1.89777   ,
          2.9039745 , -0.10433993,  0.35458302, -0.5684191 ,  2.6178317 ],
-       [-0.2905612 , -0.4147861 ,  0.90268034,  0.46530387,  1.3335679 ,
+        [-0.2905612 , -0.4147861 ,  0.90268034,  0.46530387,  1.3335679 ,
          1.8534894 , -0.1867125 , -2.4298222 , -0.5344223 ,  4.362149  ]]) - y.numpy()) < 1e-2
 
 
@@ -478,7 +479,7 @@ def test_train_cifar10(device):
     from apps.models import ResNet9
     np.random.seed(0)
     model = ResNet9(device=device, dtype="float32")
-    out = one_iter_of_cifar10_training(dataloader, model, opt=kim.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001), device=device)
+    out = one_iter_of_cifar10_training(dataloader, model, niter=1, opt=kim.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001), device=device)
     assert np.linalg.norm(np.array(list(out)) - np.array([0.09375, 3.5892258])) < 1e-2
 
 
@@ -490,7 +491,7 @@ def one_iter_of_cifar10_training(dataloader, model, niter=1, loss_fn=kim.nn.Soft
     for batch in dataloader:
         opt.reset_grad()
         X, y = batch
-        X,y = kim.Tensor(X, device=device), kim.Tensor(y, device=device)
+        X, y = kim.Tensor(X, device=device), kim.Tensor(y, device=device)
         out = model(X)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
         loss = loss_fn(out, y)

@@ -302,7 +302,7 @@ class MatMul(TensorOp):
         if array_api == np: return a @ b
 
         ### ndarray_backend
-        assert a.shape[-1] == b.shape[-2], "Sizes not matched %s @ %s" % (a.shape, b.shape)
+        assert a.shape[-1] == b.shape[-2], "MatMul: Sizes not matched %s @ %s" % (a.shape, b.shape)
 
         # 2D @ 2D
         if a.ndim == 2 and b.ndim == 2: return a @ b
@@ -313,13 +313,13 @@ class MatMul(TensorOp):
                 c = b.permute((1,2,0)).compact().reshape((b.shape[1], b.shape[2]*b.shape[0]))
                 return (a @ c).reshape((a.shape[0], b.shape[2], b.shape[0])).permute((2,0,1))
 
-            assert b.ndim == 4, "Only support 2D @ 3,4D MatMul"
+            assert b.ndim == 4, "MatMul: Only support 2D @ 3,4D MatMul"
             c = b.permute((2,3,0,1)).compact().reshape((b.shape[2], b.shape[3]*b.shape[0]*b.shape[1]))
             return (a @ c).reshape((a.shape[0], b.shape[3], b.shape[0], b.shape[1])).permute((3,0,1,2))
 
         # nD @ 2D
         if b.ndim == 2:
-            assert a.ndim >= 3, "a.ndim must >= 3 for nD @ 2D MatMul"
+            assert a.ndim >= 3, "MatMul: a.ndim must >= 3 for nD @ 2D"
             c = a.reshape((-1, a.shape[-1]))
             shape = list(a.shape)
             shape[-1] = b.shape[1]
@@ -328,7 +328,7 @@ class MatMul(TensorOp):
         # 3D @ 3D
         # https://www.geeksforgeeks.org/numpy-3d-matrix-multiplication
         if a.ndim == 3 and b.ndim == 3:
-            assert a.shape[0] == b.shape[0], "Batch need to be same size"
+            assert a.shape[0] == b.shape[0], "MatMul: Batch need to be same size"
             c = NDArray.make((a.shape[0], a.shape[-2], b.shape[-1]), device=a.device)
             for i in range(a.shape[0]):
                 _a = a[i,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
@@ -357,7 +357,7 @@ class MatMul(TensorOp):
             return c
 
         print(">>>", a.shape, b.shape)
-        assert False, "Only support 2D @ 2D, nD @ 2D, 2D @ 3D, and 3D @ 3D"
+        assert False, "MatMul: Only support 2D @ 2D, nD @ 2D, 2D @ 3-4D, 3D @ 3D and selected 4D @ 4D"
 
         # # 4D @ 4D
         # if a.ndim == 4 and b.ndim == 4:
@@ -370,7 +370,8 @@ class MatMul(TensorOp):
         #             _b = b[i,j,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
         #             c[i,j,:,:] = (_a @ _b).reshape((1, a.shape[-2], b.shape[-1]))
         #     return c
-        # assert False, "Only support 2D @ 2D, nD @ 2D, 2D @ 3D, 3D @ 3D and 4D @ 4D"
+        # assert False, "Only support 2D @ 2D, nD @ 2D, 2D @ 3-4D, 3D @ 3D and 4D @ 4D"
+
 
     def gradient(self, out_grad, node):
         a, b = node.inputs 

@@ -324,7 +324,9 @@ def test_matmul(m, n, p, device):
     B = nd.array(_B, device=device)
     mm = A @ B
     # if m % 64 == 0: print(">>>", mm.shape, mm)
-    np.testing.assert_allclose(mm.numpy(), _A @ _B, rtol=1e-5, atol=1e-5)
+    if kim.default_device() == kim.cuda_triton(): k = 1e-2
+    else: k = 1e-5
+    np.testing.assert_allclose(mm.numpy(), _A @ _B, rtol=k, atol=k)
 
 
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)

@@ -78,6 +78,9 @@ def assert_allclose(x, y, rtol=1e-5, atol=1e-5):
     if kim.array_api == np:
         np.testing.assert_allclose(x, y, rtol=1e-5, atol=1e-5)
     else:
+        if kim.default_device() == kim.cuda_triton(): 
+            rtol = 1e-2 # reduce accuracy, since triton use f16 matmul
+        # work around since assert_allclose cause error on nd backend
         xy = np.absolute(as_numpy((x-y).sum()))
         assert abs(xy) < rtol
 

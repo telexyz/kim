@@ -4,13 +4,15 @@ import kim as kim
 import kim.nn as nn
 from kim import backend_ndarray as nd
 from models import *
-import time
 
-device = kim.cpu()
+from timeit import default_timer as timer
+import datetime
+
+device = kim.default_device()
 
 ### CIFAR-10 training ###
 
-def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None):
+def epoch_general_cifar10(dataloader, model, started_at, loss_fn=nn.SoftmaxLoss(), opt=None):
     """
     Iterates over the dataloader. If optimizer is not None, sets the
     model to train mode, and for each batch updates the model parameters.
@@ -28,9 +30,28 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
         avg_loss: average loss over dataset
     """
     np.random.seed(4)
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    training = (opt is not None)
+    if training: model.train()
+    else: model.eval()
+
+    correct, total_loss = 0, 0
+    niter = 0
+    for (X, y) in dataloader:
+        out = model(X)
+        loss = loss_fn(out, y)
+        correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
+        total_loss += loss.data.numpy() * y.shape[0]
+        if training:
+            opt.reset_grad()
+            loss.backward()
+            opt.step()
+        niter += 1
+        avg_acc, avg_loss = correct/(y.shape[0]*niter), total_loss/(y.shape[0]*niter)
+        if niter % 20 == 0:
+            time_passed = datetime.timedelta(seconds=timer() - started_at)
+            print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, avg_acc, avg_loss, time_passed))
+
+    return avg_acc, avg_loss
 
 
 def train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,
@@ -52,9 +73,13 @@ def train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,
         avg_loss: average loss over dataset from last epoch of training
     """
     np.random.seed(4)
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay, device=device)
+    lf = loss_fn()
+    started_at = timer()
+    for epoch in range(n_epochs):
+        avg_acc, avg_loss = epoch_general_cifar10(dataloader, model, started_at, loss_fn=lf, opt=opt)
+        time_passed = datetime.timedelta(seconds=timer() - started_at)
+        print("\n>>> epoch: %s, acc: %s, loss: %s (%s)\n" % (epoch, avg_acc, avg_loss, time_passed))
 
 
 def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):

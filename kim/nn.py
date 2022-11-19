@@ -98,7 +98,7 @@ class Linear(Module):
         # 
         out = ops.matmul(X, self.weight)
         if self.bias is not None: out += ops.broadcast_to(self.bias, out.shape)
-        print(">>> nn.Linear:", X.shape, "->", out.shape)
+        # print(">>> nn.Linear:", X.shape, "->", out.shape)
         return out
 
 
@@ -298,7 +298,7 @@ class Conv(Module):
             bias = self.bias.reshape((1, self.out_channels, 1, 1))
             out += bias.broadcast_to(out.shape)
 
-        print(">>> nn.Conv",self.in_channels,self.out_channels,self.kernel_size,self.stride,x.shape,"->",out.shape)
+        # print(">>> nn.Conv",self.in_channels,self.out_channels,self.kernel_size,self.stride,x.shape,"->",out.shape)
         return out
 
 

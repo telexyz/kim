@@ -659,7 +659,7 @@ class Conv(TensorOp):
 
         # padding
         pad = self.padding
-        if pad > 0: Z = Z.pad(( (0, 0), (pad, pad), (pad, pad), (0, 0) ))
+        if pad > 0: Z = array_api.pad(Z, ( (0, 0), (pad, pad), (pad, pad), (0, 0) ))
 
         # init params
         N,H,W,C_in = Z.shape

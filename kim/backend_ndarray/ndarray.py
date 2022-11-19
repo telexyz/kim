@@ -704,6 +704,8 @@ class NDArray:
         return out
         ### END YOUR SOLUTION
 
+def pad(a, axes):
+    return a.pad(axes)
 
 def array(a, dtype="float32", device=None):
     """ Convenience methods to match numpy a bit more closely."""

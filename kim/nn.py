@@ -90,10 +90,12 @@ class Linear(Module):
         else: self.bias = None
 
     def forward(self, X: Tensor) -> Tensor:
-        # Handle Resnet9 (2, 128, 1, 1) @ (128, 128)
-        if any(dim == 1 for dim in X.shape):
-            new_shape = [dim for dim in X.shape if dim != 1]
-            X = X.reshape(tuple(new_shape))
+        if len(X.shape) > 2 and X.shape[-1] != self.weight.shape[-2]:
+            # Handle Resnet9 (2, 128, 1, 1) @ (128, 128)
+            if any(dim == 1 for dim in X.shape):
+                new_shape = [dim for dim in X.shape if dim != 1]
+                X = X.reshape(tuple(new_shape))
+        # 
         out = ops.matmul(X, self.weight)
         if self.bias is not None: out += ops.broadcast_to(self.bias, out.shape)
         print(">>> nn.Linear:", X.shape, "->", out.shape)

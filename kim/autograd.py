@@ -112,7 +112,7 @@ class Tensor:
     def backward(self, out_grad: Optional["Tensor"] = None):
         if out_grad is None:
             out_grad = kim.init.ones(*self.shape, dtype=self.dtype, device=self.device)
-        compute_gradient_of(self, out_grad)
+        compute_gradient_from(self, out_grad)
 
     @property
     def data(self): return self.detach()
@@ -190,18 +190,21 @@ def get_array_from_numpy(numpy_array, device, dtype):
     else: return array_api.array(numpy_array, device=device, dtype="float32")
 
 
-def compute_gradient_of(output_tensor: Tensor, out_grad: Tensor):
+def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
     output_grads: Dict[Tensor, List[Tensor]] = {}
     output_grads[output_tensor] = [out_grad]
     reverse_topo_order = reversed(find_topo_sort([output_tensor]))
 
     for node in reverse_topo_order:
         if not node.requires_grad: continue
-        node.grad = sum(x for x in output_grads[node])
 
-        # Detach grad from computational graph to save memory
-        if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
-            node.grad = node.grad.detach()
+        node.grad = kim.init.zeros(*node.shape, dtype=node.dtype, device=node.device)
+        for x in output_grads[node]:
+            node.grad = node.grad + x
+            # Keep this condition to pass grad-of-grad test
+            if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
+                # Detach grad from computational graph to save memory
+                node.grad = node.grad.detach()
 
         # print(">>>", node.op) # bắt lỗi grad không phải float32
         # assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node.dtype)

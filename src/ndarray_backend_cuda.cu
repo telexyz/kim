@@ -578,7 +578,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
     // Mỗi thread tính (TILE, TILE) sub-matrix
     dim3 block((L / TILE)*(L / TILE), 1, 1);
     dim3 grid((P / L)*(M / L), 1, 1);
-    cout << "\nmatmul: "<<grid.x<<","<<grid.y<<","<<grid.z<<" "<<block.x<<","<<block.y<<","<<block.z;
+    // cout << "\nmatmul: "<<grid.x<<","<<grid.y<<","<<grid.z<<" "<<block.x<<","<<block.y<<","<<block.z;
     MatmulSharedMemKernel<<<grid, block>>>(a.ptr, b.ptr, out->ptr, M, N, P);
   /**/
   } else if (M % TILE == 0 && P % TILE == 0) {

@@ -151,22 +151,6 @@ def test_flip_backward(params, device):
     backward_check(kim.flip, kim.Tensor(np.random.randn(*shape), device=device), axes=axes)
 
 
-# @pytest.mark.parametrize("device", _DEVICES)
-# def test_init_calculate_fans(device):
-#     _A = np.random.randn(3, 3, 16, 8)
-#     A = kim.Tensor(_A, device=device)
-#     assert kim.init._calculate_fans(A) == (144, 72)
-
-#     _A = np.random.randn(3, 3, 16, 8)
-#     A = kim.Tensor(_A, device=device)
-#     assert kim.init._calculate_fans(A) == (144, 72)
-
-
-#     _A = np.random.randn(16, 8)
-#     A = kim.Tensor(_A, device=device)
-#     assert kim.init._calculate_fans(A) == (16, 8)
-
-
 @pytest.mark.parametrize("device", _DEVICES)
 def test_init_kaiming_uniform(device):
     _A = np.random.randn(3, 3, 16, 8)

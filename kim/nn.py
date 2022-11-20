@@ -269,7 +269,7 @@ class Conv(Module):
 
         if bias:
             # Initialize the (o,) bias tensor using uniform initialization on the interval 
-            #                             1.0/(in_channels * kernel_size**2)**0.5
+            #                         +/- 1.0/(in_channels * kernel_size**2)**0.5
             bias_init = init.randn(o, mean=0.0, std=1.0/(i * k**2)**0.5, dtype=dtype,device=device)
             self.bias = Parameter(bias_init)
         else: self.bias = None

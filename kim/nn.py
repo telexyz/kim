@@ -90,12 +90,6 @@ class Linear(Module):
         else: self.bias = None
 
     def forward(self, X: Tensor) -> Tensor:
-        if len(X.shape) > 2 and X.shape[-1] != self.weight.shape[-2]:
-            # Handle Resnet9 (2, 128, 1, 1) @ (128, 128)
-            if any(dim == 1 for dim in X.shape):
-                new_shape = [dim for dim in X.shape if dim != 1]
-                X = X.reshape(tuple(new_shape))
-        # 
         out = ops.matmul(X, self.weight)
         if self.bias is not None: out += ops.broadcast_to(self.bias, out.shape)
         # print(">>> nn.Linear:", X.shape, "->", out.shape)
@@ -232,14 +226,10 @@ class Tanh(Module):
     def forward(self, x: Tensor) -> Tensor:
         return ops.tanh(x)
 
-class Sigmoid(Module):
-    def __init__(self):
-        super().__init__()
 
-    def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+# class Sigmoid(Module):
+#     def forward(self, x: Tensor) -> Tensor:
+#         raise NotImplementedError()
 
 
 class BatchNorm2d(BatchNorm1d):
@@ -392,9 +382,18 @@ class RNN(Module):
             of shape (hidden_size,).
         """
         super().__init__()
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+
+        self.nonlinearity = nonlinearity
+        self.hidden_size = hidden_size
+        self.input_size = input_size
+        self.num_layers = num_layers
+        self.device = device
+        self.dtype = dtype
+        self.bias = bias
+
+        # Init RNN Layers        
+        self.layers = [RNNCell(input_size, hidden_size, bias=bias, nonlinearity=nonlinearity,
+            dtype=dtype, device=device) for i in range(num_layers)]
 
     def forward(self, X, h0=None):
         """
@@ -408,11 +407,12 @@ class RNN(Module):
             (h_t) from the last layer of the RNN, for each t.
         h_n of shape (num_layers, bs, hidden_size) containing the final hidden state for each element in the batch.
         """
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
-
-
+        rnn_cell = self.layers[0]
+        seq_len, bs, input_size = X.shape
+        h = h0
+        for i in range(seq_len):
+            x = X[i]
+            h = rnn_cell.forward(x, h)
 class LSTMCell(Module):
     def __init__(self, input_size, hidden_size, bias=True, device=None, dtype="float32"):
         """

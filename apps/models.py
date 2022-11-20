@@ -19,7 +19,7 @@ class ResNet9(kim.nn.Module):
         super().__init__()
         self.model = nn.Sequential(
             # 
-            ConvBN(3,16,7,4, dtype=dtype,device=device),
+            ConvBN( 3,16,7,4, dtype=dtype,device=device),
             ConvBN(16,32,3,2, dtype=dtype,device=device),
             nn.Residual(
                 nn.Sequential(
@@ -28,7 +28,7 @@ class ResNet9(kim.nn.Module):
                 ),
             ),
             # 
-            ConvBN(32,64,3,2, dtype=dtype,device=device),
+            ConvBN(32, 64,3,2, dtype=dtype,device=device),
             ConvBN(64,128,3,2, dtype=dtype,device=device),
             nn.Residual(
                 nn.Sequential(
@@ -37,9 +37,10 @@ class ResNet9(kim.nn.Module):
                 ),
             ),
             # 
+            nn.Flatten(),
             nn.Linear(128,128, dtype=dtype,device=device),
             nn.ReLU(),
-            nn.Linear(128,10, dtype=dtype,device=device),
+            nn.Linear(128, 10, dtype=dtype,device=device),
         )
 
 

@@ -1,14 +1,16 @@
 # pip3 install --upgrade --no-deps git+https://github.com/dlsys10714/mugrade.git
 # pip3 install pytest numpy numdifftools pybind11 requests
 
-# Test for a specific backend
-KIM_BACKEND=nd KIM_DEVICE=cuda_triton ./tests.sh
-KIM_BACKEND=nd KIM_DEVICE=cuda ./tests.sh
-KIM_BACKEND=nd KIM_DEVICE=cpu ./tests.sh
-KIM_BACKEND=nd KIM_DEVICE=cpu_numpy ./tests.sh
-KIM_BACKEND=np ./tests.sh
+# Common tests for a specific backend
+# - - - - - - - - - - - - - - - - - -
+# KIM_BACKEND=nd KIM_DEVICE=cuda_triton ./tests.sh
+# KIM_BACKEND=nd KIM_DEVICE=cuda ./tests.sh
+# KIM_BACKEND=nd KIM_DEVICE=cpu ./tests.sh
+# KIM_BACKEND=nd KIM_DEVICE=cpu_numpy ./tests.sh
+# KIM_BACKEND=np ./tests.sh
 
 # Heavy tests
+# - - - - - -
 # python3 -m pytest tests/test_simple_nn.py \
 # 	tests/test_data.py tests/test_cifar_ptb_data.py tests/test_mlp_resnet.py
 

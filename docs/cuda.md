@@ -1,3 +1,6 @@
+https://github.com/kevinzakka/learn-cuda/blob/master/warps.md
+
+
 ## Tesla T4's SM (Streaming Multiprocessor)
 
 https://colab.research.google.com/github/d2l-ai/d2l-tvm-colab/blob/master/chapter_gpu_schedules/arch.ipynb

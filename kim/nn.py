@@ -436,7 +436,20 @@ class LSTMCell(Module):
         """
         super().__init__()
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.hidden_size = hidden_size
+        self.input_size = input_size
+        self.device = device
+        self.dtype = dtype
+        self.bias = bias
+
+        k = 1 / hidden_size
+
+        self.W_ih = Parameter(init.randn(input_size, 4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+        self.W_hh = Parameter(init.randn(hidden_size, 4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+
+        if bias:
+            self.bias_ih = Parameter(init.randn(4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+            self.bias_hh = Parameter(init.randn(4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
         ### END YOUR SOLUTION
 
 

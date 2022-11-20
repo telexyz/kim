@@ -7,21 +7,9 @@ import mugrade
 
 import kim
 from kim import backend_ndarray as nd
-
+from backend_select import CPU_CUDA, _DEVICES
 
 np.random.seed(2)
-
-
-_DEVICES = [ nd.cpu_numpy(), 
-    # nd.cpu(), 
-    # pytest.param(nd.cuda(), marks=pytest.mark.skipif(not nd.cuda().enabled(), reason="No GPU")),
-    # pytest.param(nd.cuda_triton(), marks=pytest.mark.skipif(not nd.cuda_triton().enabled(), reason="No GPU"))
-]
-CPU_CUDA = [ "cpu_numpy",
-    # "cpu", 
-    # "cuda",
-    # "cuda_triton",
-]
 
 TRAIN = [True, False]
 @pytest.mark.parametrize("train", TRAIN)

@@ -6,13 +6,8 @@ from kim import backend_ndarray as nd
 import kim as kim
 import mugrade
 import itertools
+from backend_select import _DEVICES
 
-
-_DEVICES = [ nd.cpu_numpy(), 
-    # nd.cpu(), 
-    # pytest.param(nd.cuda(), marks=pytest.mark.skipif(not nd.cuda().enabled(), reason="No GPU")),
-    # pytest.param(nd.cuda_triton(), marks=pytest.mark.skipif(not nd.cuda_triton().enabled(), reason="No GPU"))
-]
 
 def backward_check(f, *args, **kwargs):
     eps = 1e-3
@@ -100,7 +95,7 @@ pad_params = [
     {"shape": (10, 32, 32, 8), "padding": ( (0, 0), (0, 0), (0, 0), (0, 0) )},
     {"shape": (10, 32, 32, 8), "padding": ( (0, 2), (1, 10), (3, 8), (2, 12) )},
 ]
-@pytest.mark.parametrize("device", [nd.cpu()])
+@pytest.mark.parametrize("device", _DEVICES)
 @pytest.mark.parametrize("params", pad_params)
 def test_pad_forward(params, device):
     np.random.seed(0)
@@ -207,7 +202,6 @@ def test_resnet9(device):
 @pytest.mark.parametrize("device", _DEVICES)
 def test_dilate_forward(device):
     np.random.seed(0)
-    device = kim.cpu()
 
     _A = np.random.randint(1, 10, size=(2, 5))
     A = kim.Tensor(_A, device=device)
@@ -313,7 +307,8 @@ def test_dilate_backward(params, device):
     backward_check(kim.dilate, kim.Tensor(np.random.randn(*shape), device=device), dilation=d, axes=axes)
 
 
-def test_stack_vs_pytorch():
+@pytest.mark.parametrize("device", _DEVICES)
+def test_stack_vs_pytorch(device):
     np.random.seed(0)
     import torch
     A = np.random.randn(5, 5)
@@ -321,10 +316,10 @@ def test_stack_vs_pytorch():
     C = np.random.randn(5, 5)
     D = np.random.randn(15, 5)
 
-    Akim = kim.Tensor(A, requires_grad=True)
-    Bkim = kim.Tensor(B, requires_grad=True)
-    Ckim = kim.Tensor(C, requires_grad=True)
-    Dkim = kim.Tensor(D, requires_grad=True)
+    Akim = kim.Tensor(A, requires_grad=True, device=device)
+    Bkim = kim.Tensor(B, requires_grad=True, device=device)
+    Ckim = kim.Tensor(C, requires_grad=True, device=device)
+    Dkim = kim.Tensor(D, requires_grad=True, device=device)
 
     Atch = torch.tensor(A, requires_grad=True)
     Btch = torch.tensor(B, requires_grad=True)

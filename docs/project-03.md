@@ -1,1 +1,1 @@
-Choose an intersting model and start from threre. e.g. wav2vec2, gpt-2, ... implement model, load checkpoint from a pre-trained, then do inference. Our framework is not strong enough to do training but can we do fine-tune?
+Choose an intersting model and start from threre. e.g. wav2vec2, gpt-2, RWKV ... implement model, load checkpoint from a pre-trained, then do inference. Our framework is not strong enough to do training but can we do fine-tune?

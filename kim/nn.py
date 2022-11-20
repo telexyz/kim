@@ -392,7 +392,7 @@ class RNN(Module):
         self.bias = bias
 
         # Init RNN Layers        
-        self.layers = [RNNCell(input_size, hidden_size, bias=bias, nonlinearity=nonlinearity,
+        self.rnn_cells = [RNNCell(input_size, hidden_size, bias=bias, nonlinearity=nonlinearity,
             dtype=dtype, device=device) for i in range(num_layers)]
 
     def forward(self, X, h0=None):
@@ -407,12 +407,15 @@ class RNN(Module):
             (h_t) from the last layer of the RNN, for each t.
         h_n of shape (num_layers, bs, hidden_size) containing the final hidden state for each element in the batch.
         """
-        rnn_cell = self.layers[0]
+        rnn_cell = self.rnn_cells[0]
         seq_len, bs, input_size = X.shape
         h = h0
         for i in range(seq_len):
-            x = X[i]
-            h = rnn_cell.forward(x, h)
+            x = X.cached_data[i,:,:].reshape((bs, input_size)).compact()
+            h = rnn_cell(Tensor(x, device=self.device), h)
+        return h
+
+
 class LSTMCell(Module):
     def __init__(self, input_size, hidden_size, bias=True, device=None, dtype="float32"):
         """

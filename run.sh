@@ -36,8 +36,8 @@
 # https://youtu.be/7kclgMIcMq0?t=2354 => conv via matmul
 
 # python3 -m pytest tests/test_sequence_models.py
-python3 -m pytest tests/test_sequence_models.py -k "cell and tanh-False-False-12-11-15"
-python3 -m pytest tests/test_sequence_models.py -k "cell and relu-False-False-12-11-15"
+python3 -m pytest tests/test_sequence_models.py -k "rnn_cell"
+KIM_DEVICE=cuda python3 -m pytest tests/test_sequence_models.py -k "test_rnn"
 
 # DONE
 # python3 -m pytest tests/test_conv.py

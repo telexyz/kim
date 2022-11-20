@@ -5,7 +5,8 @@
 
 # Train and test cifar10
 # - - - - - - - - - - - 
-# cd apps && KIM_BACKEND=cuda python3 cifar10.py && cd ..
+# cd apps
+# KIM_BACKEND=cuda python3 cifar10.py
 
 # Common tests for a specific backend
 # - - - - - - - - - - - - - - - - - -

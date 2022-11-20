@@ -32,23 +32,23 @@ def epoch_general_cifar10(dataloader, model, started_at, loss_fn=nn.SoftmaxLoss(
     if training: model.train()
     else: model.eval()
 
-    correct, total_loss = 0, 0
+    correct, total_loss = 0, 0, 0
     n = 0; niter = 0
     for (X, y) in dataloader:
         out = model(X)
         loss = loss_fn(out, y)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
-        total_loss += loss.data.numpy() * y.shape[0]
+        total_loss += loss.data.numpy()
         if training:
             opt.reset_grad()
             loss.backward()
             opt.step()
-        niter +=1; n += y.shape[0] # n += batch_size
+        niter += 1; n += y.shape[0] # n += batch_size
         if niter % 20 == 0:
             time_passed = datetime.timedelta(seconds=timer() - started_at)
-            print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, correct/n, total_loss/n, time_passed))
+            print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, correct/n, total_loss/niter, time_passed))
 
-    return correct/n, total_loss/n
+    return correct/n, total_loss/niter
 
 
 def train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,

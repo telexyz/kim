@@ -5,41 +5,46 @@ import torch
 import triton
 import triton.language as tl
 
-# inputs must be torch.float16 in-order to autotune works !!!
-# more then one configs will make test code slow !!!
+# Note1: inputs must be torch.float16 in-order to autotune works !!!
+# Note2: more than one configs will make test code slow !!!
+
+__BLOCK_SIZE_K = 32
+__GROUP_SIZE_M = 8
 @triton.autotune(
     configs=[
-        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=3, num_warps=8),
-        # triton.Config({'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=3, num_warps=8),
-        # triton.Config({'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N':  64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_SIZE_M':  64, 'BLOCK_SIZE_N': 256, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N':  64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_SIZE_M':  64, 'BLOCK_SIZE_N': 128, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N':  32, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=4, num_warps=4),
-        # triton.Config({'BLOCK_SIZE_M':  64, 'BLOCK_SIZE_N':  32, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=5, num_warps=2),
-        # triton.Config({'BLOCK_SIZE_M':  32, 'BLOCK_SIZE_N':  64, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=5, num_warps=2),
-        triton.Config({'BLOCK_SIZE_M':  32, 'BLOCK_SIZE_N':  32, 'BLOCK_SIZE_K': 32, 'GROUP_SIZE_M': 8}, num_stages=5, num_warps=2),
+        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 256}, num_stages=3, num_warps=8),
+        # triton.Config({'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N': 128}, num_stages=3, num_warps=8),
+        # triton.Config({'BLOCK_SIZE_M': 256, 'BLOCK_SIZE_N':  64}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_SIZE_M':  64, 'BLOCK_SIZE_N': 256}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 128}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N':  64}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_SIZE_M':  64, 'BLOCK_SIZE_N': 128}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N':  32}, num_stages=4, num_warps=4),
+        # triton.Config({'BLOCK_SIZE_M':  64, 'BLOCK_SIZE_N':  32}, num_stages=5, num_warps=2),
+        # triton.Config({'BLOCK_SIZE_M':  32, 'BLOCK_SIZE_N':  64}, num_stages=5, num_warps=2),
+        triton.Config({'BLOCK_SIZE_M':  64, 'BLOCK_SIZE_N':  64}, num_stages=5, num_warps=2),
     ],
-    key=['M', 'N', 'K'],
+    key=['M', 'N'],
 )
-
 @triton.jit
 def matmul_kernel(
     # Pointers to matrices
     a_ptr, b_ptr, c_ptr,
+
     # Matrix dimensions
     M, N, K,
+
     # The stride variables represent how much to increase the ptr by when moving by 1
     # element in a particular dimension. E.g. stride_am is how much to increase a_ptr
     # by to get the element one row down (A has M rows)
     stride_am, stride_ak,
     stride_bk, stride_bn,
     stride_cm, stride_cn,
+
     # Meta-parameters
-    BLOCK_SIZE_M: tl.constexpr, BLOCK_SIZE_N: tl.constexpr, BLOCK_SIZE_K: tl.constexpr,
-    GROUP_SIZE_M: tl.constexpr,
-    ACTIVATION: tl.constexpr,
+    BLOCK_SIZE_M: tl.constexpr, # M = n1 * BLOCK_SIZE_M
+    BLOCK_SIZE_N: tl.constexpr, # N = n2 * BLOCK_SIZE_N
+    ACTIVATION: tl.constexpr,   # n1, n2 are > 0 integers
 ):
     """Kernel for computing the matmul C = A x B.
     A has shape (M, K), B has shape (K, N) and C has shape (M, N)
@@ -49,30 +54,39 @@ def matmul_kernel(
     # This is done in a grouped ordering to promote L2 data reuse
     # Details https://triton-lang.org/master/getting-started/tutorials/03-matrix-multiplication.html#l2-cache-optimizations
 
+    BLOCK_SIZE_K: tl.constexpr = __BLOCK_SIZE_K
+    GROUP_SIZE_M: tl.constexpr = __GROUP_SIZE_M
+
     # program ID
     pid = tl.program_id(axis=0)
 
-    # number of program ids along the M axis
+    # Mỗi pid (program id) tính toán trên 1 khối BLOCK_SIZE_M x BLOCK_SIZE_N
+    # nên blocks tương đương programs
+
+    # number of blocks (programs) along the M axis
     num_pid_m = tl.cdiv(M, BLOCK_SIZE_M)
 
-    # number of programs ids along the N axis
+    # number of blocks (programs) along the N axis
     num_pid_n = tl.cdiv(N, BLOCK_SIZE_N)
 
-    # number of programs in group
+    # nhóm blocks theo chiều dọc (M), GROUP_SIZE_M blocks vào thành nhóm
+    # number of blocks (programs) in group
     num_pid_in_group = GROUP_SIZE_M * num_pid_n
 
     # id of the group this program is in
     group_id = pid // num_pid_in_group
 
-    # row-id of the first program in the group
-    first_pid_m = group_id * GROUP_SIZE_M
+    # (row-)id of the first program in the group
+    first_pid_in_group_m = group_id * GROUP_SIZE_M
 
     # if `num_pid_m` isn't divisible by `GROUP_SIZE_M`, the last group is smaller
-    group_size_m = min(num_pid_m - first_pid_m, GROUP_SIZE_M)
+    group_size_m = min(num_pid_m - first_pid_in_group_m, GROUP_SIZE_M)
 
+    # Đoạn này triton _tự động_ phân chia programs vào *launch grid* theo pid_m và pid_n
+  
     # *within groups*, programs are ordered in a column-major order
     # row-id of the program in the *launch grid*
-    pid_m = first_pid_m + (pid % group_size_m)
+    pid_m = first_pid_in_group_m + (pid % group_size_m)
 
     # col-id of the program in the *launch grid*
     pid_n = (pid % num_pid_in_group) // group_size_m
@@ -82,12 +96,15 @@ def matmul_kernel(
     # We will advance this pointer as we move in the K direction
     # and accumulate
     # a_ptrs is a block of [BLOCK_SIZE_M, BLOCK_SIZE_K] pointers
-    # b_ptrs is a block of [BLOCK_SIZE_K, BLOCK_SIZE_n] pointers
+    # b_ptrs is a block of [BLOCK_SIZE_K, BLOCK_SIZE_N] pointers
     # Details https://triton-lang.org/master/getting-started/tutorials/03-matrix-multiplication.html#pointer-arithmetics
 
     offs_am = pid_m * BLOCK_SIZE_M + tl.arange(0, BLOCK_SIZE_M)
     offs_bn = pid_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
     offs_kk = tl.arange(0, BLOCK_SIZE_K)
+
+    # Đoạn này chưa hiểu quy ước :, None và None, : có nghĩa là gì ?
+
     a_ptrs = a_ptr + (offs_am[:, None] * stride_am + offs_kk[None, :] * stride_ak)
     b_ptrs = b_ptr + (offs_kk[:, None] * stride_bk + offs_bn[None, :] * stride_bn)
 
@@ -112,8 +129,7 @@ def matmul_kernel(
 
     # you can fuse arbitrary activation functions here
     # while the accumulator is still in FP32!
-    if ACTIVATION == "leaky_relu":
-        accumulator = leaky_relu(accumulator)
+    if ACTIVATION == "leaky_relu": accumulator = leaky_relu(accumulator)
     c = accumulator.to(tl.float16)
 
     # -----------------------------------------------------------
@@ -136,22 +152,28 @@ def leaky_relu(x):
 # and (1) checks any shape constraint; (2) allocates the output; (3) launches the above kernel
 
 
-def matmul(a, b, activation=""):
+def matmul(a: torch.Tensor, b: torch.Tensor, activation="") -> torch.Tensor:
     # checks constraints
+    assert a.ndim == 2 and b.ndim == 2, "only support 2D @ 2D"
     assert a.shape[1] == b.shape[0], "incompatible dimensions"
     assert a.is_contiguous(), "matrix A must be contiguous"
     assert b.is_contiguous(), "matrix B must be contiguous"
+
     M, K = a.shape
     K, N = b.shape
+
     assert (
-        K % 32 == 0
+        K % __BLOCK_SIZE_K == 0
     ), "We don't check memory-out-of-bounds with K so K must be divisible by BLOCK_SIZE_K"
+
     # allocates output
     c = torch.empty((M, N), device=a.device, dtype=a.dtype)
+
     # 1D launch kernel where each block gets its own program.
-    grid = lambda META: (
-        triton.cdiv(M, META['BLOCK_SIZE_M']) * triton.cdiv(N, META['BLOCK_SIZE_N']),
-    )
+    grid = lambda META: (triton.cdiv(M, META['BLOCK_SIZE_M']) * triton.cdiv(N, META['BLOCK_SIZE_N']),)
+
+    # Khởi tạo n1 * n2 programs, mỗi program (pid) tính kết quả nhân ma trận cho
+    # 1 block BLOCK_SIZE_M * BLOCK_SIZE_M và ghi vào ma trận c
     matmul_kernel[grid](
         a, b, c,
         M, N, K,

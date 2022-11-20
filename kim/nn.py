@@ -357,7 +357,6 @@ class RNNCell(Module):
         assert bs == h.shape[0]
         assert self.input_size == input_size
         assert self.hidden_size == hidden_size
-        # print(">>> X, W_ih:", X.shape, self.W_ih.shape)
 
         out = X @ self.W_ih
         if self.bias: out += self.bias_ih.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
@@ -366,6 +365,7 @@ class RNNCell(Module):
         if self.bias: out += self.bias_hh.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
 
         return ops.tanh(out) if self.nonlinearity == 'tanh' else ops.relu(out)
+
 
 
 class RNN(Module):

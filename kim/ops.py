@@ -357,20 +357,7 @@ class MatMul(TensorOp):
             return c
 
         print(">>>", a.shape, b.shape)
-        assert False, "MatMul: Only support 2D @ 2D, nD @ 2D, 2D @ 3-4D, 3D @ 3D and selected 4D @ 4D"
-
-        # # 4D @ 4D
-        # if a.ndim == 4 and b.ndim == 4:
-        #     assert a.shape[0] == b.shape[0], "Batch need to be same size"
-        #     assert a.shape[1] == b.shape[1], "Batch need to be same size"
-        #     c = NDArray.make((a.shape[0], a.shape[1], a.shape[-2], b.shape[-1]), device=a.device)
-        #     for i in range(a.shape[0]):
-        #         for j in range(a.shape[1]):
-        #             _a = a[i,j,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
-        #             _b = b[i,j,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
-        #             c[i,j,:,:] = (_a @ _b).reshape((1, a.shape[-2], b.shape[-1]))
-        #     return c
-        # assert False, "Only support 2D @ 2D, nD @ 2D, 2D @ 3-4D, 3D @ 3D and 4D @ 4D"
+        assert False, "MatMul: Only support 2D @ 2D, nD @ 2D, 2D @ 3:4D, 3D @ 3D and selected 4D @ 4D"
 
 
     def gradient(self, out_grad, node):
@@ -503,7 +490,7 @@ class Tanh(TensorOp):
         d_x = out_grad * (1 - tanh(x)^2)
         '''
         x = node.inputs[0]
-        y = 1 + negate(power_scalar(tanh(x), 2))
+        y = 1 - power_scalar(tanh(x), 2)
         return (out_grad * y,)
 
 def tanh(a):
@@ -520,27 +507,21 @@ class Stack(TensorOp):
         """
         self.axis = axis
 
-    def compute(self, args: TensorTuple) -> Tensor:
+    def compute(self, tensors: TensorTuple) -> Tensor:
         # https://www.geeksforgeeks.org/python-pytorch-stack-method
-        # print(">>> args:", len(args), args[0].shape, self.axis)
-        shape = list(args[0].shape)
-        # print("---", shape)
-        shape.insert(self.axis, len(args))
-        # print("+++", shape)
-        idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
-        # print("@@@", idxs)
-        out = NDArray.make(shape, device=args[0].device)
-        # print(">>> out:", out.shape)
-        for i in range(len(args)):
-            assert args[0].shape == args[i].shape, "stacked tensors must be same shape"
-            idxs[self.axis] = slice(i,i+1,1)
-            # print(">>> slice:", idxs)
-            out.__setitem__(tuple(idxs), args[i])
+        tensor0 = tensors[0]
+        shape = list(tensor0.shape)
+        shape.insert(self.axis, len(tensors)) # thêm 1 chiều không gian nữa
+        idxs = [ slice(0, shape[i], 1) for i in range(len(shape)) ]
+        out = NDArray.make(shape, device=tensor0.device)
+        for i, tensori in enumerate(tensors):
+            assert tensor0.shape == tensori.shape, "stacked tensors must be same shape"
+            idxs[self.axis] = slice(i, i+1, 1) # gán dữ liệu vào từng lát cát của chiều self.axis
+            out.__setitem__(tuple(idxs), tensori)
         return out
 
 
     def gradient(self, out_grad, node):
-        # print(">>> node:", type(node), len(node.inputs))
         a = split(out_grad, self.axis).realize_cached_data()
         return make_tuple(*[Tensor(x, device=out_grad.device) for x in a]),
 
@@ -560,13 +541,13 @@ class Split(TensorTupleOp):
         self.axis = axis
 
     def compute(self, A):
-        print(">>> A:", A.shape, self.axis)
+        # print(">>> A:", A.shape, self.axis)
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
         b_idxs = copy.deepcopy(idxs)
         del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
         del shape[self.axis] # xóa phần tử thứ self.axis của shape
-        print(">>> shape:", shape)
+        # print(">>> shape:", shape)
         out = []
         for i in range(A.shape[self.axis]):
             idxs[self.axis] = slice(i,i+1,1)
@@ -577,14 +558,6 @@ class Split(TensorTupleOp):
         return tuple(out)
 
     def gradient(self, out_grad, node):
-        # print(">>> node:", len(node), type(node))
-        # print(">>> node.inputs:", len(node.inputs), type(node.inputs))
-        # A = node.inputs[0]
-        # print("\n>>> out_grad:", out_grad.shape, out_grad, type(out_grad))
-        # print(">>> A:", A.shape, type(A))
-        # print(">>> axis:", self.axis)
-        # n = A.shape[self.axis]
-        # return stack([out_grad for i in range(n)], self.axis)
         raise NotImplementedError()
 
 

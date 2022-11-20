@@ -1,5 +1,11 @@
+# Required python modules
+# - - - - - - - - - - - -
 # pip3 install --upgrade --no-deps git+https://github.com/dlsys10714/mugrade.git
 # pip3 install pytest numpy numdifftools pybind11 requests
+
+# Train and test cifar10
+# - - - - - - - - - - - 
+# cd apps && KIM_BACKEND=cuda python3 cifar10.py && cd ..
 
 # Common tests for a specific backend
 # - - - - - - - - - - - - - - - - - -

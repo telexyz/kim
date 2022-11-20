@@ -485,6 +485,7 @@ def one_iter_of_cifar10_training(dataloader, model, niter=1, loss_fn=kim.nn.Soft
     model.train()
     correct, total_loss = 0, 0
     i = 1
+    n = 0
     for (X, y) in dataloader:
         opt.reset_grad()
         out = model(X)
@@ -495,7 +496,8 @@ def one_iter_of_cifar10_training(dataloader, model, niter=1, loss_fn=kim.nn.Soft
         opt.step()
         if i >= niter: break
         i += 1
-    return correct/(y.shape[0]*niter), total_loss/(y.shape[0]*niter)
+        n += y.shape[0]
+    return correct/n, total_loss/n
 
 
 ######################    |    ######################

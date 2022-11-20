@@ -1,6 +1,4 @@
-import sys
-sys.path.append('../python')
-import kim as kim
+import kim
 import kim.nn as nn
 from kim import backend_ndarray as nd
 from models import *
@@ -35,7 +33,7 @@ def epoch_general_cifar10(dataloader, model, started_at, loss_fn=nn.SoftmaxLoss(
     else: model.eval()
 
     correct, total_loss = 0, 0
-    niter = 0
+    n = 0; niter = 0
     for (X, y) in dataloader:
         out = model(X)
         loss = loss_fn(out, y)
@@ -45,13 +43,12 @@ def epoch_general_cifar10(dataloader, model, started_at, loss_fn=nn.SoftmaxLoss(
             opt.reset_grad()
             loss.backward()
             opt.step()
-        niter += 1
-        avg_acc, avg_loss = correct/(y.shape[0]*niter), total_loss/(y.shape[0]*niter)
+        niter +=1; n += y.shape[0] # n += batch_size
         if niter % 20 == 0:
             time_passed = datetime.timedelta(seconds=timer() - started_at)
-            print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, avg_acc, avg_loss, time_passed))
+            print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, correct/n, total_loss/n, time_passed))
 
-    return avg_acc, avg_loss
+    return correct/n, total_loss/n
 
 
 def train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,
@@ -79,7 +76,7 @@ def train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,
     for epoch in range(n_epochs):
         avg_acc, avg_loss = epoch_general_cifar10(dataloader, model, started_at, loss_fn=lf, opt=opt)
         time_passed = datetime.timedelta(seconds=timer() - started_at)
-        print("\n>>> epoch: %s, acc: %s, loss: %s (%s)\n" % (epoch, avg_acc, avg_loss, time_passed))
+        print("\n>>> Training epoch: %s, acc: %s, loss: %s (%s)\n" % (epoch, avg_acc, avg_loss, time_passed))
 
 
 def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
@@ -96,9 +93,11 @@ def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
         avg_loss: average loss over dataset
     """
     np.random.seed(4)
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    lf = loss_fn()
+    started_at = timer()
+    avg_acc, avg_loss = epoch_general_cifar10(dataloader, model, started_at, loss_fn=lf, opt=None)
+    time_passed = datetime.timedelta(seconds=timer() - started_at)
+    print("\n>>> Test acc: %s, loss: %s (%s)\n" % (avg_acc, avg_loss, time_passed))
 
 
 

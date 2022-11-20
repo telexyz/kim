@@ -1,6 +1,5 @@
 import sys
-sys.path.append('./python')
-import kim as kim
+import kim
 import kim.nn as nn
 import math
 import numpy as np

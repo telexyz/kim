@@ -322,14 +322,27 @@ class RNNCell(Module):
         Weights and biases are initialized from U(-sqrt(k), sqrt(k)) where k = 1/hidden_size
         """
         super().__init__()
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+
+        self.nonlinearity = nonlinearity
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.device = device
+        self.dtype = dtype
+        self.bias = bias
+        k = 1 / hidden_size
+
+        self.W_ih = Parameter(init.randn(input_size, hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+        self.W_hh = Parameter(init.randn(hidden_size, hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+
+        if bias:
+            self.bias_ih = Parameter(init.randn(hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+            self.bias_hh = Parameter(init.randn(hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+
 
     def forward(self, X, h=None):
         """
         Inputs:
-        X of shape (bs, input_size): Tensor containing input features
+        X of shape (bs, input_size): Tensor containing input features (bs: batch_size)
         h of shape (bs, hidden_size): Tensor containing the initial hidden state
             for each element in the batch. Defaults to zero if not provided.
 
@@ -337,9 +350,22 @@ class RNNCell(Module):
         h' of shape (bs, hidden_size): Tensor contianing the next hidden state
             for each element in the batch.
         """
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        bs, input_size = X.shape
+        if h is None: h = init.zeros(bs, self.hidden_size, dtype=self.dtype,device=self.device)
+        _, hidden_size = h.shape
+
+        assert bs == h.shape[0]
+        assert self.input_size == input_size
+        assert self.hidden_size == hidden_size
+        # print(">>> X, W_ih:", X.shape, self.W_ih.shape)
+
+        out = X @ self.W_ih
+        if self.bias: out += self.bias_ih.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
+
+        out += h @ self.W_hh
+        if self.bias: out += self.bias_hh.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
+
+        return ops.tanh(out) if self.nonlinearity == 'tanh' else ops.relu(out)
 
 
 class RNN(Module):

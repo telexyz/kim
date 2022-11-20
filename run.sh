@@ -32,10 +32,12 @@ KIM_BACKEND=np ./fast_tests.sh
 # https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb
 # https://youtu.be/7kclgMIcMq0?t=2354 => conv via matmul
 
-# python3 -m pytest tests/test_conv.py
 # python3 -m pytest tests/test_sequence_models.py
+python3 -m pytest tests/test_sequence_models.py -k "cell and tanh-False-False-12-11-15"
+python3 -m pytest tests/test_sequence_models.py -k "cell and relu-False-False-12-11-15"
 
 # DONE
+# python3 -m pytest tests/test_conv.py
 # python3 -m pytest tests/test_nd_backend.py
 # python3 -m pytest tests/test_cifar_ptb_data.py
 

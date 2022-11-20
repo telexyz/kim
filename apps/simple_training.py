@@ -32,7 +32,7 @@ def epoch_general_cifar10(dataloader, model, started_at, loss_fn=nn.SoftmaxLoss(
     if training: model.train()
     else: model.eval()
 
-    correct, total_loss = 0, 0, 0
+    correct, total_loss = 0, 0
     n = 0; niter = 0
     for (X, y) in dataloader:
         out = model(X)

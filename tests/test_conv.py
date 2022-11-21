@@ -475,9 +475,9 @@ def one_iter_of_cifar10_training(dataloader, model, niter=1, loss_fn=kim.nn.Soft
         total_loss += loss.data.numpy() * y.shape[0]
         loss.backward()
         opt.step()
+        n += y.shape[0]
         if i >= niter: break
         i += 1
-        n += y.shape[0]
     return correct/n, total_loss/n
 
 

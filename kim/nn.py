@@ -82,7 +82,7 @@ class Linear(Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype, device=device)
+        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype, device=device, requires_grad=True)
         self.weight = Parameter(weight_init)
         if bias is True:
             bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype, device=device)
@@ -269,14 +269,14 @@ class Conv(Module):
         # For convolution, this becomes somewhat more detailed, in that you should multiply both of these 
         # by the "receptive field size", which is in this case just the product of the kernel sizes 
         # -- which in our case are always going to be the same, i.e., `k x k` kernels.
-        weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(k, k, i, o), dtype=dtype, device=device)
+        weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(k, k, i, o), dtype=dtype, device=device, requires_grad=True)
         self.weight = Parameter(weight_init)
 
         if bias:
             # Initialize the (o,) bias tensor using uniform initialization on the interval 
             # +/- 1.0/(in_channels * kernel_size**2)**0.5
             x = 1.0/((i* k**2)**0.5)
-            self.bias = Parameter(init.rand(o, low=-x, high=x, dtype= dtype, device=device))
+            self.bias = Parameter(init.rand(o, low=-x, high=x, dtype= dtype, device=device, requires_grad=True))
         else:
             self.bias = None
 

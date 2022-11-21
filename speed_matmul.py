@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import numpy as np
 import torch
 from kim import backend_ndarray as nd

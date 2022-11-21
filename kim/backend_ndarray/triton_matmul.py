@@ -1,15 +1,12 @@
 # Modified from https://github.com/openai/triton/blob/master/python/tutorials/03-matrix-multiplication.py
 
 import torch
-
 import triton
 import triton.language as tl
 
-# Note1: inputs must be torch.float16 in-order to autotune works !!!
-# Note2: more than one configs will make test code slow !!!
-
 __BLOCK_SIZE_K = 32
 __GROUP_SIZE_M = 8
+# Note: more than one configs will make test code slow !!!
 @triton.autotune(
     configs=[
         # triton.Config({'BLOCK_SIZE_M': 128, 'BLOCK_SIZE_N': 256}, num_stages=3, num_warps=8),
@@ -113,7 +110,7 @@ def matmul_kernel(
     # We accumulate into a `[BLOCK_SIZE_M, BLOCK_SIZE_N]` block
     # of fp32 values for higher accuracy.
     # `accumulator` will be converted back to fp16 after the loop
-    accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
+    c = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
     for k in range(0, K, BLOCK_SIZE_K):
         # Note that for simplicity, we don't apply a mask here.
         # This means that if K is not a multiple of BLOCK_SIZE_K,
@@ -122,15 +119,13 @@ def matmul_kernel(
         a = tl.load(a_ptrs)
         b = tl.load(b_ptrs)
         # We accumulate along the K dimension
-        accumulator += tl.dot(a, b)
+        c += tl.dot(a, b)
         # Advance the ptrs to the next K block
         a_ptrs += BLOCK_SIZE_K * stride_ak
         b_ptrs += BLOCK_SIZE_K * stride_bk
 
     # you can fuse arbitrary activation functions here
-    # while the accumulator is still in FP32!
-    if ACTIVATION == "leaky_relu": accumulator = leaky_relu(accumulator)
-    c = accumulator.to(tl.float16)
+    if ACTIVATION == "leaky_relu": c = leaky_relu(c)
 
     # -----------------------------------------------------------
     # Write back the block of the output matrix C
@@ -171,6 +166,7 @@ def matmul(a: torch.Tensor, b: torch.Tensor, activation="") -> torch.Tensor:
 
     # 1D launch kernel where each block gets its own program.
     grid = lambda META: (triton.cdiv(M, META['BLOCK_SIZE_M']) * triton.cdiv(N, META['BLOCK_SIZE_N']),)
+    # n1 = M // BLOCK_SIZE_M, n2 = n // BLOCK_SIZE_N
 
     # Khởi tạo n1 * n2 programs, mỗi program (pid) tính kết quả nhân ma trận cho
     # 1 block BLOCK_SIZE_M * BLOCK_SIZE_M và ghi vào ma trận c

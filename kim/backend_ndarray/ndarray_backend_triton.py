@@ -44,14 +44,14 @@ def scalar_setitem(size, val, out, shape, strides, offset):
     # then using ewise_setitem to assign them to out
     ewise_setitem(a, out, shape, strides, offset)
 
+
 from .triton_matmul import matmul as triton_matmul
 def matmul(a, b, out, m, n, p):
     if n % 32 == 0:
-        # triton_matmul use torch.float16 so need to convert input into half first
-        c = triton_matmul(a.array.reshape(m, n).half(), b.array.reshape(n, p).half())
-        out.array[:] = c.reshape(-1)
+        c = triton_matmul(a.array.reshape(m, n), b.array.reshape(n, p))
     else:
-        out.array[:] = (a.array.reshape(m, n) @ b.array.reshape(n, p)).reshape(-1)
+        c = a.array.reshape(m, n) @ b.array.reshape(n, p)
+    out.array[:] = c.reshape(-1)
 
 
 ''' Use Torch functions to pass the tests first. Will re-implement them in Triton,

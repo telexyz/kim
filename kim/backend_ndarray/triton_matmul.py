@@ -100,26 +100,24 @@ def matmul_kernel(
     offs_bn = pid_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
     offs_kk = tl.arange(0, BLOCK_SIZE_K)
 
-    # Đoạn này chưa hiểu quy ước :, None và None, : có nghĩa là gì ?
+    # Đoạn này chưa hiểu quy ước [:, None] và [None, :] có nghĩa là gì?
+    # Để mở rộng từ tl.arange từ 1 chiều sang 2 chiều?
 
     a_ptrs = a_ptr + (offs_am[:, None] * stride_am + offs_kk[None, :] * stride_ak)
     b_ptrs = b_ptr + (offs_kk[:, None] * stride_bk + offs_bn[None, :] * stride_bn)
 
     # -----------------------------------------------------------
     # Iterate to compute a block of the C matrix
-    # We accumulate into a `[BLOCK_SIZE_M, BLOCK_SIZE_N]` block
-    # of fp32 values for higher accuracy.
-    # `accumulator` will be converted back to fp16 after the loop
     c = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
     for k in range(0, K, BLOCK_SIZE_K):
         # Note that for simplicity, we don't apply a mask here.
-        # This means that if K is not a multiple of BLOCK_SIZE_K,
-        # this will access out-of-bounds memory and produce an
-        # error or (worse!) incorrect results.
+        # This means that if K is not a multiple of BLOCK_SIZE_K
         a = tl.load(a_ptrs)
         b = tl.load(b_ptrs)
+
         # We accumulate along the K dimension
         c += tl.dot(a, b)
+
         # Advance the ptrs to the next K block
         a_ptrs += BLOCK_SIZE_K * stride_ak
         b_ptrs += BLOCK_SIZE_K * stride_bk

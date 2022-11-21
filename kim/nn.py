@@ -263,16 +263,23 @@ class Conv(Module):
         self.stride = stride
 
         # Initialize the (k, k, i, o) weight tensor using Kaiming uniform initialization 
-        # with default settings
-        weight_init = init.kaiming_uniform(i, o, shape=(k, k, i, o), dtype=dtype,device=device)
+        # with default settings.
+        # Previously, we have implemented Kaiming uniform/normal initializations, where we essentially 
+        # assigned fan_in = input_size and fan_out = output_size.
+        # For convolution, this becomes somewhat more detailed, in that you should multiply both of these 
+        # by the "receptive field size", which is in this case just the product of the kernel sizes 
+        # -- which in our case are always going to be the same, i.e., `k x k` kernels.
+        weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(k, k, i, o), dtype=dtype, device=device)
         self.weight = Parameter(weight_init)
 
         if bias:
             # Initialize the (o,) bias tensor using uniform initialization on the interval 
-            #                         +/- 1.0/(in_channels * kernel_size**2)**0.5
-            bias_init = init.randn(o, mean=0.0, std=1.0/(i * k**2)**0.5, dtype=dtype,device=device)
-            self.bias = Parameter(bias_init)
-        else: self.bias = None
+            # +/- 1.0/(in_channels * kernel_size**2)**0.5
+            x = 1.0/((i* k**2)**0.5)
+            self.bias = Parameter(init.rand(o, low=-x, high=x, dtype= dtype, device=device))
+        else:
+            self.bias = None
+
 
     def forward(self, x: Tensor) -> Tensor:
         # Ensure nn.Conv works for (N, C, H, W) tensors even though we implemented 
@@ -319,14 +326,14 @@ class RNNCell(Module):
         self.device = device
         self.dtype = dtype
         self.bias = bias
-        k = 1 / hidden_size
+        x = (1 / hidden_size)**0.5
 
-        self.W_ih = Parameter(init.randn(input_size, hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
-        self.W_hh = Parameter(init.randn(hidden_size, hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+        self.W_ih = Parameter(init.rand(input_size, hidden_size, low=-x, high=x), dtype=dtype, device=device)
+        self.W_hh = Parameter(init.rand(hidden_size, hidden_size, low=-x, high=x), dtype=dtype, device=device)
 
         if bias:
-            self.bias_ih = Parameter(init.randn(hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
-            self.bias_hh = Parameter(init.randn(hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+            self.bias_ih = Parameter(init.rand(hidden_size, low=-x, high=x), dtype=dtype, device=device)
+            self.bias_hh = Parameter(init.rand(hidden_size, low=-x, high=x), dtype=dtype, device=device)
 
 
     def forward(self, X, h=None):
@@ -441,15 +448,14 @@ class LSTMCell(Module):
         self.device = device
         self.dtype = dtype
         self.bias = bias
+        x = (1 / hidden_size)**0.5
 
-        k = 1 / hidden_size
-
-        self.W_ih = Parameter(init.randn(input_size, 4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
-        self.W_hh = Parameter(init.randn(hidden_size, 4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+        self.W_ih = Parameter(init.rand(input_size, 4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
+        self.W_hh = Parameter(init.rand(hidden_size, 4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
 
         if bias:
-            self.bias_ih = Parameter(init.randn(4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
-            self.bias_hh = Parameter(init.randn(4*hidden_size, mean=0, std=np.sqrt(k)), dtype=dtype,device=device)
+            self.bias_ih = Parameter(init.rand(4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
+            self.bias_hh = Parameter(init.rand(4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
         ### END YOUR SOLUTION
 
 

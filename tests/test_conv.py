@@ -153,10 +153,8 @@ def test_flip_backward(params, device):
 
 @pytest.mark.parametrize("device", _DEVICES)
 def test_init_kaiming_uniform(device):
-    _A = np.random.randn(3, 3, 16, 8)
-    A = kim.Tensor(_A, device=device)
     np.random.seed(0)
-    A = kim.init.kaiming_uniform(16*9, 8*9, shape=A.shape)
+    A = kim.init.kaiming_uniform(16*9, 8*9, shape=(3, 3, 16, 8))
     assert abs(A.sum().numpy() - -2.5719218) < 1e-4
 
 
@@ -167,8 +165,8 @@ def test_resnet9(device):
 
     from apps.models import ResNet9
     np.random.seed(0)
-    model = ResNet9(device=device)
 
+    model = ResNet9(device=device)
     assert num_params(model) == 431946
 
     _A = np.random.randn(2, 3, 32, 32)
@@ -180,7 +178,6 @@ def test_resnet9(device):
          2.9039745 , -0.10433993,  0.35458302, -0.5684191 ,  2.6178317 ],
         [-0.2905612 , -0.4147861 ,  0.90268034,  0.46530387,  1.3335679 ,
          1.8534894 , -0.1867125 , -2.4298222 , -0.5344223 ,  4.362149  ]]) - y.numpy()) < 1e-2
-
 
 
 @pytest.mark.parametrize("device", _DEVICES)

@@ -227,9 +227,9 @@ class Tanh(Module):
         return ops.tanh(x)
 
 
-# class Sigmoid(Module):
-#     def forward(self, x: Tensor) -> Tensor:
-#         raise NotImplementedError()
+class Sigmoid(Module):
+    def forward(self, x: Tensor) -> Tensor:
+        return 1 / (1 + ops.exp(ops.negate(x)))
 
 
 class BatchNorm2d(BatchNorm1d):
@@ -344,24 +344,23 @@ class RNNCell(Module):
             for each element in the batch. Defaults to zero if not provided.
 
         Outputs:
-        h' of shape (bs, hidden_size): Tensor contianing the next hidden state
-            for each element in the batch.
+        h' of shape (bs, hidden_size): Tensor contianing the next hidden state for each element in the batch.
         """
         bs, input_size = X.shape
-        if h is None: h = init.zeros(bs, self.hidden_size, dtype=self.dtype,device=self.device)
+        if h is None: h = init.zeros(bs, self.hidden_size, dtype=self.dtype, device=self.device)
         _, hidden_size = h.shape
 
         assert bs == h.shape[0]
         assert self.input_size == input_size
         assert self.hidden_size == hidden_size
 
-        out = X @ self.W_ih
-        if self.bias: out += self.bias_ih.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
+        out = X @ self.W_ih + h @ self.W_hh
+        if self.bias:
+            out += self.bias_ih.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
+            out += self.bias_hh.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
 
-        out += h @ self.W_hh
-        if self.bias: out += self.bias_hh.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
-
-        return ops.tanh(out) if self.nonlinearity == 'tanh' else ops.relu(out)
+        if self.nonlinearity == 'tanh': return ops.tanh(out)
+        else: return ops.relu(out)
 
 
 
@@ -379,14 +378,10 @@ class RNN(Module):
 
         Variables:
         rnn_cells[k].W_ih: The learnable input-hidden weights of the k-th layer,
-            of shape (input_size, hidden_size) for k=0. Otherwise the shape is
-            (hidden_size, hidden_size).
-        rnn_cells[k].W_hh: The learnable hidden-hidden weights of the k-th layer,
-            of shape (hidden_size, hidden_size).
-        rnn_cells[k].bias_ih: The learnable input-hidden bias of the k-th layer,
-            of shape (hidden_size,).
-        rnn_cells[k].bias_hh: The learnable hidden-hidden bias of the k-th layer,
-            of shape (hidden_size,).
+            of shape (input_size, hidden_size) for k=0. Otherwise the shape is (hidden_size, hidden_size).
+        rnn_cells[k].W_hh: The learnable hidden-hidden weights of the k-th layer, of shape (hidden_size, hidden_size).
+        rnn_cells[k].bias_ih: The learnable input-hidden bias of the k-th layer, of shape (hidden_size,).
+        rnn_cells[k].bias_hh: The learnable hidden-hidden bias of the k-th layer, of shape (hidden_size,).
         """
         super().__init__()
 
@@ -400,7 +395,11 @@ class RNN(Module):
 
         # Init RNN Layers        
         self.rnn_cells = [RNNCell(input_size, hidden_size, bias=bias, nonlinearity=nonlinearity,
-            dtype=dtype, device=device) for i in range(num_layers)]
+            dtype=dtype, device=device)] 
+
+        self.rnn_cells += [RNNCell(hidden_size, hidden_size, bias=bias, nonlinearity=nonlinearity,
+            dtype=dtype, device=device) for i in range(num_layers - 1)]
+
 
     def forward(self, X, h0=None):
         """
@@ -409,9 +408,10 @@ class RNN(Module):
         h_0 of shape (num_layers, bs, hidden_size) containing the initial
             hidden state for each element in the batch. Defaults to zeros if not provided.
 
-        Outputs
+        Outputs:
         output of shape (seq_len, bs, hidden_size) containing the output features
             (h_t) from the last layer of the RNN, for each t.
+
         h_n of shape (num_layers, bs, hidden_size) containing the final hidden state for each element in the batch.
         """
         rnn_cell = self.rnn_cells[0]

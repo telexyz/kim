@@ -1,3 +1,5 @@
+https://github.com/rusty1s/pytorch_sparse
+
 ## Sparse GPU kernel
 
 https://www.reddit.com/r/MachineLearning/comments/j2m1qr/r_sparse_gpu_kernels_for_deep_learning

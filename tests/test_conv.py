@@ -645,7 +645,7 @@ def submit_resnet9():
     def num_params(model):
         return np.sum([np.prod(x.shape) for x in model.parameters()])
 
-    device = kim.cpu()
+    device = kim.cuda()
     import sys
     sys.path.append('.')
     from apps.models import ResNet9
@@ -659,11 +659,13 @@ def submit_resnet9():
     dataloader = kim.data.DataLoader(\
              dataset=dataset,
              batch_size=128,
-             shuffle=True
+             shuffle=True,
+             device=device,
              )
     np.random.seed(1)
     model = ResNet9(device=device, dtype="float32")
-    out = one_iter_of_cifar10_training(dataloader, model, niter=2, opt=kim.optim.Adam(model.parameters(), lr=0.01, weight_decay=0.0001), device=device)
+    out = one_iter_of_cifar10_training(dataloader, model, niter=2, 
+        opt=kim.optim.Adam(model.parameters(), lr=0.01, weight_decay=0.0001), device=device)
     MugradeSubmit(kim.Tensor(list(out)))
 
 

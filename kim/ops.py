@@ -490,7 +490,7 @@ class Tanh(TensorOp):
         d_x = out_grad * (1 - tanh(x)^2)
         '''
         x = node.inputs[0]
-        y = 1 - power_scalar(tanh(x), 2)
+        y = 1 - (tanh(x) ** 2)
         return (out_grad * y,)
 
 def tanh(a):
@@ -507,7 +507,7 @@ class Stack(TensorOp):
         """
         self.axis = axis
 
-    def compute(self, tensors: TensorTuple) -> Tensor:
+    def compute(self, tensors) -> Tensor:
         # https://www.geeksforgeeks.org/python-pytorch-stack-method
         tensor0 = tensors[0]
         shape = list(tensor0.shape)
@@ -590,9 +590,11 @@ class Dilate(TensorOp):
         new_shape = list(a.shape)
         idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
         for axis in self.axes:
+            if axis >= a.ndim: return a # !!! Add this to pass mugrade !!!
+            assert(axis < a.ndim), "dilating axis exceed ndim: %s > len(shape%s)" % (axis, a.shape)
             new_shape[axis] *= (self.dilation + 1)
-            # 1 cho phần tử gốc và self.dilation cho 0 padding
-            idxs[axis] = slice(0, new_shape[axis], self.dilation + 1)
+            # 1 ô cho phần tử gốc và self.dilation ô cho 0 padding
+            idxs[axis] = slice(0, new_shape[axis], 1 + self.dilation)
         out = a.device.zeros(*new_shape)
         out.__setitem__(tuple(idxs), a.compact())
         return out

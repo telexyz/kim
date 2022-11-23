@@ -37,20 +37,22 @@ python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "language_model"
 python3 -m pytest -l -v -k "language_model_implementation"
 python3 -m pytest -l -v -k "language_model_training"
 
+
+# python3 -m pytest tests/test_sequence_models.py
+python3 -m pytest tests/test_sequence_models.py -k "rnn_cell"
+KIM_DEVICE=cuda python3 -m pytest tests/test_sequence_models.py -k "test_rnn and cuda-relu-False-False-12-11-15-2-13"
+KIM_DEVICE=cuda python3 -m pytest tests/test_sequence_models.py -k "test_rnn"
+
+
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "conv_forward"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "conv_backward"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "cifar10"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr tests/test_conv.py -k "new_ops"
 
-
 # https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb
 # https://github.com/dlsyscourse/public_notebooks/blob/main/convolution_implementation.ipynb
 # https://github.com/dlsyscourse/public_notebooks/blob/main/rnn_implementation.ipynb
 # https://youtu.be/7kclgMIcMq0?t=2354 => conv via matmul
-
-# python3 -m pytest tests/test_sequence_models.py
-python3 -m pytest tests/test_sequence_models.py -k "rnn_cell"
-KIM_DEVICE=cuda python3 -m pytest tests/test_sequence_models.py -k "test_rnn"
 
 # DONE
 # python3 -m pytest tests/test_conv.py

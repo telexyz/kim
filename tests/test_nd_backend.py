@@ -32,7 +32,7 @@ def backward_check(f, *args, **kwargs):
         np.linalg.norm(backward_grad[i].numpy() - numerical_grad[i])
         for i in range(len(args))
     )
-    assert error < 3.5e-2 # original is 4.2e-1
+    assert error < 4.2e-1 # original is 4.2e-1
     return [g.numpy() for g in backward_grad]
 
 
@@ -298,21 +298,27 @@ def mugrade_submit(x):
 
 
 def submit_new_nd_backend():
-    devices = [kim.nd.cpu(), kim.nd.cuda()] if kim.nd.cuda().enabled() else [kim.nd.cpu()]
-    # devices = [kim.nd.cpu(), kim.nd.cuda()]
+    # devices = [kim.nd.cpu(), kim.nd.cuda()] if kim.nd.cuda().enabled() else [kim.nd.cpu()]
+    devices = [kim.nd.cpu(), kim.nd.cuda()]
 
     if not kim.nd.cuda().enabled():
         print('You need a GPU to run some of these tests.')
         
     # ewise fn
+    print(">>> ewise fn")
     for (device, shape, fn_name) in itertools.product(devices, TEST_GENERAL_SHAPES, EWISE_OP_NAMES):
         _A = np.random.randn(*shape).astype(np.float32)
         _B = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)
         B = kim.Tensor(nd.array(_B), device=device)
-        mugrade_submit(EWISE_OPS[fn_name](A, B).numpy())
+        f = EWISE_OPS[fn_name]
+        x = f(A, B).numpy()
+        # print(">>>", fn_name, A, B)
+        # print(">>>", fn_name, A, B)
+        mugrade_submit(x)
 
     # scalar fn
+    print(">>> scalar fn")
     for (device, shape, fn_name) in itertools.product(devices, TEST_GENERAL_SHAPES, SCALAR_OP_NAMES):
         _A = np.random.randn(*shape).astype(np.float32)
         _B = np.random.randn(1).astype(np.float32).item()
@@ -320,6 +326,7 @@ def submit_new_nd_backend():
         mugrade_submit(EWISE_OPS[fn_name](A, _B).numpy())
 
     # matmul
+    print(">>> matmul")
     for (device, matmul_dim) in itertools.product(devices, TEST_MATMUL_DIMS):
         m, n, p = matmul_dim
         _A = np.random.randn(m, n).astype(np.float32)
@@ -329,6 +336,7 @@ def submit_new_nd_backend():
         mugrade_submit((A @ B).numpy())
 
     # power
+    print(">>> power")
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
         _B = np.random.randint(1)
@@ -336,25 +344,32 @@ def submit_new_nd_backend():
         mugrade_submit((A**_B).numpy())
 
     # log
+    print(">>> log")
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32) + 5.
         A = kim.Tensor(nd.array(_A), device=device)
         mugrade_submit(kim.log(A).numpy())
 
     # exp
+    print(">>> exp")
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)
         mugrade_submit(kim.exp(A).numpy())
 
     # tanh
+    print(">>> tanh")
     for (device, shape) in itertools.product(devices, TEST_GENERAL_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)
-        mugrade_submit(kim.tanh(A).numpy())
-        mugrade_submit(backward_check(kim.tanh, A))
+        x = kim.tanh(A).numpy()
+        y = backward_check(kim.tanh, A)
+        # print(">>> tanh", A, x, y)
+        mugrade_submit(x)
+        mugrade_submit(y)
 
     # stack
+    print(">>> stack")
     for (device, (shape, axis, l)) in itertools.product(devices, TEST_STACK_PARAMETERS):
         _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
         A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
@@ -364,6 +379,7 @@ def submit_new_nd_backend():
         mugrade_submit(A[0].grad.numpy())
 
     # summation
+    print(">>> summation")
     for (device, (shape, axes)) in itertools.product(devices, TEST_SUMMATION_PARAMETERS):
         _A = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)
@@ -371,24 +387,28 @@ def submit_new_nd_backend():
         mugrade_submit(backward_check(kim.summation, A, axes=axes))
 
     # broadcast
+    print(">>> broadcast")
     for (device, (shape, shape_to)) in itertools.product(devices, TEST_BROADCAST_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)
         mugrade_submit(kim.broadcast_to(A, shape_to).numpy())
 
     # reshape
+    print(">>> reshape")
     for (device, (shape, shape_to)) in itertools.product(devices, TEST_RESHAPE_SHAPES):
         _A = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)
         mugrade_submit(kim.reshape(A, shape_to).numpy())
 
     # transpose
+    print(">>> transpose")
     for (device, shape, axes) in itertools.product(devices, TEST_TRANSPOSE_SHAPES, TEST_TRANSPOSE_AXES):
         _A = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)
         mugrade_submit(kim.transpose(A, axes=axes).numpy())
 
     # logsumexp
+    print(">>> logsumexp")
     for (device, (shape, axes)) in itertools.product(devices, TEST_LOGSUMEXP_PARAMETERS):
         _A = np.random.randn(*shape).astype(np.float32)
         A = kim.Tensor(nd.array(_A), device=device)

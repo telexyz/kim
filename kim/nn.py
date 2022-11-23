@@ -414,13 +414,29 @@ class RNN(Module):
 
         h_n of shape (num_layers, bs, hidden_size) containing the final hidden state for each element in the batch.
         """
-        rnn_cell = self.rnn_cells[0]
+
         seq_len, bs, input_size = X.shape
-        h = h0
+        output = [] # recorded output sequence
+        h = []      # current hidden states
+
+        # Init h from h0
+        for layer in range(self.num_layers):
+            if h0 is None: h.append(None)
+            else: h.append(h0[layer,:,:].reshape((bs, self.hidden_size)).compact())
+
+
         for i in range(seq_len):
             x = X.cached_data[i,:,:].reshape((bs, input_size)).compact()
-            h = rnn_cell(Tensor(x, device=self.device), h)
-        return h
+
+            for layer in range(self.num_layers):
+                rnn_cell = self.rnn_cells[layer]
+                x = rnn_cell(Tensor(x, device=self.device), h[layer])
+                h[layer] = x
+
+            output.append(x)
+
+        return ops.stack(output, 0), ops.stack(h, 0)
+
 
 
 class LSTMCell(Module):

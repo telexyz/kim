@@ -416,26 +416,33 @@ class RNN(Module):
         """
 
         seq_len, bs, input_size = X.shape
-        output = [] # recorded output sequence
-        h = []      # current hidden states
+        outputs = [] # the output sequence
+        hiddens = [] # hidden states, started at h0 
 
-        # Init h from h0
-        for layer in range(self.num_layers):
-            if h0 is None: h.append(None)
-            else: h.append(h0[layer,:,:].reshape((bs, self.hidden_size)).compact())
+        # Init hiddens from h0 (a.k.a started at h0)
+        if h0 is None:
+            for layer in range(self.num_layers):
+                hiddens.append(init.zeros(bs, self.hidden_size, dtype=self.dtype, device=self.device))
+        else:
+            for layer in range(self.num_layers):
+                array = h0.cached_data[layer,:,:].reshape((bs, self.hidden_size)).compact()
+                hiddens.append(Tensor(array, device=self.device))
 
 
         for i in range(seq_len):
-            x = X.cached_data[i,:,:].reshape((bs, input_size)).compact()
+            curr_input = Tensor(X.cached_data[i,:,:].reshape((bs, input_size)).compact(), device=self.device)
 
+            # Calculate new hiddens from current input and self.rnn_cells
             for layer in range(self.num_layers):
-                rnn_cell = self.rnn_cells[layer]
-                x = rnn_cell(Tensor(x, device=self.device), h[layer])
-                h[layer] = x
+                prev_hidden = hiddens[layer]
+                curr_rnn_cell = self.rnn_cells[layer]
+                curr_hidden = curr_rnn_cell(curr_input, prev_hidden)
+                hiddens[layer] = curr_hidden
+                curr_input = curr_hidden
 
-            output.append(x)
+            outputs.append(curr_hidden) # hidden ouput from last layer 
 
-        return ops.stack(output, 0), ops.stack(h, 0)
+        return ops.stack(outputs, 0), ops.stack(hiddens, 0)
 
 
 

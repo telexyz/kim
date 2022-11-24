@@ -27,7 +27,10 @@
 
 BACKEND_DEVICE=cuda python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "resnet9"
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "rnn"
+
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "lstm"
+python3 -m pytest -k "lstm_cell and cpu-False-False-12-1-15"
+
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "ptb"
 python3 -m pytest -l -v -k "ptb_dataset"
 

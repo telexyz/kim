@@ -498,9 +498,27 @@ class LSTMCell(Module):
         c' of shape (bs, hidden_size): Tensor containing the next cell state for each
             element in the batch.
         """
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        bs = X.shape[0]
+
+        if h is None: 
+            h0 = init.zeros(bs, self.hidden_size, dtype=self.dtype, device=self.device)
+            c0 = init.zeros(bs, self.hidden_size, dtype=self.dtype, device=self.device)
+        else:
+            h0, c0 = h
+
+        out = X @ self.W_ih + h0 @ self.W_hh
+        if self.bias:
+            out += self.bias_ih.reshape((1, out.shape[-1])).broadcast_to(out.shape)
+            out += self.bias_hh.reshape((1, out.shape[-1])).broadcast_to(out.shape)
+
+        i,f,g,o = ops.split(out, 4)
+        i,f,g,o = Sigmoid(i), Sigmoid(f), ops.tanh(g), Sigmoid(o)
+
+        c_out = f * c0 + i * g
+        h_out = o * ops.tanh(c_out)
+
+        return h_out, c_out
+
 
 
 class LSTM(Module):

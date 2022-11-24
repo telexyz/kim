@@ -557,8 +557,9 @@ class Split(TensorTupleOp):
             out.append(b)
         return tuple(out)
 
+
     def gradient(self, out_grad, node):
-        raise NotImplementedError()
+        return stack(out_grad, self.axis),
 
 
 def split(a, axis):

@@ -443,7 +443,7 @@ class RNN(Module):
             outputs.append(curr_hidden) # hidden ouput from last layer 
 
         return ops.stack(outputs, 0), ops.stack(hiddens, 0)
-
+        # Tham khảo https://pytorch.org/docs/stable/generated/torch.nn.RNN.html
 
 
 class LSTMCell(Module):

@@ -571,13 +571,10 @@ class Split(TensorTupleOp):
 
 
     def gradient(self, out_grad, node):
-        # raise NotImplementedError()
-        if self.chunks is None:
-            return stack(out_grad, self.axis),
-        else:
-            shape = node.inputs[0].shape 
-            # print(">>> grad, input", out_grad.shape, shape)
-            return stack([out_grad]*self.chunks, self.axis).reshape(shape),
+        shape = node.inputs[0].shape
+        # print(">>> grad, input", out_grad.shape, shape)
+        chunks = shape[self.axis] // out_grad.shape[self.axis]
+        return stack([out_grad]*chunks, self.axis).reshape(shape),
 
 
 def split(a, axis, chunks=None):

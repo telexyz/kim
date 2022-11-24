@@ -529,9 +529,10 @@ class Stack(TensorOp):
 def stack(args, axis):
     return Stack(axis)(make_tuple(*args))
 
+
 import copy
 class Split(TensorTupleOp):
-    def __init__(self, axis: int):
+    def __init__(self, axis: int, chunks=None):
         """
         Splits a tensor along an axis into a tuple of tensors.
         (The "inverse" of Stack)
@@ -539,31 +540,49 @@ class Split(TensorTupleOp):
         axis - dimension to split
         """
         self.axis = axis
+        self.chunks = chunks
 
     def compute(self, A):
         # print(">>> A:", A.shape, self.axis)
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
         b_idxs = copy.deepcopy(idxs)
-        del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
-        del shape[self.axis] # xóa phần tử thứ self.axis của shape
-        # print(">>> shape:", shape)
+
         out = []
-        for i in range(A.shape[self.axis]):
-            idxs[self.axis] = slice(i,i+1,1)
+        if self.chunks is None:
+            del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
+            del shape[self.axis] # xóa phần tử thứ self.axis của shape
+            chunks = A.shape[self.axis]
+            offset = 1
+        else:
+            chunks = self.chunks
+            offset = A.shape[self.axis] // chunks
+            b_idxs[self.axis] = slice(0, offset, 1)
+            shape[self.axis] = offset
+
+        for i in range(chunks):
+            idxs[self.axis] = slice(i, i+offset, 1)
             a = A.__getitem__(tuple(idxs))
             b = NDArray.make(shape, device=A.device)
             b.__setitem__(tuple(b_idxs), a)
             out.append(b)
+ 
         return tuple(out)
 
 
     def gradient(self, out_grad, node):
-        return stack(out_grad, self.axis),
+        # raise NotImplementedError()
+        if self.chunks is None:
+            return stack(out_grad, self.axis),
+        else:
+            shape = node.inputs[0].shape 
+            # print(">>> grad, input", out_grad.shape, shape)
+            return stack([out_grad]*self.chunks, self.axis).reshape(shape),
 
 
-def split(a, axis):
-    return Split(axis)(a)
+def split(a, axis, chunks=None):
+    return Split(axis, chunks=chunks)(a)
+
 
 
 class Flip(TensorOp):

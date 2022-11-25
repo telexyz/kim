@@ -387,7 +387,6 @@ class RNN(Module):
         """
         super().__init__()
 
-        self.nonlinearity = nonlinearity
         self.hidden_size = hidden_size
         self.input_size = input_size
         self.num_layers = num_layers
@@ -400,7 +399,7 @@ class RNN(Module):
             dtype=dtype, device=device)] 
 
         self.rnn_cells += [RNNCell(hidden_size, hidden_size, bias=bias, nonlinearity=nonlinearity,
-            dtype=dtype, device=device) for i in range(num_layers - 1)]
+            dtype=dtype, device=device) for _ in range(num_layers - 1)]
 
 
     def forward(self, X, h0=None):
@@ -418,31 +417,32 @@ class RNN(Module):
         """
 
         seq_len, bs, input_size = X.shape
-        outputs = [] # the output sequence
-        hiddens = [] # hidden states, started at h0 
+        assert input_size == self.input_size
 
-        # Init hiddens from h0 (a.k.a started at h0)
+        outputs = [] # the output sequence, len(outputs) == seq_len
+        hiddens = [] # hidden states acrossing layers, len(hiddens) == self.num_layers
+
+        # Init hiddens from h0
         if h0 is None:
-            for layer in range(self.num_layers):
-                hiddens.append(init.zeros(bs, self.hidden_size, dtype=self.dtype, device=self.device))
+            hiddens = [init.zeros(bs, self.hidden_size, device=self.device) for _ in range(self.num_layers)]
         else:
-            for layer in range(self.num_layers):
-                array = h0.cached_data[layer,:,:].reshape((bs, self.hidden_size)).compact()
-                hiddens.append(Tensor(array, device=self.device))
+            assert list(h0.shape) == [self.num_layers, bs, self.hidden_size]
+            hiddens = list(ops.split(h0, 0).detach())
 
+        # Init outputs from X
+        outputs = [ Tensor(X.realize_cached_data()[i,:,:].reshape((bs, input_size)).compact(), device=self.device)
+            for i in range(seq_len) ]
 
-        for i in range(seq_len):
-            curr_input = Tensor(X.cached_data[i,:,:].reshape((bs, input_size)).compact(), device=self.device)
+        for layer in range(self.num_layers):
+            rnn_cell = self.rnn_cells[layer]
+            for i in range(seq_len):
+                x = rnn_cell(outputs[i], hiddens[layer])
+                hiddens[layer] = x
+                outputs[i] = x
 
-            # Calculate new hiddens from current input and self.rnn_cells
-            for layer in range(self.num_layers):
-                prev_hidden = hiddens[layer]
-                curr_rnn_cell = self.rnn_cells[layer]
-                curr_hidden = curr_rnn_cell(curr_input, prev_hidden)
-                hiddens[layer] = curr_hidden
-                curr_input = curr_hidden
-
-            outputs.append(curr_hidden) # hidden ouput from last layer 
+        assert len(outputs) == seq_len
+        assert len(hiddens) == self.num_layers
+        assert outputs[-1] == hiddens[-1]
 
         return ops.stack(outputs, 0), ops.stack(hiddens, 0)
         # Tham khảo https://pytorch.org/docs/stable/generated/torch.nn.RNN.html

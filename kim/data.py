@@ -358,7 +358,8 @@ def batchify(data, batch_size, device, dtype):
     ### BEGIN YOUR SOLUTION
     nbatch = len(data) // batch_size
     n = nbatch * batch_size
-    return np.array(data[0:n]).astype(dtype).reshape((nbatch, batch_size))
+    # assert n == len(data)
+    return np.array(data[0:n]).astype(dtype).reshape((batch_size, nbatch)).transpose()
     ### END YOUR SOLUTION
 
 
@@ -387,11 +388,11 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     ### BEGIN YOUR SOLUTION
     n = batches.shape[0]
     assert i < n
-    assert bptt > 0 and bptt < batches.shape[0] - i
+    assert bptt > 0 and bptt < n - i
     
-    data = batches[i:i+bptt,:]
+    data = batches[i : i+bptt, : ]
     i += 1
-    target = batches[i:i+bptt,:].flatten()
+    target = batches[i : i+bptt, : ].flatten()
 
     return Tensor(data, device=device, dtype=dtype), Tensor(target, device=device, dtype=dtype)
     ### END YOUR SOLUTION

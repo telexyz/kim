@@ -64,12 +64,9 @@ class TensorTuple:
         return self.__repr__()
 
     def __add__(self, other):
-        if isinstance(other, TensorTuple):
-            assert len(self) == len(other)
-            return kim.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
-        else:
-            return kim.ops.make_tuple(*[self[i] + other for i in range(len(self))])
-    __radd__ = __add__
+        assert isinstance(other, TensorTuple)
+        assert len(self) == len(other)
+        return kim.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
 
     @staticmethod
     def make_from_op(op: TensorTupleOp, inputs: List["TensorTuple"]):

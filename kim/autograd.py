@@ -34,7 +34,7 @@ class Tensor:
     requires_grad: bool
 
     op: TensorOp
-    inputs: List["Tensor"]
+    inputs: List
 
     def realize_cached_data(self) -> NDArray:
         if self.cached_data is None:
@@ -215,11 +215,7 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
             # Detach grad from computational graph to save memory
             node.grad = node.grad.detach()
 
-        # print(">>>", node.op) # bắt lỗi grad không phải float32
-        # assert node.grad.dtype == "float32", "%s %s" % (node.grad.dtype, node.dtype)
-
         if node.op:
-            # print(">>> gradient:", node, node.op)
             grads = node.op.gradient(node.grad, node)
             for k in range(len(node.inputs)):
                 try: output_grads[node.inputs[k]].append(grads[k])

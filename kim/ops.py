@@ -24,13 +24,6 @@ class TupleGetItem(TensorOp):
     def __init__(self, index):
         self.index = index
 
-    def __call__(self, a: TensorTuple, fold_const=True) -> Tensor:
-        assert isinstance(a, TensorTuple)
-        # constant folding
-        if fold_const and isinstance(a.op, MakeTensorTuple):
-            return a.inputs[self.index]
-        return Tensor.make_from_op(self, [a])
-
     def compute(self, a):
         return a[self.index]
 
@@ -49,9 +42,6 @@ def tuple_get_item(value, index):
     return TupleGetItem(index)(value)
 
 
-# - - - - - - - - - - - -
-
-
 class FusedAddScalars(TensorTupleOp):
     def __init__(self, c0: float, c1: float):
         self.c0 = c0
@@ -61,11 +51,100 @@ class FusedAddScalars(TensorTupleOp):
         return a + self.c0, a + self.c1
 
     def gradient(self, out_grad, node):
-        return out_grad[0] + out_grad[1]
+        return out_grad[0] + out_grad[1],
 
 
 def fused_add_scalars(x, c0, c1):
     return FusedAddScalars(c0, c1)(x)
+
+
+
+class Stack(TensorOp):
+    def __init__(self, axis: int):
+        """
+        Concatenates a sequence of arrays along a new dimension.
+        Parameters:
+        axis - dimension to concatenate along
+        All arrays need to be of the same size.
+        """
+        self.axis = axis
+
+    def compute(self, tensors) -> Tensor:
+        # https://www.geeksforgeeks.org/python-pytorch-stack-method
+        tensor0 = tensors[0]
+        shape = list(tensor0.shape)
+        shape.insert(self.axis, len(tensors)) # thêm 1 chiều không gian nữa
+        idxs = [ slice(0, shape[i], 1) for i in range(len(shape)) ]
+        out = NDArray.make(shape, device=tensor0.device)
+        for i, tensori in enumerate(tensors):
+            assert tensor0.shape == tensori.shape, "stacked tensors must be same shape"
+            idxs[self.axis] = slice(i, i+1, 1) # gán dữ liệu vào từng lát cát của chiều self.axis
+            out.__setitem__(tuple(idxs), tensori)
+        return out
+
+
+    def gradient(self, out_grad, node):
+        a = split(out_grad, self.axis).realize_cached_data()
+        return make_tuple(*[Tensor(x, device=out_grad.device) for x in a]),
+
+
+def stack(args, axis):
+    return Stack(axis)(make_tuple(*args))
+
+
+
+import copy
+class Split(TensorTupleOp):
+    def __init__(self, axis: int, chunks=None):
+        """
+        Splits a tensor along an axis into a tuple of tensors.
+        (The "inverse" of Stack)
+        Parameters:
+        axis - dimension to split
+        """
+        self.axis = axis
+        self.chunks = chunks
+
+    def compute(self, A):
+        # print(">>> A:", A.shape, self.axis)
+        shape = list(A.shape)
+        idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
+        b_idxs = copy.deepcopy(idxs)
+
+        out = []
+        if self.chunks is None:
+            del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
+            del shape[self.axis] # xóa phần tử thứ self.axis của shape
+            chunks = A.shape[self.axis]
+            offset = 1
+        else:
+            chunks = self.chunks
+            offset = A.shape[self.axis] // chunks
+            b_idxs[self.axis] = slice(0, offset, 1)
+            shape[self.axis] = offset
+
+        for i in range(chunks):
+            idxs[self.axis] = slice(i, i+offset, 1)
+            a = A.__getitem__(tuple(idxs))
+            b = NDArray.make(shape, device=A.device)
+            b.__setitem__(tuple(b_idxs), a)
+            out.append(b)
+ 
+        return tuple(out)
+
+
+    def gradient(self, out_grad, node):
+        shape = node.inputs[0].shape
+        # print(">>> grad, input", out_grad.shape, shape)
+        chunks = shape[self.axis] // out_grad.shape[self.axis]
+        return stack([out_grad]*chunks, self.axis).reshape(shape),
+
+
+def split(a, axis, chunks=None):
+    return Split(axis, chunks=chunks)(a)
+
+
+# - - - - - - - - - - - -
 
 
 '''Lưu ý: các hàm tính gradient() của các TensorOp được định nghĩa dưới đây
@@ -495,90 +574,6 @@ class Tanh(TensorOp):
 
 def tanh(a):
     return Tanh()(a)
-
-
-class Stack(TensorOp):
-    def __init__(self, axis: int):
-        """
-        Concatenates a sequence of arrays along a new dimension.
-        Parameters:
-        axis - dimension to concatenate along
-        All arrays need to be of the same size.
-        """
-        self.axis = axis
-
-    def compute(self, tensors) -> Tensor:
-        # https://www.geeksforgeeks.org/python-pytorch-stack-method
-        tensor0 = tensors[0]
-        shape = list(tensor0.shape)
-        shape.insert(self.axis, len(tensors)) # thêm 1 chiều không gian nữa
-        idxs = [ slice(0, shape[i], 1) for i in range(len(shape)) ]
-        out = NDArray.make(shape, device=tensor0.device)
-        for i, tensori in enumerate(tensors):
-            assert tensor0.shape == tensori.shape, "stacked tensors must be same shape"
-            idxs[self.axis] = slice(i, i+1, 1) # gán dữ liệu vào từng lát cát của chiều self.axis
-            out.__setitem__(tuple(idxs), tensori)
-        return out
-
-
-    def gradient(self, out_grad, node):
-        a = split(out_grad, self.axis).realize_cached_data()
-        return make_tuple(*[Tensor(x, device=out_grad.device) for x in a]),
-
-
-def stack(args, axis):
-    return Stack(axis)(make_tuple(*args))
-
-
-import copy
-class Split(TensorTupleOp):
-    def __init__(self, axis: int, chunks=None):
-        """
-        Splits a tensor along an axis into a tuple of tensors.
-        (The "inverse" of Stack)
-        Parameters:
-        axis - dimension to split
-        """
-        self.axis = axis
-        self.chunks = chunks
-
-    def compute(self, A):
-        # print(">>> A:", A.shape, self.axis)
-        shape = list(A.shape)
-        idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
-        b_idxs = copy.deepcopy(idxs)
-
-        out = []
-        if self.chunks is None:
-            del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
-            del shape[self.axis] # xóa phần tử thứ self.axis của shape
-            chunks = A.shape[self.axis]
-            offset = 1
-        else:
-            chunks = self.chunks
-            offset = A.shape[self.axis] // chunks
-            b_idxs[self.axis] = slice(0, offset, 1)
-            shape[self.axis] = offset
-
-        for i in range(chunks):
-            idxs[self.axis] = slice(i, i+offset, 1)
-            a = A.__getitem__(tuple(idxs))
-            b = NDArray.make(shape, device=A.device)
-            b.__setitem__(tuple(b_idxs), a)
-            out.append(b)
- 
-        return tuple(out)
-
-
-    def gradient(self, out_grad, node):
-        shape = node.inputs[0].shape
-        # print(">>> grad, input", out_grad.shape, shape)
-        chunks = shape[self.axis] // out_grad.shape[self.axis]
-        return stack([out_grad]*chunks, self.axis).reshape(shape),
-
-
-def split(a, axis, chunks=None):
-    return Split(axis, chunks=chunks)(a)
 
 
 

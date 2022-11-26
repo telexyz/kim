@@ -14,8 +14,8 @@ class TensorTupleOp:
 class TensorTuple:
     # Internal Data
     op: Optional[TensorTupleOp]
-    inputs: List["TensorTuple"]
-    cached_data: Optional["TensorTuple"]
+    inputs: List["Tensor"]
+    cached_data: Optional["Tensor"]
     requires_grad: bool
 
     def realize_cached_data(self):
@@ -35,7 +35,7 @@ class TensorTuple:
 
     def assign_params_and_record_creation(
         self, op: Optional[TensorTupleOp]=None,
-        inputs: List["TensorTuple"]=[],
+        inputs: List["Tensor"]=[],
         cached_data=None,
         requires_grad=False
     ):

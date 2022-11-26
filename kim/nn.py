@@ -226,12 +226,10 @@ class Tanh(Module):
     def forward(self, x: Tensor) -> Tensor:
         return ops.tanh(x)
 
-def sigmoid(x):
-    return (1 + ops.exp(ops.negate(x)))**(-1)
 
 class Sigmoid(Module):
     def forward(self, x: Tensor) -> Tensor:
-        return sigmoid(x)
+        return (1 + ops.exp(ops.negate(x)))**(-1)
 
 
 class BatchNorm2d(BatchNorm1d):
@@ -513,11 +511,12 @@ class LSTMCell(Module):
             out += self.bias_ih.reshape((1, out.shape[-1])).broadcast_to(out.shape)
             out += self.bias_hh.reshape((1, out.shape[-1])).broadcast_to(out.shape)
 
-        i,f,g,o = ops.split(out, 1, chunks=4)
-        i = sigmoid(i)
-        f = sigmoid(f)
-        g = ops.tanh(g)
-        o = sigmoid(o)
+        ifgo = ops.split(out, 1, chunks=4)
+        _sigmoid = Sigmoid()
+        i = _sigmoid(ops.tuple_get_item(ifgo, 0))
+        f = _sigmoid(ops.tuple_get_item(ifgo, 1))
+        g = ops.tanh(ops.tuple_get_item(ifgo, 2))
+        o = _sigmoid(ops.tuple_get_item(ifgo, 3))
 
         # print(">>> hidden_size,out", self.hidden_size, out.shape)
         # print(">>> f,c0,i,g",f.shape,c0.shape,i.shape,g.shape)

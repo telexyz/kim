@@ -379,6 +379,7 @@ class MatMul(TensorOp):
         ### numpy_backend
         if array_api == np: return a @ b
 
+        # return NDArray(a.numpy() @ b.numpy(), device=a.device) # use numpy for testing
         ### ndarray_backend
         assert a.shape[-1] == b.shape[-2], "MatMul: Sizes not matched %s @ %s" % (a.shape, b.shape)
 

@@ -553,7 +553,18 @@ class LSTM(Module):
             of shape (4*hidden_size,).
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.hidden_size = hidden_size
+        self.input_size = input_size
+        self.num_layers = num_layers
+        self.device = device
+        self.dtype = dtype
+        self.bias = bias
+
+        # Init LSTM Layers
+        self.lstm_cells = [LSTMCell(input_size, hidden_size, bias=bias, dtype=dtype, device=device)]
+
+        self.lstm_cells += [LSTMCell(hidden_size, hidden_size, bias=bias, dtype=dtype, device=device) 
+            for _ in range(num_layers - 1)]
         ### END YOUR SOLUTION
 
     def forward(self, X, h=None):
@@ -561,7 +572,7 @@ class LSTM(Module):
         Inputs: X, h
         X of shape (seq_len, bs, input_size) containing the features of the input sequence.
         h, tuple of (h0, c0) with
-            h_0 of shape (num_layers, bs, hidden_size) containing the initial
+            h0 of shape (num_layers, bs, hidden_size) containing the initial
                 hidden state for each element in the batch. Defaults to zeros if not provided.
             c0 of shape (num_layers, bs, hidden_size) containing the initial
                 hidden cell state for each element in the batch. Defaults to zeros if not provided.
@@ -574,7 +585,42 @@ class LSTM(Module):
             h_n of shape (num_layers, bs, hidden_size) containing the final hidden cell state for each element in the batch.
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        seq_len, bs, input_size = X.shape
+        assert input_size == self.input_size
+
+        outputs = [] # the output sequence, len(outputs) == seq_len
+        hiddens_h = [] # hidden states acrossing layers, len(hiddens) == self.num_layers
+        hiddens_c = [] # hidden states acrossing layers, len(hiddens) == self.num_layers
+
+        # Init hiddens_h,c from h
+        if h is None:
+            hiddens_h = [init.zeros(bs, self.hidden_size, device=self.device) for _ in range(self.num_layers)]
+            hiddens_c = [init.zeros(bs, self.hidden_size, device=self.device) for _ in range(self.num_layers)]
+        else:
+            h0, c0 = h
+            assert list(h0.shape) == [self.num_layers, bs, self.hidden_size]
+            assert list(c0.shape) == [self.num_layers, bs, self.hidden_size]
+            hiddens_h = list(ops.split(h0, 0).detach())
+            hiddens_c = list(ops.split(c0, 0).detach())
+
+        # Init outputs from X
+        outputs = [ Tensor(X.realize_cached_data()[i,:,:].reshape((bs, input_size)).compact(), device=self.device)
+            for i in range(seq_len) ]
+
+        for layer in range(self.num_layers):
+            lstm_cell = self.lstm_cells[layer]
+            for i in range(seq_len):
+                h, c = lstm_cell(outputs[i], (hiddens_h[layer], hiddens_c[layer]))
+                hiddens_h[layer] = h
+                hiddens_c[layer] = c
+                outputs[i] = h
+
+        assert len(outputs) == seq_len
+        assert len(hiddens_h) == self.num_layers
+        assert len(hiddens_c) == self.num_layers
+        assert outputs[-1] == hiddens_h[-1]
+
+        return ops.stack(outputs, 0), (ops.stack(hiddens_h, 0), ops.stack(hiddens_c, 0))
         ### END YOUR SOLUTION
 
 

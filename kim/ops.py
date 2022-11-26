@@ -84,8 +84,7 @@ class Stack(TensorOp):
 
 
     def gradient(self, out_grad, node):
-        a = split(out_grad, self.axis).realize_cached_data()
-        return make_tuple(*[Tensor(x, device=out_grad.device) for x in a]),
+        return make_tuple(*[Tensor(x, device=out_grad.device) for x in split(out_grad, self.axis)]),
 
 
 def stack(args, axis):

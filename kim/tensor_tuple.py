@@ -63,13 +63,6 @@ class TensorTuple:
     def __str__(self):
         return self.__repr__()
 
-    def __add__(self, other):
-        if isinstance(other, TensorTuple):
-            assert len(self) == len(other)
-            return kim.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
-        else:
-            return kim.ops.make_tuple(*[self[i] + other for i in range(len(self))])
-    __radd__ = __add__
 
     @staticmethod
     def make_from_op(op: TensorTupleOp, inputs: List["TensorTuple"]):
@@ -93,12 +86,3 @@ class TensorTuple:
             requires_grad=requires_grad
         )
         return tensor_tuple
-
-
-    def backward(self, out_grad=None):
-        if out_grad is None:
-            for tensor in self: tensor.backward()
-        else:
-            assert len(out_grad) == len(self)
-            for i in range(len(out_grad)):
-                self[i].backward(out_grad[i])

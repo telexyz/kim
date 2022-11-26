@@ -209,7 +209,12 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
-        node.grad = sum(x for x in output_grads[node])
+        # print("\n(((", node.op, ")))\n")
+        # for x in output_grads[node]: print(">>>", type(x), x)
+
+        if len(output_grads[node]) == 1: node.grad = output_grads[node][0]
+        else: node.grad = sum(output_grads[node])
+
         # Keep this condition to pass grad-of-grad test
         if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
             # Detach grad from computational graph to save memory

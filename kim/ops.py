@@ -14,10 +14,10 @@ class MakeTensorTuple(TensorTupleOp):
 
     def gradient(self, out_grad, node):
         assert isinstance(out_grad, TensorTuple)
-        assert len(node.inputs) == len(out_grad)
+        n_inputs = len(node.inputs)
+        assert n_inputs == len(out_grad)
         # trả lại gradient thông qua ops.tuple_get_item
-        n = len(out_grad.realize_cached_data()) # số lượng các tensors của tuple
-        return tuple([tuple_get_item(out_grad, i) for i in range(n)])
+        return tuple([tuple_get_item(out_grad, index) for index in range(n_inputs)])
 
 def make_tensor_tuple(*args):
     return MakeTensorTuple()(*args)
@@ -31,9 +31,9 @@ class TupleGetItem(TensorOp):
         return a[self.index]
 
     def gradient(self, out_grad, node):
-        n = len(node.inputs[0]) - 1
-        in_grads = [init.zeros_like(value) for _ in range(n)]
-        in_grads.insert(self.in_index, out_grad)
+        n_inputs = len(node.inputs[0])
+        in_grads = [init.zeros_like(out_grad) for _ in range(n_inputs - 1)]
+        in_grads.insert(self.index, out_grad)
         return make_tensor_tuple(*in_grads),
 
 def tuple_get_item(value, index):
@@ -126,10 +126,9 @@ class Split(TensorTupleOp):
 
 
     def gradient(self, out_grad, node):
-        shape = node.inputs[0].shape
-        # print(">>> grad, input", out_grad.shape, shape)
-        chunks = shape[self.axis] // out_grad.shape[self.axis]
-        return stack([out_grad]*chunks, self.axis).reshape(shape),
+        assert isinstance(out_grad, tuple)
+        input_shape = node.inputs[0].shape
+        return stack(out_grad, self.axis).reshape(input_shape),
 
 
 def split(a, axis, chunks=None):

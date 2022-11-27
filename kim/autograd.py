@@ -210,11 +210,19 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
-        # print("\n(((", node.op, ")))\n")
-        # for x in output_grads[node]: print(">>>", type(x), x)
+        # print("\n(((", node.op, ")))")
+        # for i, grad in enumerate(output_grads[node]):
+        #     print("    output_grads", i, type(grad))
+        #     if isinstance(grad, kim.TensorTuple):
+        #         print("   ", [tensor.shape for tensor in grad.realize_cached_data()])
 
-        if len(output_grads[node]) == 1: node.grad = output_grads[node][0]
-        else: node.grad = sum(output_grads[node])
+        node_output_grads = output_grads[node]
+        node.grad = node_output_grads[0]
+        for i in range(len(node_output_grads) - 1): node.grad += node_output_grads[i + 1]
+
+        # print(" => node.grad", type(node.grad)) # DEBUG
+        # if isinstance(node.grad, kim.TensorTuple):
+        #     print("   ", [tensor.shape for tensor in node.grad.realize_cached_data()])
 
         # Keep this condition to pass grad-of-grad test
         if CompGraph.NODE_COUNT > CompGraph.MAX_BACKWARD_NODE_COUNT:

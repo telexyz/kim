@@ -166,7 +166,7 @@ def test_lstm(seq_length, num_layers, batch_size, input_size, hidden_size, bias,
     else:
         output, (h, c) = model(kim.Tensor(x, device=device), None)
 
-    np.testing.assert_allclose(h_.detach().numpy(), h.numpy(), atol=1e-5, rtol=1e-5)
+        np.testing.assert_allclose(h_.detach().numpy(), h.numpy(), atol=1e-5, rtol=1e-5)
     np.testing.assert_allclose(c_.detach().numpy(), c.numpy(), atol=1e-5, rtol=1e-5)
     np.testing.assert_allclose(output_.detach().numpy(), output.numpy(), atol=1e-5, rtol=1e-5)
 

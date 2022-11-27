@@ -93,18 +93,8 @@ class TensorTuple:
         return tensor_tuple
 
     # Hàm dùng để tính gradient (backward graph)
-    # __add__ dùng trong sum gradient
+    # __add__ dùng trong sum gradient (autograd.py)
     def __add__(self, other):
         assert isinstance(other, TensorTuple)
         assert len(self) == len(other)
-        return kim.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
-
-    # backward để gọi trong trường hợp node cuối là tensor tuple
-    # (ít xảy ra) chỉ dùng để test vì trong thực tế node cuối là 1 hàm loss
-    def backward(self, out_grad=None):
-        if out_grad is None:
-            for tensor in self: tensor.backward()
-        else:
-            assert len(out_grad) == len(self)
-            for i in range(len(out_grad)):
-                self[i].backward(out_grad[i])
+        return kim.ops.make_tensor_tuple(*[self[i] + other[i] for i in range(len(self))])

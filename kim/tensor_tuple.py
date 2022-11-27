@@ -1,5 +1,6 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import kim
+import numpy as np
 
 ################################
 ####### Cấu trúc dữ liệu #######
@@ -12,57 +13,60 @@ class TensorTupleOp:
 
 
 class TensorTuple:
-    # Internal Data
+    # Data structure
+    # `op` biến đổi input tensor(s) thành Tulple[Tensor] nên được gọi là TensorTuple
+    # inputs có thể chỉ là 1 tensor khi op là split (tách tensor thành nhiều tensors con)
     op: Optional[TensorTupleOp]
     inputs: List["Tensor"]
-    cached_data: Optional["Tensor"]
+    cached_data: Tuple["Tensor"]
     requires_grad: bool
 
     def realize_cached_data(self):
         if self.cached_data is None:
-            self.cached_data = self.op.compute(
-                *[x.realize_cached_data() for x in self.inputs]
-            )
+            self.cached_data = self.op.compute(*[x.realize_cached_data() for x in self.inputs])
         return self.cached_data
 
     def numpy(self):
         data = self.realize_cached_data()
-        if array_api is numpy: return data
-        if isinstance(data, tuple):
-            return [x.numpy() for x in data]
+        assert isinstance(data, tuple)
+        if array_api is np:
+            return list(data)
         else:
-            return data.numpy()
+            return [x.numpy() for x in data]
 
     def assign_params_and_record_creation(
-        self, op: Optional[TensorTupleOp]=None,
+        self,
+        op: Optional[TensorTupleOp]=None,
         inputs: List["Tensor"]=[],
         cached_data=None,
         requires_grad=False
     ):
-        kim.autograd.CompGraph.TENSOR_COUNT += 1 # record new tensor creation
+        kim.autograd.CompGraph.NODE_COUNT += 1 # record new tensor creation
         self.op = op
         self.inputs = inputs
         self.cached_data = cached_data
-        self.requires_grad = requires_grad or any(x.requires_grad for x in inputs)
+        self.requires_grad = requires_grad or any(tensor.requires_grad for tensor in inputs)
 
     def __len__(self):
         return len(self.realize_cached_data())
 
+    # Truy cập vào 1 phần tử trong TensorTuple sử dụng qua ops.tuple_get_item
+    # để còn tính được backward trong computational graph
     def __getitem__(self, index: int):
         return kim.ops.tuple_get_item(self, index)
 
     def tuple(self):
-        return tuple([x for x in self])
+        n = len(self.realize_cached_data())
+        return tuple([kim.ops.tuple_get_item(self, i) for i in range(n)])
 
     def __del__(self):
-        kim.autograd.CompGraph.TENSOR_COUNT -= 1 # record tensor destruction
+        kim.autograd.CompGraph.NODE_COUNT -= 1 # record tensor destruction
 
     def __repr__(self):
         return "kim.TensorTuple" + str(self.tuple())
 
     def __str__(self):
         return self.__repr__()
-
 
     @staticmethod
     def make_from_op(op: TensorTupleOp, inputs: List["TensorTuple"]):
@@ -81,8 +85,26 @@ class TensorTuple:
         tensor_tuple = TensorTuple.__new__(TensorTuple)
         if isinstance(data, TensorTuple): data = data.realize_cached_data()
         tensor_tuple.assign_params_and_record_creation(
-            op=None, inputs=[],
+            op=None, 
+            inputs=[],
             cached_data=data,
             requires_grad=requires_grad
         )
         return tensor_tuple
+
+    # Hàm dùng để tính gradient (backward graph)
+    # __add__ dùng trong sum gradient
+    def __add__(self, other):
+        assert isinstance(other, TensorTuple)
+        assert len(self) == len(other)
+        return kim.ops.make_tuple(*[self[i] + other[i] for i in range(len(self))])
+
+    # backward để gọi trong trường hợp node cuối là tensor tuple
+    # (ít xảy ra) chỉ dùng để test vì trong thực tế node cuối là 1 hàm loss
+    def backward(self, out_grad=None):
+        if out_grad is None:
+            for tensor in self: tensor.backward()
+        else:
+            assert len(out_grad) == len(self)
+            for i in range(len(out_grad)):
+                self[i].backward(out_grad[i])

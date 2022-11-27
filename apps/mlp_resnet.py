@@ -59,7 +59,7 @@ def epoch(dataloader, model, optim=None):
             loss.backward() # backward for all nodes of computational graph, including model's params
             optim.step()    # update model's params
 
-        # print(">>> step, TENSOR_COUNT:", step, kim.autograd.CompGraph.TENSOR_COUNT)
+        # print(">>> step, NODE_COUNT:", step, kim.autograd.CompGraph.NODE_COUNT)
 
     # return metrics after consume all data
     return errors / counts, losses / (step + 1)

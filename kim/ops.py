@@ -16,7 +16,7 @@ class MakeTensorTuple(TensorTupleOp):
         assert isinstance(out_grad, TensorTuple)
         return tuple([out_grad[i] for i in range(len(out_grad))])
 
-def make_tuple(*args):
+def make_tensor_tuple(*args):
     return MakeTensorTuple()(*args)
 
 
@@ -28,15 +28,10 @@ class TupleGetItem(TensorOp):
         return a[self.index]
 
     def gradient(self, out_grad, node):
-        index = self.index
-        in_grad = []
-        for i, value in enumerate(node.inputs[0]):
-            if i != index:
-                in_grad.append(init.zeros_like(value))
-            else:
-                in_grad.append(out_grad)
-        return make_tuple(*in_grad)
-
+        n = len(node.inputs[0]) - 1
+        in_grads = [init.zeros_like(value) for _ in range(n)]
+        in_grads.insert(self.in_index, out_grad)
+        return make_tensor_tuple(*in_grads)
 
 def tuple_get_item(value, index):
     return TupleGetItem(index)(value)
@@ -53,10 +48,8 @@ class FusedAddScalars(TensorTupleOp):
     def gradient(self, out_grad, node):
         return out_grad[0] + out_grad[1],
 
-
 def fused_add_scalars(x, c0, c1):
     return FusedAddScalars(c0, c1)(x)
-
 
 
 class Stack(TensorOp):
@@ -82,14 +75,11 @@ class Stack(TensorOp):
             out.__setitem__(tuple(idxs), tensori)
         return out
 
-
     def gradient(self, out_grad, node):
-        return make_tuple(*[Tensor(x, device=out_grad.device) for x in split(out_grad, self.axis)]),
-
+        return make_tensor_tuple(*split(out_grad, self.axis)),
 
 def stack(args, axis):
-    return Stack(axis)(make_tuple(*args))
-
+    return Stack(axis)(make_tensor_tuple(*args))
 
 
 import copy
@@ -113,7 +103,7 @@ class Split(TensorTupleOp):
         out = []
         if self.chunks is None:
             del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
-            del shape[self.axis] # xóa phần tử thứ self.axis của shape
+            del  shape[self.axis] # xóa phần tử thứ self.axis của shape
             chunks = A.shape[self.axis]
             offset = 1
         else:

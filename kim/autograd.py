@@ -4,10 +4,11 @@ import numpy
 from .tensor_tuple import TensorTuple, TensorTupleOp
 from .backend_selection import Device, array_api, NDArray, default_device
 
+# namespace để chứa config và counters liên quan tới computational graph
 class CompGraph:
     LAZY_MODE = False
-    TENSOR_COUNT = 0
-    MAX_BACKWARD_TENSOR_COUNT = 0
+    NODE_COUNT = 0
+    MAX_BACKWARD_NODE_COUNT = 0
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -27,7 +28,7 @@ class Tensor:
         return self.realize_cached_data().__str__()
 
     def __del__(self):
-        CompGraph.TENSOR_COUNT -= 1
+        CompGraph.NODE_COUNT -= 1
     
     cached_data: Optional[NDArray]
     grad: "Tensor" # lưu out_grad gradient của node
@@ -55,7 +56,7 @@ class Tensor:
         cached_data: Optional[NDArray] = None,
         requires_grad: bool = False
     ):
-        CompGraph.TENSOR_COUNT += 1
+        CompGraph.NODE_COUNT += 1
         self.op = op
         self.inputs = inputs
         self.cached_data = cached_data
@@ -216,7 +217,7 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
         else: node.grad = sum(output_grads[node])
 
         # Keep this condition to pass grad-of-grad test
-        if CompGraph.TENSOR_COUNT > CompGraph.MAX_BACKWARD_TENSOR_COUNT:
+        if CompGraph.NODE_COUNT > CompGraph.MAX_BACKWARD_NODE_COUNT:
             # Detach grad from computational graph to save memory
             node.grad = node.grad.detach()
 

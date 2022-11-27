@@ -26,6 +26,7 @@ class Tensor:
 
     def __str__(self):
         return self.realize_cached_data().__str__()
+        # return self.__repr__()
 
     def __del__(self):
         CompGraph.NODE_COUNT -= 1
@@ -238,11 +239,13 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
 
 def find_topo_sort(nodes: List[Tensor]) -> List[Tensor]:
     topo_order = []
+
+    def topo_sort_dfs(node: Tensor):
+        # print("topo_sort_dfs for", node)
+        for input_node in node.inputs: topo_sort_dfs(input_node)
+        if node not in topo_order: topo_order.append(node)
+
     for node in nodes:
-        topo_sort_dfs(node, topo_order)
+        print("find_topo_sort for", node.shape)
+        topo_sort_dfs(node)
     return topo_order
-
-
-def topo_sort_dfs(node: Tensor, topo_order: List[Tensor]):
-    for input_node in node.inputs: topo_sort_dfs(input_node, topo_order)
-    if node not in topo_order: topo_order.append(node)

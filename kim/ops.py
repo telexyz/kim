@@ -126,9 +126,14 @@ class Split(TensorTupleOp):
 
 
     def gradient(self, out_grad, node):
-        assert isinstance(out_grad, tuple)
         input_shape = node.inputs[0].shape
-        return stack(out_grad, self.axis).reshape(input_shape),
+        if isinstance(out_grad, TensorTuple):
+            return Stack(self.axis)(out_grad).reshape(input_shape),
+        # elif isinstance(out_grad, tuple):
+        #     return stack(out_grad, self.axis).reshape(input_shape),
+        # else:
+        #     chunks = input_shape[self.axis] // out_grad.shape[self.axis]
+        #     return stack([out_grad]*chunks, self.axis).reshape(input_shape),
 
 
 def split(a, axis, chunks=None):

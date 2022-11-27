@@ -88,7 +88,7 @@ def test_compute_gradient():
 def test_gradient_of_gradient():
     '''check gradient of gradient'''
     # work around to keep node.grad in computational graph
-    kim.autograd.CompGraph.MAX_BACKWARD_TENSOR_COUNT = 1000
+    kim.autograd.CompGraph.MAX_BACKWARD_NODE_COUNT = 1000
     x2 = kim.Tensor([6])
     x3 = kim.Tensor([0])
     y = x2 * x2 + x2 * x3
@@ -110,5 +110,5 @@ def test_gradient_of_gradient():
     # assert gradient of gradient
     assert grad_x2_x2.numpy() == 2
     assert grad_x2_x3.numpy() == 1
-    kim.autograd.CompGraph.MAX_BACKWARD_TENSOR_COUNT = 0
+    kim.autograd.CompGraph.MAX_BACKWARD_NODE_COUNT = 0
 

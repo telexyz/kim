@@ -74,12 +74,11 @@ def test_compute_gradient():
                        kim.Tensor(np.random.randn(9,8)),
                        kim.Tensor(np.random.randn(10,8)), backward=True)
 
-    gradient_check(lambda A,B : kim.summation(kim.broadcast_to(A,shape=(10,9))*B,
-        axes=None),
+    gradient_check(lambda A,B : kim.summation(kim.broadcast_to(A,shape=(10,9))*B, axes=None),
                    kim.Tensor(np.random.randn(10,1)),
                    kim.Tensor(np.random.randn(10,9)), backward=True)
-    gradient_check(lambda A,B,C : kim.summation(kim.reshape(A,shape=(10,10))@B/5+C,
-        axes=None),
+
+    gradient_check(lambda A,B,C : kim.summation(kim.reshape(A,shape=(10,10))@B/5+C, axes=None),
                    kim.Tensor(np.random.randn(100)),
                    kim.Tensor(np.random.randn(10,5)),
                    kim.Tensor(np.random.randn(10,5)), backward=True)
@@ -111,4 +110,3 @@ def test_gradient_of_gradient():
     assert grad_x2_x2.numpy() == 2
     assert grad_x2_x3.numpy() == 1
     kim.autograd.CompGraph.MAX_BACKWARD_NODE_COUNT = 0
-

@@ -69,7 +69,7 @@ class TensorTuple:
         return self.__repr__()
 
     @staticmethod
-    def make_from_op(op: TensorTupleOp, inputs: List["TensorTuple"]):
+    def make_from_op(op: TensorTupleOp, inputs: List["Tensor"]):
         tensor_tuple = TensorTuple.__new__(TensorTuple)
         tensor_tuple.assign_params_and_record_creation(op=op, inputs=inputs)
         if not kim.autograd.CompGraph.LAZY_MODE:

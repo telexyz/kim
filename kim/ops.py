@@ -14,7 +14,11 @@ class MakeTensorTuple(TensorTupleOp):
 
     def gradient(self, out_grad, node):
         assert isinstance(out_grad, TensorTuple)
-        return tuple([out_grad[i] for i in range(len(out_grad))])
+        assert len(node.inputs) == len(out_grad)
+        # trả lại gradient thông qua ops.tuple_get_item
+        # bằng cách gọi `out_grad.tuple()` hoặc cụ thể hơn:
+        n = len(out_grad.realize_cached_data()) # số lượng các tensors của tuple
+        return tuple([tuple_get_item(out_grad, i) for i in range(n)])
 
 def make_tensor_tuple(*args):
     return MakeTensorTuple()(*args)

@@ -12,7 +12,7 @@ def get_int_tensor(*shape, low=0, high=10, entropy=1):
     return kim.Tensor(np.random.randint(low, high, size=shape))
 
 def global_tensor_count():
-    return np.array(kim.autograd.CompGraph.TENSOR_COUNT)
+    return np.array(kim.autograd.CompGraph.NODE_COUNT)
 
 def learn_model_1d(feature_size, nclasses, _model, optimizer, epochs=1, **kwargs):
     np.random.seed(42)

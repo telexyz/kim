@@ -213,6 +213,7 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
 
         node.grad = output_grads[node].pop(0) # remove and assign first element
         for grad in output_grads[node]: node.grad += grad # acummulate other elems
+        node.grad = node.grad.detach() # will have half of GPU memory
 
         if node.op is not None:
             grads = node.op.gradient(node.grad, node)

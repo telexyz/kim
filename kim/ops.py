@@ -27,6 +27,13 @@ class TupleGetItem(TensorOp):
     def __init__(self, index):
         self.index = index
 
+    def __call__(self, a: TensorTuple, fold_const=True) -> Tensor:
+        assert isinstance(a, TensorTuple)
+        # constant folding
+        if fold_const and isinstance(a.op, MakeTensorTuple):
+            return a.inputs[self.index]
+        return Tensor.make_from_op(self, [a])
+
     def compute(self, a):
         return a[self.index]
 
@@ -66,7 +73,7 @@ class Stack(TensorOp):
         self.axis = axis
 
     def compute(self, tensors) -> Tensor:
-        # https://www.geeksforgeeks.org/python-pytorch-stack-method
+        assert isinstance(tensors, tuple)
         tensor0 = tensors[0]
         shape = list(tensor0.shape)
         shape.insert(self.axis, len(tensors)) # thêm 1 chiều không gian nữa
@@ -77,12 +84,15 @@ class Stack(TensorOp):
             idxs[self.axis] = slice(i, i+1, 1) # gán dữ liệu vào từng lát cát của chiều self.axis
             out.__setitem__(tuple(idxs), tensori)
         return out
+        # https://www.geeksforgeeks.org/python-pytorch-stack-method
 
     def gradient(self, out_grad, node):
-        return make_tensor_tuple(*split(out_grad, self.axis)),
+        return split(out_grad, self.axis),
+        # return make_tensor_tuple(*split(out_grad, self.axis)),
 
 def stack(args, axis):
-    return Stack(axis)(make_tensor_tuple(*args))
+    tensor_tuple = make_tensor_tuple(*args)
+    return Stack(axis)(tensor_tuple)
 
 
 import copy

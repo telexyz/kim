@@ -8,6 +8,7 @@ from .backend_selection import Device, array_api, NDArray, default_device
 class CompGraph:
     LAZY_MODE = False
     NODE_COUNT = 0
+    MAX_NODE_COUNT = 0
     MAX_BACKWARD_NODE_COUNT = 0
 
 ####################################
@@ -208,6 +209,9 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
     output_grads[output_tensor] = [out_grad]
     reverse_topo_order = reversed(find_topo_sort([output_tensor]))
 
+    if CompGraph.MAX_NODE_COUNT < CompGraph.NODE_COUNT:
+        CompGraph.MAX_NODE_COUNT = CompGraph.NODE_COUNT
+
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
@@ -217,15 +221,14 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
         #     if isinstance(grad, kim.TensorTuple):
         #         print("   ", [tensor.shape for tensor in grad.realize_cached_data()])
 
-        node_output_grads = output_grads[node]
-        node.grad = node_output_grads[0]
-        for i in range(len(node_output_grads) - 1): node.grad += node_output_grads[i + 1]
+        node.grad = output_grads[node].pop(0) # remove and assign first element
+        for grad in output_grads[node]: node.grad += grad
 
         # print(" => node.grad", type(node.grad)) # DEBUG
         # if isinstance(node.grad, kim.TensorTuple):
         #     print("   ", [tensor.shape for tensor in node.grad.realize_cached_data()])
 
-        # Keep this condition to pass grad-of-grad test
+        # Note: set MAX_BACKWARD_NODE_COUNT to big enough amount to pass grad-of-grad test
         if CompGraph.NODE_COUNT > CompGraph.MAX_BACKWARD_NODE_COUNT:
             # Detach grad from computational graph to save memory
             node.grad = node.grad.detach()
@@ -238,14 +241,23 @@ def compute_gradient_from(output_tensor: Tensor, out_grad: Tensor):
 
 
 def find_topo_sort(nodes: List[Tensor]) -> List[Tensor]:
-    topo_order = []
-
-    def topo_sort_dfs(node: Tensor):
-        # print("topo_sort_dfs for", node)
-        for input_node in node.inputs: topo_sort_dfs(input_node)
-        if node not in topo_order: topo_order.append(node)
+    topo = {
+        'visited': [],
+        'counter':  0,
+    }
 
     for node in nodes:
         print("find_topo_sort for", node.shape)
-        topo_sort_dfs(node)
-    return topo_order
+        topo_sort_dfs(node, topo)
+
+    print(f">>> topo length %i, topo_sort_dfs call %i" % (len(topo['visited']), topo['counter']))
+    return topo['visited']
+
+
+def topo_sort_dfs(node: Tensor, topo):
+    topo['counter'] += 1
+    for input_node in node.inputs:
+        topo_sort_dfs(input_node, topo)
+
+    if node not in topo['visited']:
+        topo['visited'].append(node)

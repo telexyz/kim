@@ -518,7 +518,7 @@ class LSTMCell(Module):
         g = ops.tanh(ops.tuple_get_item(ifgo, 2))
         o = _sigmoid(ops.tuple_get_item(ifgo, 3))
 
-        # print(">>> hidden_size,out", self.hidden_size, out.shape)
+        # print(">>> hidden_size,out",self.hidden_size,out.shape)
         # print(">>> f,c0,i,g",f.shape,c0.shape,i.shape,g.shape)
 
         c_out = f*c0 + i*g
@@ -565,6 +565,7 @@ class LSTM(Module):
         self.lstm_cells += [LSTMCell(hidden_size, hidden_size, bias=bias, dtype=dtype, device=device) 
             for _ in range(num_layers - 1)]
         ### END YOUR SOLUTION
+
 
     def forward(self, X, h=None):
         """
@@ -623,6 +624,7 @@ class LSTM(Module):
         ### END YOUR SOLUTION
 
 
+
 class Embedding(Module):
     def __init__(self, num_embeddings, embedding_dim, device=None, dtype="float32"):
         super().__init__()
@@ -640,6 +642,7 @@ class Embedding(Module):
         ### BEGIN YOUR SOLUTION
         raise NotImplementedError()
         ### END YOUR SOLUTION
+
 
     def forward(self, x: Tensor) -> Tensor:
         """

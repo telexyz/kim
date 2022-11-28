@@ -107,7 +107,7 @@ def test_optim_sgd_layernorm_residual_1():
 def test_optim_sgd_z_memory_check_1():
     # np.testing.assert_allclose
     np.testing.assert_allclose(global_tensor_count(),
-        np.array(387//2), rtol=1e-5, atol=387//2)
+        np.array(387), rtol=1e-5, atol=387)
 
 
 def test_optim_adam_1():
@@ -138,4 +138,4 @@ def test_optim_adam_weight_decay_bias_correction_1():
 # if this fails, make sure you're using .detach()/.data whenever possible.
 def test_optim_adam_z_memory_check_1():
     np.testing.assert_allclose(global_tensor_count(),
-        np.array(1000//2), rtol=1e-5, atol=1000//2)
+        np.array(1132), rtol=1e-5, atol=1000)

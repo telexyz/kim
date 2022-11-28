@@ -72,17 +72,19 @@ class Stack(TensorOp):
         """
         self.axis = axis
 
-    def compute(self, tensors) -> Tensor:
-        assert isinstance(tensors, tuple)
-        tensor0 = tensors[0]
-        shape = list(tensor0.shape)
-        shape.insert(self.axis, len(tensors)) # thêm 1 chiều không gian nữa
+    def compute(self, arrays) -> Tensor:
+        # Vì compute luôn sử dụng dữ liệu từ .cached_data nên arrays ở đây phải là tupple của NDArray
+        assert isinstance(arrays, tuple)
+        array0 = arrays[0]
+        assert isinstance(array0, NDArray)
+        shape = list(array0.shape)
+        shape.insert(self.axis, len(arrays)) # thêm 1 chiều không gian nữa
         idxs = [ slice(0, shape[i], 1) for i in range(len(shape)) ]
-        out = NDArray.make(shape, device=tensor0.device)
-        for i, tensori in enumerate(tensors):
-            assert tensor0.shape == tensori.shape, "stacked tensors must be same shape"
+        out = NDArray.make(shape, device=array0.device)
+        for i, arrayi in enumerate(arrays):
+            assert array0.shape == arrayi.shape, "stacked arrays must be same shape"
             idxs[self.axis] = slice(i, i+1, 1) # gán dữ liệu vào từng lát cát của chiều self.axis
-            out.__setitem__(tuple(idxs), tensori)
+            out.__setitem__(tuple(idxs), arrayi)
         return out
         # https://www.geeksforgeeks.org/python-pytorch-stack-method
 
@@ -107,7 +109,7 @@ class Split(TensorTupleOp):
         self.axis = axis
         self.chunks = chunks
 
-    def compute(self, A):
+    def compute(self, A: NDArray):
         # print(">>> A:", A.shape, self.axis)
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]

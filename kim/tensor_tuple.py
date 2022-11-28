@@ -20,6 +20,7 @@ class TensorTuple:
     inputs: List["Tensor"]
     cached_data: Tuple["Tensor"]
     requires_grad: bool
+    visited=None
 
     def realize_cached_data(self):
         if self.cached_data is None:

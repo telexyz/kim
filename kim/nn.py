@@ -494,8 +494,8 @@ class LSTMCell(Module):
 
         Outputs: (h', c')
         h' of shape (bs, hidden_size): Tensor containing the next hidden state for each
-            element in the batch.
-        c' of shape (bs, hidden_size): Tensor containing the next cell state for each
+            element in the batch
+.        c' of shape (bs, hidden_size): Tensor containing the next cell state for each
             element in the batch.
         """
         bs = X.shape[0]

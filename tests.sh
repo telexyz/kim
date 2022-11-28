@@ -10,6 +10,8 @@ python3 -m pytest \
 python3 -m pytest \
 	tests/test_nn.py \
 	tests/test_ops.py \
+
+KIM_BACKEND=np python3 -m pytest \
 	tests/test_optim.py \
 
 echo !!! backend: $KIM_BACKEND, device: $KIM_DEVICE

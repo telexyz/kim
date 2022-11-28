@@ -228,10 +228,9 @@ def find_topo_sort(nodes):
 
     def topo_sort_dfs(node):
         node.visited = visited
-        if node.op is not None:
-            for inp in node.inputs:
-                if inp.visited != visited:
-                    topo_sort_dfs(inp)
+        for inp in node.inputs:
+            if inp.visited != visited:
+                topo_sort_dfs(inp)
         topo_order.append(node)
 
     for node in nodes: topo_sort_dfs(node)

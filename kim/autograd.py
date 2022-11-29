@@ -211,24 +211,8 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
-        if len(output_grads[node]) == 1:
-            grad = output_grads[node][0]
-            node.grad = grad + 0 # to pass test_optim.py
-            # nhiều khả năng do có nan trong grad's ndarray nên khi `+ 0` sẽ khử nan
-        else:
-            node.grad = output_grads[node].pop()
-            for grad in output_grads[node]: node.grad += grad # acummulate other elems
-
-        # Other-ways to sum node's grads that consume more mem
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - 
-        # node.grad = sum(output_grads[node]) 
-
-        # node.grad = 0
-        # for grad in output_grads[node]: node.grad += grad
-
-        # from operator import add; from functools import reduce
-        # node.grad = reduce(add, output_grads[node])
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        node.grad = output_grads[node].pop()
+        for grad in output_grads[node]: node.grad += grad # accummulate other grads
 
         if CompGraph.SAVE_MEM:
             node.grad = node.grad.detach() # will save half of (GPU) memory
@@ -236,8 +220,9 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
         if node.op is not None:
             grads = node.op.gradient(node.grad, node)
             for k, inp in enumerate(node.inputs):
-                try: output_grads[inp].append(grads[k])
-                except KeyError: output_grads[inp] = [grads[k]]
+                grad = grads[k]
+                try: output_grads[inp].append(grad)
+                except KeyError: output_grads[inp] = [grad]
 
 
 import random

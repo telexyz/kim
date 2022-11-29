@@ -96,9 +96,6 @@ class TensorTuple:
     # Hàm dùng để tính gradient (backward graph)
     # __add__ dùng trong sum gradient (autograd.py)
     def __add__(self, other):
-        if isinstance(other, TensorTuple):
-            assert len(self) == len(other)
-            return kim.ops.make_tensor_tuple(*[self[i] + other[i] for i in range(len(self))])
-        elif isinstance(other, int):
-            return kim.ops.make_tensor_tuple(*[self[i] + other for i in range(len(self))])
-    __radd__ = __add__
+        assert isinstance(other, TensorTuple)
+        assert len(self) == len(other)
+        return kim.ops.make_tensor_tuple(*[self[i] + other[i] for i in range(len(self))])

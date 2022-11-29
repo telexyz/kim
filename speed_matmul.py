@@ -66,7 +66,7 @@ print("cuda tiled:  ", timeit.timeit(lambda: init() or A_cuda_tiled @ B_cuda_til
 ''' > python3 speed_matmul.py
 (2048, 2048) @ (2048, 2048) repeat 100
 torch:        0.719944774002215
-cuda shard:   1.801550069998484
+cuda shared:  1.801550069998484
 cuda tiled:   2.204254189000494
 cuda simple: 23.082233955999982
 numpy:        8.142443960998207

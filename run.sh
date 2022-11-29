@@ -26,13 +26,13 @@
 
 BACKEND_DEVICE=cuda python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "resnet9"
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "rnn"
-python3 -m pytest -k "test_rnn and relu and cuda"
+python3 -m pytest -k "test_rnn[cuda-relu-False-False-12-11-1-1-13]"
 
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "lstm"
-python3 -m pytest -k "lstm_cell and cpu-False-False-12-1-15"
-python3 -m pytest -k "test_lstm[cuda-False-False-12-11-15-2-13]"
+python3 -m pytest -k "lstm_cell and cuda-False-False-12-1-15"
 python3 -m pytest -k "test_lstm"
-python3 -m pytest -k "test_lstm[cuda-True-True-1-1-1-1-13]" # bị hang
+python3 -m pytest -k "test_lstm[cuda-False-False-12-11-15-2-13]"
+python3 -m pytest -k "test_lstm[cuda-True-True-1-1-1-1-13]"
 
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "ptb"
 python3 -m pytest -l -v -k "ptb_dataset"

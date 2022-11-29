@@ -425,7 +425,7 @@ class RNN(Module):
             hiddens = [init.zeros(bs, self.hidden_size, device=self.device) for _ in range(self.num_layers)]
         else:
             assert list(h0.shape) == [self.num_layers, bs, self.hidden_size]
-            hiddens = list(ops.split(h0, 0).detach())
+            hiddens = list(ops.split(h0, 0))
 
         # Init outputs from X
         outputs = [ Tensor(X.realize_cached_data()[i,:,:].reshape((bs, input_size)).compact(), device=self.device)
@@ -443,7 +443,6 @@ class RNN(Module):
         assert outputs[-1] == hiddens[-1]
 
         return ops.stack(outputs, 0), ops.stack(hiddens, 0)
-        # Tham khảo https://pytorch.org/docs/stable/generated/torch.nn.RNN.html
 
 
 class LSTMCell(Module):

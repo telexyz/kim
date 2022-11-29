@@ -35,13 +35,11 @@ def learn_model_1d(feature_size, nclasses, _model, optimizer, epochs=1, **kwargs
             out = model(X0)
             loss = loss_func(out, y0)
             assert loss.dtype == "float32"
-            # print(">>> loss", loss, loss.dtype) # => float64
             loss.backward()
             # Opt should not change gradients.
             grad_before = model.parameters()[0].grad.detach().cached_data
             opt.step()
             grad_after = model.parameters()[0].grad.detach().cached_data
-            # print(">>>", grad_before, grad_after)
             np.testing.assert_allclose(as_numpy(grad_before), as_numpy(grad_after), rtol=1e-5, atol=1e-5, err_msg="Optim should not modify gradients in place")
     return np.array(loss.cached_data)
 

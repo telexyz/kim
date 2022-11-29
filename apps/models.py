@@ -44,7 +44,6 @@ class ResNet9(kim.nn.Module):
 
 
     def forward(self, x):
-        # print(">>> ResNet9 forward:", x.shape)
         return self.model(x)
 
 

@@ -256,8 +256,6 @@ class NDArray:
         else:
             '''Tạo một compact NDArray mới và copy dữ liệu sang'''
             out = NDArray.make(self.shape, device=self.device)
-            # print(">>> Compact", self.shape, self.strides, self._offset);
-            # raise ValueError
             self.device.compact(self._handle, out._handle, 
                 self._shape, self._strides, self._offset)
             return out
@@ -283,12 +281,9 @@ class NDArray:
         Returns:
             NDArray: reshaped array; this will point to the same memory as the original NDArray.
         """
-        # print(">>>", new_shape)
         if len(new_shape) == 2 and new_shape[0] == -1 and new_shape[1] > 0:
             new_shape = (prod(self.shape) // new_shape[1], new_shape[1])
-        # if prod(self.shape) != prod(new_shape): raise ValueError
         assert prod(self.shape) == prod(new_shape), "%s shape != new_shape" % (new_shape)
-        # assert self.is_compact(), "%s is not compact" % ("self") # (self)
         new_strides = self.compact().compact_strides(new_shape)
         return self.as_strided(new_shape, new_strides)
 
@@ -434,8 +429,6 @@ class NDArray:
             new_shape.append(math.ceil((idx.stop - idx.start) / idx.step))
             new_strides.append(self.strides[i] * idx.step)
             new_offset += idx.start * self.strides[i]
-            # print(">>>", i, idx, self.strides[i], new_offset, new_shape, new_strides)
-        # print("__getitem__", idxs)
 
         '''Returns:
             NDArray: a new NDArray object corresponding to the selected
@@ -453,7 +446,6 @@ class NDArray:
         """Set the values of a view into an array, using the same semantics
         as __getitem__()."""
         view = self.__getitem__(idxs)
-        # print(">>> view:", view.shape)
         if isinstance(other, NDArray):
             assert prod(view.shape) == prod(other.shape)
             self.device.ewise_setitem(
@@ -644,7 +636,6 @@ class NDArray:
 
 
     def sum(self, axis=None, keepdims=False):
-        # print(">>> sum:", axis, keepdims)
         view, out = self.reduce_view_out(axis, keepdims=keepdims)
         self.device.reduce_sum(view.compact()._handle, out._handle, view.shape[-1])
         return out
@@ -661,23 +652,20 @@ class NDArray:
         Flip this ndarray along the specified axes.
         Note: compact() before returning.
         """
-        ### BEGIN YOUR SOLUTION
         x = self.compact()
         new_offset = 0
         new_strides = list(x.strides)
         for a in axes:
             new_strides[a] *= -1
-            # (shape[0]) - 1)*shape[1]*shape[2] => a = 0
             offset = x.shape[a] - 1
             for b in range(len(x.shape) - a - 1): offset *= x.shape[a + b + 1]
-            # print(">>> offset:", offset)
             new_offset += offset
         out = NDArray.make(
             x.shape, strides=tuple(new_strides), device=x.device, 
             handle=x._handle, offset=new_offset
         )
         return out.compact()
-        ### END YOUR SOLUTION
+
 
     def undilate(a, axes, dilation):
         new_shape = list(a.shape)
@@ -695,7 +683,6 @@ class NDArray:
         which lists for _all_ axes the left and right padding amount, e.g.,
         axes = ( (0, 0), (1, 1), (0, 0)) pads the middle axis with a 0 on the left and right side.
         """
-        ### BEGIN YOUR SOLUTION
         idx = ()
         shape = list(self.shape)
         for i in range(len(axes)):
@@ -707,10 +694,12 @@ class NDArray:
         out = self.device.zeros(*shape)
         out.__setitem__(idx, self.compact())
         return out
-        ### END YOUR SOLUTION
+
+
 
 def pad(a, axes):
     return a.pad(axes)
+
 
 def array(a, dtype="float32", device=None):
     """ Convenience methods to match numpy a bit more closely."""
@@ -718,51 +707,40 @@ def array(a, dtype="float32", device=None):
     assert dtype == "float32"
     return NDArray(a, device=device)
 
-
 def empty(shape, dtype="float32", device=None):
     if device is None: device = default_device()
     return device.empty(shape, dtype)
-
 
 def full(shape, fill_value, dtype="float32", device=None):
     if device is None: device = default_device()
     return device.full(shape, fill_value, dtype)
 
-
 def broadcast_to(array, new_shape):
-    return array.broadcast_to(new_shape)
+    return array.broadcast_to(new_shape).compact()
 
 def reshape(array, new_shape):
     return array.reshape(new_shape)
 
-
 def maximum(a, b):
     return a.maximum(b)
-
 
 def max(a, axis=None):
     return a.max(axis)
 
-
 def log(a):
     return a.log()
-
 
 def exp(a):
     return a.exp()
 
-
 def tanh(a):
     return a.tanh()
-
 
 def flip(a, axes):
     return a.flip(axes)
 
-
 def summation(a, axis=None, keepdims=False):
     return a.sum(axis=axis, keepdims=keepdims)
-
 
 def sum(a, axis=None, keepdims=False):
     return a.sum(axis=axis, keepdims=keepdims)

@@ -43,7 +43,6 @@ class RandomCrop(Transform):
         """
         shift_x, shift_y = np.random.randint(low=-self.padding, 
             high=self.padding+1, size=2)
-        ### BEGIN YOUR SOLUTION
         start_x = shift_x + self.padding
         start_y = shift_y + self.padding
         pad_img = np.pad(img, 
@@ -53,7 +52,6 @@ class RandomCrop(Transform):
             start_y : start_y + img.shape[1],
             :, # same as before padding
         ]
-        ### END YOUR SOLUTION
 
 
 class Dataset:
@@ -120,7 +118,6 @@ class DataLoader:
         return self
 
     def __next__(self):
-        ### BEGIN YOUR SOLUTION
         if self.n >= len(self.ordering): raise StopIteration
         order = self.ordering[self.n]
         self.n += 1
@@ -133,7 +130,7 @@ class DataLoader:
         else:
             batch_y = Tensor([xy[1] for xy in batch_xy], device=self.device)
             return (batch_x, batch_y)
-        ### END YOUR SOLUTION
+
 
 
 class MNISTDataset(Dataset):
@@ -143,7 +140,6 @@ class MNISTDataset(Dataset):
         label_filename: str,
         transforms: Optional[List] = None,
     ):
-        ### BEGIN YOUR SOLUTION
         self.transforms = transforms
         self.image_filename = image_filename
         self.label_filename = label_filename
@@ -156,7 +152,7 @@ class MNISTDataset(Dataset):
             self.labels = np.frombuffer(f.read(), 'B', offset=8) # skip 8-bytes
 
         self.cached_len = len(self.images)
-        ### END YOUR SOLUTION
+
 
     def __getitem__(self, index) -> object:
         if isinstance(index, slice):
@@ -213,8 +209,6 @@ class CIFAR10Dataset(Dataset):
         X - numpy array of images
         y - numpy array of labels
         """
-        ### BEGIN YOUR SOLUTION
-
         if train is True:
             files = ["data_batch_1", "data_batch_2",
                 "data_batch_3", "data_batch_4", "data_batch_5"]
@@ -234,19 +228,19 @@ class CIFAR10Dataset(Dataset):
             self.labels.extend(datadict[b'labels'])
             self.images.extend(imgs)
             self.length += len(imgs)
-        ### END YOUR SOLUTION
+
 
     def __getitem__(self, index) -> object:
         """
         Returns the image, label at given index
         Image should be of shape (3, 32, 32)
         """
-        ### BEGIN YOUR SOLUTION
         image = self.apply_transforms(self.images[index])
         return (image, self.labels[index])
-        ### END YOUR SOLUTION
+
 
     def __len__(self) -> int: return self.length
+
 
 
 class Dictionary(object):
@@ -277,22 +271,18 @@ class Dictionary(object):
         and appends to the list of words.
         Returns the word's unique ID.
         """
-        ### BEGIN YOUR SOLUTION
         try: n = self.word2idx[word]
         except KeyError:
             n = len(self.idx2word)
             self.word2idx[word] = n
             self.idx2word.append(word)
         return n
-        ### END YOUR SOLUTION
 
     def __len__(self):
         """
         Returns the number of unique words in the dictionary.
         """
-        ### BEGIN YOUR SOLUTION
         return len(self.idx2word)
-        ### END YOUR SOLUTION
 
 
 
@@ -317,7 +307,6 @@ class Corpus(object):
         Output:
         ids: List of ids
         """
-        ### BEGIN YOUR SOLUTION
         txt = open(path).read()
         lines = txt.split("\n")
         if max_lines is None: max_lines = len(lines) - 1 # remove last blank line
@@ -331,7 +320,6 @@ class Corpus(object):
                 if len(word) > 0: ids.append(self.dictionary.add_word(word))
             ids.append(eos_id)
         return ids
-        ### END YOUR SOLUTION
 
     def lookup(self, idx):
         return self.dictionary.idx2word[idx]
@@ -355,12 +343,9 @@ def batchify(data, batch_size, device, dtype):
     If the data cannot be evenly divided by the batch size, trim off the remainder.
     Returns the data as a numpy array of shape (nbatch, batch_size).
     """
-    ### BEGIN YOUR SOLUTION
     nbatch = len(data) // batch_size
     n = nbatch * batch_size
-    # assert n == len(data)
     return np.array(data[0:n]).astype(dtype).reshape((batch_size, nbatch)).transpose()
-    ### END YOUR SOLUTION
 
 
 def get_batch(batches, i, bptt, device=None, dtype=None):
@@ -385,7 +370,6 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
         * data - Tensor of shape (bptt, bs) with cached data as NDArray
         * target - Tensor of shape (bptt * bs,) with cached data as NDArray
     """
-    ### BEGIN YOUR SOLUTION
     n = batches.shape[0]
     assert i < n
     assert bptt > 0 and bptt < n - i
@@ -395,4 +379,3 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     target = batches[i : i+bptt, : ].flatten()
 
     return Tensor(data, device=device, dtype=dtype), Tensor(target, device=device, dtype=dtype)
-    ### END YOUR SOLUTION

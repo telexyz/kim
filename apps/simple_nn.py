@@ -112,12 +112,12 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
         batch_begin += batch
 
         # Init
-        Xb = X[batch_range] # print(Xb.shape) => (50, 5)
+        Xb = X[batch_range]
         yb = np.array(y[batch_range])
 
         # https://www.delftstack.com/howto/numpy/one-hot-encoding-numpy
         yb_one_hot = np.zeros((batch, k))
-        yb_one_hot[np.arange(yb.size), yb] = 1 # print(yb_one_hot)
+        yb_one_hot[np.arange(yb.size), yb] = 1
 
         """Forward"""
         Xb_W1 = kim.matmul(kim.Tensor(Xb), W1)
@@ -131,7 +131,6 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
 
         grad_W1 = W1.grad.numpy()
         grad_W2 = W2.grad.numpy()
-        # print(grad_W1, "\n\n", grad_W2) # OK!
 
         W1 = kim.Tensor(W1.numpy() - lr * grad_W1)
         W2 = kim.Tensor(W2.numpy() - lr * grad_W2)

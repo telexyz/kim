@@ -92,7 +92,6 @@ class Linear(Module):
     def forward(self, X: Tensor) -> Tensor:
         out = ops.matmul(X, self.weight)
         if self.bias is not None: out += ops.broadcast_to(self.bias, out.shape)
-        # print(">>> nn.Linear:", X.shape, "->", out.shape)
         return out
 
 
@@ -109,9 +108,7 @@ class Flatten(Module):
 
 class ReLU(Module):
     def forward(self, x: Tensor) -> Tensor:
-        out = ops.relu(x)
-        # print(">>> nn.ReLU", x.shape, "->", out.shape)
-        return out
+        return ops.relu(x)
 
 
 class Sequential(Module):
@@ -294,8 +291,7 @@ class Conv(Module):
         if self.bias is not None:
             bias = self.bias.reshape((1, self.out_channels, 1, 1))
             out += bias.broadcast_to(out.shape)
-
-        # print(">>> nn.Conv",self.in_channels,self.out_channels,self.kernel_size,self.stride,x.shape,"->",out.shape)
+        # 
         return out
 
 
@@ -464,7 +460,6 @@ class LSTMCell(Module):
         Weights and biases are initialized from U(-sqrt(k), sqrt(k)) where k = 1/hidden_size
         """
         super().__init__()
-        ### BEGIN YOUR SOLUTION
         self.hidden_size = hidden_size
         self.input_size = input_size
         self.device = device
@@ -478,7 +473,6 @@ class LSTMCell(Module):
         if bias:
             self.bias_ih = Parameter(init.rand(4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
             self.bias_hh = Parameter(init.rand(4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
-        ### END YOUR SOLUTION
 
 
     def forward(self, X, h=None):
@@ -550,7 +544,6 @@ class LSTM(Module):
         lstm_cells[k].bias_hh: The learnable hidden-hidden bias of the k-th layer,
             of shape (4*hidden_size,).
         """
-        ### BEGIN YOUR SOLUTION
         self.hidden_size = hidden_size
         self.input_size = input_size
         self.num_layers = num_layers
@@ -563,7 +556,6 @@ class LSTM(Module):
 
         self.lstm_cells += [LSTMCell(hidden_size, hidden_size, bias=bias, dtype=dtype, device=device) 
             for _ in range(num_layers - 1)]
-        ### END YOUR SOLUTION
 
 
     def forward(self, X, h=None):
@@ -583,7 +575,6 @@ class LSTM(Module):
             h_n of shape (num_layers, bs, hidden_size) containing the final hidden state for each element in the batch.
             h_n of shape (num_layers, bs, hidden_size) containing the final hidden cell state for each element in the batch.
         """
-        ### BEGIN YOUR SOLUTION
         seq_len, bs, input_size = X.shape
         assert input_size == self.input_size
 
@@ -620,7 +611,6 @@ class LSTM(Module):
         assert outputs[-1] == hiddens_h[-1]
 
         return ops.stack(outputs, 0), (ops.stack(hiddens_h, 0), ops.stack(hiddens_c, 0))
-        ### END YOUR SOLUTION
 
 
 

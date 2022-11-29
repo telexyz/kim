@@ -95,7 +95,6 @@ class Split(TensorTupleOp):
         self.chunks = chunks
 
     def compute(self, A: NDArray):
-        # print(">>> A:", A.shape, self.axis)
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
         b_idxs = copy.deepcopy(idxs)
@@ -296,7 +295,6 @@ class BroadcastTo(TensorOp):
 
     def compute(self, a):
         n = len(a.shape)
-        # print(">>>", a.shape, self.shape)
         if n < len(self.shape):
             shape = []
             k = 0
@@ -306,10 +304,9 @@ class BroadcastTo(TensorOp):
                 else:
                     shape.append(a.shape[k])
                     k += 1
-            # print(shape)
             a = a.reshape(tuple(shape))
 
-        return array_api.broadcast_to(a, self.shape).compact()
+        return array_api.broadcast_to(a, self.shape)
 
     def gradient(self, out_grad, node):
         a = node.inputs[0]
@@ -634,7 +631,6 @@ class Conv(TensorOp):
         self.padding = padding
 
     def compute(self, Z, weight):
-        # print(">>>", Z.shape, weight.shape)
         assert len(Z.shape) == 4 and len(weight.shape) == 4, "ops.Conv only accept 4D, 4D args"
 
         # padding
@@ -663,8 +659,6 @@ class Conv(TensorOp):
 
     def gradient(self, out_grad, node):
         X, W = node.inputs
-        # print(">>> conv_backward:", out_grad.shape, X.shape, W.shape, self.stride, self.padding)
-
         # If the convolution is strided, increase the size of out_grad with a corresponding dilation
         if self.stride > 1: out_grad = dilate(out_grad, (1,2), self.stride-1) # NWHC
 

@@ -118,8 +118,7 @@ class Tensor:
         return Tensor.make_const(self.realize_cached_data())
 
     def backward(self, out_grad: Optional["Tensor"] = None):
-        if out_grad is None:
-            out_grad = kim.init.ones(*self.shape, dtype=self.dtype, device=self.device)
+        if out_grad is None: out_grad = kim.init.ones(*self.shape, dtype=self.dtype, device=self.device)
         compute_gradient_from(self, out_grad)
 
     @property
@@ -212,11 +211,16 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
-        node.grad = output_grads[node].pop() + 0 # !! need `+ 0` to pass test_optim.py for nd backend !!
-        for grad in output_grads[node]: node.grad += grad # acummulate other elems
+        if len(output_grads[node]) == 1:
+            grad = output_grads[node][0]
+            node.grad = grad + 0 # to pass test_optim.py
+            # nhiều khả năng do có nan trong grad's ndarray nên khi `+ 0` sẽ khử nan
+        else:
+            node.grad = output_grads[node].pop()
+            for grad in output_grads[node]: node.grad += grad # acummulate other elems
 
-        # Other-ways to sum node's grads that consume much more mem
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Other-ways to sum node's grads that consume more mem
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - 
         # node.grad = sum(output_grads[node]) 
 
         # node.grad = 0
@@ -224,9 +228,10 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
 
         # from operator import add; from functools import reduce
         # node.grad = reduce(add, output_grads[node])
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-        if CompGraph.SAVE_MEM: node.grad = node.grad.detach() # will save half of (GPU) memory
+        if CompGraph.SAVE_MEM:
+            node.grad = node.grad.detach() # will save half of (GPU) memory
 
         if node.op is not None:
             grads = node.op.gradient(node.grad, node)

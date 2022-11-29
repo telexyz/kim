@@ -108,7 +108,7 @@ def test_optim_sgd_z_memory_check_1():
     # np.testing.assert_allclose
     print(">>>", global_tensor_count())
     np.testing.assert_allclose(global_tensor_count(),
-        np.array(387), rtol=1e-5, atol=387//2)
+        np.array(387//2), rtol=1e-5, atol=387//2)
 
 
 def test_optim_adam_1():

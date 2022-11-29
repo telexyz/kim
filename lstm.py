@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import numpy as np
 import kim as kim
 import kim.nn as nn
@@ -10,7 +12,7 @@ started_at = timer()
 # Fix python3 -m pytest -k "test_lstm[cuda-True-True-1-1-1-1-13]" # bị hang => đã fix!
 # See https://github.com/telexyz/kim/commit/62a339af99d07af04d7f97cb29508a3435ce2299#diff-82bae5d94a873b1e01bbe5992c1dc0855b66b0bf41f3489945fa5bcd83ee3f91R225
 device, init_hidden, bias = kim.default_device(), True, True
-hidden_size, input_size, batch_size, num_layers, seq_length = 80, 100, 100, 6, 200
+hidden_size, input_size, batch_size, num_layers, seq_length = 80, 100, 100, 6, 160
 
 x = np.random.randn(seq_length, batch_size, input_size).astype(np.float32)
 h0 = np.random.randn(num_layers, batch_size, hidden_size).astype(np.float32)

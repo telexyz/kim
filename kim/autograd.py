@@ -212,10 +212,21 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
-        # node.grad = output_grads[node].pop(0) # remove and assign first element
-        # for grad in output_grads[node]: node.grad += grad # acummulate other elems
-        node.grad = sum(output_grads[node]) # use this to pass optim tests (don't know why ???)
-        if CompGraph.SAVE_MEM: node.grad = node.grad.detach() # will have half of GPU memory
+        node.grad = output_grads[node].pop() + 0 # !! need `+ 0` to pass test_optim.py for nd backend !!
+        for grad in output_grads[node]: node.grad += grad # acummulate other elems
+
+        # Other-ways to sum node's grads that consume much more mem
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # node.grad = sum(output_grads[node]) 
+
+        # node.grad = 0
+        # for grad in output_grads[node]: node.grad += grad
+
+        # from operator import add; from functools import reduce
+        # node.grad = reduce(add, output_grads[node])
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        if CompGraph.SAVE_MEM: node.grad = node.grad.detach() # will save half of (GPU) memory
 
         if node.op is not None:
             grads = node.op.gradient(node.grad, node)

@@ -27,8 +27,8 @@ A_cuda = nd.array(A_np, device=nd.cuda())
 B_cuda = nd.array(B_np, device=nd.cuda())
 
 # cuda triton
-A_triton = nd.array(A_np, device=nd.cuda_triton())
-B_triton = nd.array(B_np, device=nd.cuda_triton())
+# A_triton = nd.array(A_np, device=nd.cuda_triton())
+# B_triton = nd.array(B_np, device=nd.cuda_triton())
 
 ## torch
 A_torch = torch.tensor(A_np, dtype=torch.float32, device=torch.device("cuda"))
@@ -44,19 +44,19 @@ def init():
 	B_cuda = nd.array(B_np, device=nd.cuda())
 
 	# cuda triton
-	A_triton = nd.array(A_np, device=nd.cuda_triton())
-	B_triton = nd.array(B_np, device=nd.cuda_triton())
+	# A_triton = nd.array(A_np, device=nd.cuda_triton())
+	# B_triton = nd.array(B_np, device=nd.cuda_triton())
 
 	## torch
-	# A_torch = torch.tensor(A_np, dtype=torch.float32, device=torch.device("cuda"))
-	# B_torch = torch.tensor(B_np, dtype=torch.float32, device=torch.device("cuda"))
+	A_torch = torch.tensor(A_np, dtype=torch.float32, device=torch.device("cuda"))
+	B_torch = torch.tensor(B_np, dtype=torch.float32, device=torch.device("cuda"))
 
 
 import timeit
 n = 50
 print(A_np.shape, "@", B_np.shape, "repeat", n)
-# print("torch:       ", timeit.timeit(lambda: init() or A_torch @ B_torch, number=n))
-print("cuda triton: ", timeit.timeit(lambda: init() or A_triton @ B_triton, number=n))
+print("torch:       ", timeit.timeit(lambda: init() or A_torch @ B_torch, number=n))
+# print("cuda triton: ", timeit.timeit(lambda: init() or A_triton @ B_triton, number=n))
 print("cuda shared: ", timeit.timeit(lambda: init() or A_cuda @ B_cuda, number=n))
 print("cuda tiled:  ", timeit.timeit(lambda: init() or A_cuda_tiled @ B_cuda_tiled, number=n))
 # print("cuda simple:", timeit.timeit(lambda: init() or A_cuda_simple @ B_cuda_simple, number=n))

@@ -18,8 +18,7 @@
 
 # Heavy tests
 # - - - - - -
-# python3 -m pytest tests/test_simple_nn.py \
-# 	tests/test_data.py tests/test_cifar_ptb_data.py tests/test_mlp_resnet.py
+# python3 -m pytest tests/test_simple_nn.py tests/test_data.py tests/test_cifar_ptb_data.py tests/test_mlp_resnet.py
 
 #######
 # hw4 #
@@ -27,7 +26,7 @@
 
 BACKEND_DEVICE=cuda python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "resnet9"
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "rnn"
-python3 -m pytest -k "test_rnn and relu and cpu"
+python3 -m pytest -k "test_rnn and relu and cuda"
 
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "lstm"
 python3 -m pytest -k "lstm_cell and cpu-False-False-12-1-15"

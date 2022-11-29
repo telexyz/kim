@@ -133,7 +133,7 @@ def test_mlp_train_mnist_1():
     np.testing.assert_allclose(train_mnist_1(250, 2, kim.optim.SGD, 0.001, 0.01, 100),
         np.array([0.4875 , 1.462595, 0.3245 , 1.049429]), rtol=0.001, atol=0.001)
 
-def test_mlp_train_mnist_2():
-    train_mnist_1(250, 2, kim.optim.SGD, 0.001, 0.01, 100)
-    print("[DONE] BACKEND, TENSOR_COUNT:", kim.BACKEND, kim.autograd.CompGraph.TENSOR_COUNT)
-    assert False
+# def test_mlp_train_mnist_2():
+#     train_mnist_1(250, 2, kim.optim.SGD, 0.001, 0.01, 100)
+#     print("[DONE] BACKEND, TENSOR_COUNT:", kim.BACKEND, kim.autograd.CompGraph.NODE_COUNT)
+#     assert False

@@ -47,21 +47,6 @@ def tuple_get_item(value, index):
     return TupleGetItem(index)(value)
 
 
-class FusedAddScalars(TensorTupleOp):
-    def __init__(self, c0: float, c1: float):
-        self.c0 = c0
-        self.c1 = c1
-
-    def compute(self, a):
-        return a + self.c0, a + self.c1
-
-    def gradient(self, out_grad, node):
-        return out_grad[0] + out_grad[1],
-
-def fused_add_scalars(x, c0, c1):
-    return FusedAddScalars(c0, c1)(x)
-
-
 class Stack(TensorOp):
     def __init__(self, axis: int):
         """
@@ -175,7 +160,6 @@ def add(a, b):
 class AddScalar(TensorOp):
     def __init__(self, scalar):
         self.scalar = np.float32(scalar)
-        # self.scalar = scalar
 
     def compute(self, a: NDArray):
         return a + self.scalar

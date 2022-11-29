@@ -266,14 +266,16 @@ class Conv(Module):
         # For convolution, this becomes somewhat more detailed, in that you should multiply both of these 
         # by the "receptive field size", which is in this case just the product of the kernel sizes 
         # -- which in our case are always going to be the same, i.e., `k x k` kernels.
-        weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(k, k, i, o), dtype=dtype, device=device, requires_grad=True)
+        weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(k, k, i, o), 
+            dtype=dtype, device=device, requires_grad=True)
         self.weight = Parameter(weight_init)
 
         if bias:
             # Initialize the (o,) bias tensor using uniform initialization on the interval 
             # +/- 1.0/(in_channels * kernel_size**2)**0.5
             x = 1.0/((i* k**2)**0.5)
-            self.bias = Parameter(init.rand(o, low=-x, high=x, dtype= dtype, device=device, requires_grad=True))
+            self.bias = Parameter(init.rand(o, low=-x, high=x, 
+                dtype= dtype, device=device, requires_grad=True))
         else:
             self.bias = None
 
@@ -418,10 +420,10 @@ class RNN(Module):
 
         # Init hiddens from h0
         if h0 is None:
-            hiddens = [init.zeros(bs, self.hidden_size, device=self.device) for _ in range(self.num_layers)]
+            hiddens = [init.zeros(bs, self.hidden_size, device=self.device)] * self.num_layers
         else:
-            assert list(h0.shape) == [self.num_layers, bs, self.hidden_size]
-            hiddens = list(ops.split(h0, 0))
+            assert h0.shape == (self.num_layers, bs, self.hidden_size)
+            hiddens = list(ops.split(h0, 0)) # chuyển thành list để assign elems được
 
         # Init outputs from X
         outputs = [ Tensor(X.realize_cached_data()[i,:,:].reshape((bs, input_size)).compact(), device=self.device)

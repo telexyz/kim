@@ -9,5 +9,9 @@ python3 -m pytest \
 	tests/test_nn.py \
 	tests/test_ops.py \
 	tests/test_optim.py \
+	tests/test_simple_nn.py \
+	# tests/test_mlp_resnet.py \
+	# tests/test_data.py \
+	# tests/test_cifar_ptb_data.py \
 
 echo !!! backend: $KIM_BACKEND, device: $KIM_DEVICE

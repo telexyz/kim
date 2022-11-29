@@ -315,6 +315,7 @@ class NDArray:
         new_strides = [self.strides[i] for i in new_axes]
         return self.as_strided(new_shape, new_strides)
 
+
     def swapaxes(self, a1, a2) -> "NDArray":
         new_shape = list(self.shape)
         new_strides = list(self.strides)
@@ -348,15 +349,14 @@ class NDArray:
         if len(self.shape) != len(new_shape): raise ValueError("Only broadcast to same shape len")
         new_strides = []
         for i in range(len(self.shape)):
-            if self.shape[i] != 1 and self.shape[i] != new_shape[i]: raise ValueError
-            if self.shape[i] == 1:
-                new_strides.append(0)
-            else:
-                new_strides.append(self.strides[i])
+            if self.shape[i] == 1: new_strides.append(0)
+            elif self.shape[i] == new_shape[i]: new_strides.append(self.strides[i])
+            else: raise ValueError(f"new_shape[%s] is not correct." % (i))
         return self.as_strided(new_shape, tuple(new_strides))
 
-    ### Get and set elements
 
+
+    ### Get and set elements
     def process_slice(self, sl, dim) -> slice:
         """ Convert a slice to an explicit start/stop/step """
         start, stop, step = sl.start, sl.stop, sl.step

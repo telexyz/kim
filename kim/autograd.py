@@ -215,7 +215,7 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
         for grad in output_grads[node]: node.grad += grad # accummulate other grads
 
         if CompGraph.SAVE_MEM:
-            node.grad = node.grad.detach() # will save half of (GPU) memory
+            node.grad = node.grad.detach() # will save a lot of (GPU) memory
 
         if node.op is not None:
             grads = node.op.gradient(node.grad, node)

@@ -8,6 +8,7 @@ from .backend_selection import Device, array_api, NDArray, default_device
 class CompGraph:
     LAZY_MODE = False
     NODE_COUNT = 0
+    SAVE_MEM = True
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -211,9 +212,10 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
-        node.grad = output_grads[node].pop(0) # remove and assign first element
-        for grad in output_grads[node]: node.grad += grad # acummulate other elems
-        node.grad = node.grad.detach() # will have half of GPU memory
+        # node.grad = output_grads[node].pop(0) # remove and assign first element
+        # for grad in output_grads[node]: node.grad += grad # acummulate other elems
+        node.grad = sum(output_grads[node]) # use this to pass optim tests (don't know why ???)
+        if CompGraph.SAVE_MEM: node.grad = node.grad.detach() # will have half of GPU memory
 
         if node.op is not None:
             grads = node.op.gradient(node.grad, node)

@@ -8,4 +8,4 @@ from . import data
 from . import nn
 from . import optim
 from . import utils
-from .utils import as_numpy
+from .utils import as_numpy, prod

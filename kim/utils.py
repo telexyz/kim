@@ -8,6 +8,12 @@ def as_numpy(x):
     if isinstance(x, np.int64): return x
     return x.numpy()
 
+import operator
+from functools import reduce
+# math.prod not in Python 3.7
+def prod(x):
+    return reduce(operator.mul, x, 1)
+
 '''
 https://github.com/dlsyscourse/hw4/blob/main/hw4.ipynb#Flipping-ndarrays-&-FlipOp
 '''

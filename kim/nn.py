@@ -5,46 +5,42 @@ from kim.autograd import Tensor
 from kim import ops
 import kim.init as init
 import numpy as np
+import kim
 
 class Parameter(Tensor):
     """A special kind of tensor that represents parameters."""
 
 def _unpack_params(value: object) -> List[Tensor]:
-    if isinstance(value, Parameter):
-        return [value]
-    elif isinstance(value, Module):
-        return value.parameters()
-    elif isinstance(value, dict):
-        params = []
+    if isinstance(value, Parameter): return [value]
+    if isinstance(value, Module): return value.parameters()
+
+    params = []
+    if isinstance(value, dict):
         for k, v in value.items():
             params += _unpack_params(v)
-        return params
+    # 
     elif isinstance(value, (list, tuple)):
-        params = []
         for v in value:
             params += _unpack_params(v)
-        return params
-    else:
-        return []
+    # 
+    return params
 
 
 def _child_modules(value: object) -> List["Module"]:
+    modules = []
+
     if isinstance(value, Module):
-        modules = [value]
-        modules.extend(_child_modules(value.__dict__))
-        return modules
-    if isinstance(value, dict):
-        modules = []
+        modules = [value] + _child_modules(value.__dict__)
+
+    elif isinstance(value, dict):
         for k, v in value.items():
             modules += _child_modules(v)
-        return modules
+
     elif isinstance(value, (list, tuple)):
-        modules = []
         for v in value:
             modules += _child_modules(v)
-        return modules
-    else:
-        return []
+
+    return modules
 
 
 class Module:
@@ -72,43 +68,33 @@ class Module:
         return self.forward(*args, **kwargs)
 
 
+# - - - short modules - - -
+
 class Identity(Module):
     def forward(self, x):
         return x
 
 
-class Linear(Module):
-    def __init__(self, in_features, out_features, bias=True, device=None, dtype="float32"):
-        super().__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype, device=device, requires_grad=True)
-        self.weight = Parameter(weight_init)
-        if bias is True:
-            bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype, device=device)
-            self.bias = Parameter(ops.transpose(bias_init))
-        else: self.bias = None
-
-    def forward(self, X: Tensor) -> Tensor:
-        out = ops.matmul(X, self.weight)
-        if self.bias is not None: out += ops.broadcast_to(self.bias, out.shape)
-        return out
-
-
 class Flatten(Module):
-    # Takes in a tensor of shape (B,X_0,X_1,...), and flattens all non-batch dimensions 
+    # Takes in a tensor of shape (B, X_0, X_1, ...), and flattens all non-batch dimensions 
     # so that the output is of shape (B, X_0 * X_1 * ...)
     def forward(self, X):
-        m = 1
-        for i in range(len(X.shape)-1):
-            m = m * X.shape[i + 1]
-        new_shape = (X.shape[0], m)
-        return ops.reshape(X, new_shape)
+        return ops.reshape(X, (X.shape[0], kim.prod(X.shape) // X.shape[0]))
 
 
 class ReLU(Module):
     def forward(self, x: Tensor) -> Tensor:
         return ops.relu(x)
+
+
+class Tanh(Module):
+    def forward(self, x: Tensor) -> Tensor:
+        return ops.tanh(x)
+
+
+class Sigmoid(Module):
+    def forward(self, x: Tensor) -> Tensor:
+        return (1 + ops.exp(ops.negate(x)))**(-1)
 
 
 class Sequential(Module):
@@ -152,6 +138,25 @@ class Residual(Module):
     # Given module F and input Tensor x, returning F(x) + x
     def forward(self, x: Tensor) -> Tensor:
         return self.fn(x) + x
+
+# - - - - - - - - - - - - -
+
+class Linear(Module):
+    def __init__(self, in_features, out_features, bias=True, device=None, dtype="float32"):
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype, device=device, requires_grad=True)
+        self.weight = Parameter(weight_init)
+        if bias is True:
+            bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype, device=device)
+            self.bias = Parameter(ops.transpose(bias_init))
+        else: self.bias = None
+
+    def forward(self, X: Tensor) -> Tensor:
+        out = ops.matmul(X, self.weight)
+        if self.bias is not None: out += ops.broadcast_to(self.bias, out.shape)
+        return out
 
 
 class BatchNorm1d(Module):
@@ -216,17 +221,6 @@ class LayerNorm1d(Module):
         w = ops.broadcast_to(self.weight, x.shape)
         b = ops.broadcast_to(self.bias, x.shape)
         return w*norm + b
-
-
-
-class Tanh(Module):
-    def forward(self, x: Tensor) -> Tensor:
-        return ops.tanh(x)
-
-
-class Sigmoid(Module):
-    def forward(self, x: Tensor) -> Tensor:
-        return (1 + ops.exp(ops.negate(x)))**(-1)
 
 
 class BatchNorm2d(BatchNorm1d):

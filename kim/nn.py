@@ -637,3 +637,29 @@ class Embedding(Module):
         ### BEGIN YOUR SOLUTION
         raise NotImplementedError()
         ### END YOUR SOLUTION
+
+
+# - - - - - - - - - - - - -
+# Transformer
+
+class SoftMax(Module):
+    def forward(self, z: Tensor):
+        x = ops.exp(z)
+        return x / ops.summation(x, axes=-1, keepdims=True)
+
+
+class Attention(Module):
+    def __init__(self, input_size: int, device=None):
+        super.__init__()
+        # x = (1 / input_size)**0.5
+        # self.W_ih = Parameter(init.rand(input_size, hidden_size, low=-x, high=x), device=device)
+
+        # self.W_KQV = Parameter(init.rand())
+        # self.W_out = Parameter(init.)
+
+    def forward(self, x):
+        skip
+
+class Transformer(Module):
+    def forward(self, x):
+        skip    

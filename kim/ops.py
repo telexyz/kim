@@ -335,22 +335,16 @@ class Summation(TensorOp):
     def gradient(self, out_grad, node):
         a = node.inputs[0]
         
-        axes = self.axes
-        if axes is None: axes = ()
-        if isinstance(axes, int): axes = (axes,)
-        axes = tuple(axes)
+        if len(out_grad.shape) != len(a.shape) and self.axes is not None:
+            if isinstance(self.axes, int): axes = (self.axes,)
+            else: axes = tuple(self.axes)
 
-        new_shape = out_grad.shape
-        for idx in axes:
-            new_shape = new_shape[0:idx] + (1,) + new_shape[idx:]        
-        # Các thao tác trên chỉ để tính new_shape
-
-        if len(out_grad.shape) == len(a.shape):
-            x = out_grad
-        else:
-            x = reshape(out_grad, new_shape)
-        # 
-        return broadcast_to(x, a.shape),
+            new_shape = out_grad.shape
+            for idx in sorted(axes): 
+                new_shape = new_shape[0:idx] + (1,) + new_shape[idx:]
+            out_grad = reshape(out_grad, new_shape)
+        #
+        return broadcast_to(out_grad, a.shape),
 
 def summation(a, axes=None, keepdims=False):
     return Summation(axes, keepdims=keepdims)(a)
@@ -497,7 +491,7 @@ class LogSumExp(TensorOp):
     def gradient(self, out_grad, node):
         a = node.inputs[0].realize_cached_data()
         m = a.max(axis=self.axes, keepdims=True)
-        exp_a = exp(Tensor(a - array_api.broadcast_to(m, a.shape), device=out_grad.device))
+        exp_a = exp(Tensor(a - m.broadcast_to(a.shape), device=out_grad.device))
         # 
         new_shape = self.new_shape(a.shape)
         sum_exp_a = summation(exp_a, self.axes)
@@ -524,6 +518,23 @@ class LogSumExp(TensorOp):
 def logsumexp(a, axes=None):
     return LogSumExp(axes=axes)(a)
 
+
+class SoftMax(TensorOp):
+    ''' https://towardsdatascience.com/derivative-of-the-softmax-function-and-the-categorical-cross-entropy-loss-ffceefc081d1
+    exp(e_i)/sum(exp(e_k)) k=0..n
+    '''
+    def compute(self, z: NDArray) -> NDArray:
+        z = array_api.exp(z - z.max(axis=-1, keepdims=True))
+        return z / z.sum(axis=-1, keepdims=True)
+
+    def gradient(self, out_grad: Tensor, node: Tensor) -> Tensor:
+        # z = node.inputs[0]
+        # s = softmax(z)
+        # return out_grad * ...
+        raise NotImplementedError()
+
+def softmax(z):
+    return SoftMax()(z)
 
 
 class Tanh(TensorOp):

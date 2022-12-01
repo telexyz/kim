@@ -97,6 +97,16 @@ class Sigmoid(Module):
         return (1 + ops.exp(ops.negate(x)))**(-1)
 
 
+class SoftmaxLoss(Module):
+    def forward(self, logits: Tensor, y: Tensor):
+        bs, ndim = logits.shape
+        y_one_hot = init.one_hot(ndim, y, dtype=logits.dtype, device=logits.device)
+        logits_y = ops.summation(logits * y_one_hot, axes=(1,))
+        logsum = ops.logsumexp(logits, axes=(1,))
+        return ops.summation(logsum - logits_y) / bs
+
+# - - - - - - - - - - - - -
+
 class Sequential(Module):
     def __init__(self, *modules):
         super().__init__()
@@ -107,27 +117,14 @@ class Sequential(Module):
         return x
 
 
-class SoftmaxLoss(Module):
-    def forward(self, logits: Tensor, y: Tensor):
-        y_one_hot = init.one_hot(logits.shape[1], y, dtype=logits.dtype, device=logits.device)
-        logits_y = ops.summation(logits * y_one_hot, axes=(1,))
-        # 
-        logsum = ops.logsumexp(logits, axes=(1,))
-        loss = logsum - logits_y
-        # 
-        return ops.summation(loss) / logits.shape[0]
-
-
 class Dropout(Module):
     def __init__(self, p = 0.5):
         super().__init__()
         self.p = 1 - p
 
     def forward(self, x: Tensor) -> Tensor:
-        if self.training:
-            mask = init.randb(x.shape[0], x.shape[1], p=self.p, dtype=x.dtype)
-            return (x * mask) / self.p
-        return x
+        if not self.training: return x
+        return (x * init.randb(*x.shape, p=self.p, device=x.device)) / self.p
 
 
 class Residual(Module):
@@ -135,11 +132,9 @@ class Residual(Module):
         super().__init__()
         self.fn = fn
 
-    # Given module F and input Tensor x, returning F(x) + x
     def forward(self, x: Tensor) -> Tensor:
         return self.fn(x) + x
 
-# - - - - - - - - - - - - -
 
 class Linear(Module):
     def __init__(self, in_features, out_features, bias=True, device=None, dtype="float32"):

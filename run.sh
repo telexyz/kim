@@ -18,7 +18,7 @@
 
 # Heavy tests
 # - - - - - -
-# python3 -m pytest tests/test_simple_nn.py tests/test_data.py tests/test_cifar_ptb_data.py tests/test_mlp_resnet.py
+# python3 -m pytest tests/test_mlp_resnet.py tests/test_data.py tests/test_cifar_ptb_data.py
 
 #######
 # hw4 #

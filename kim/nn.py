@@ -648,7 +648,7 @@ class SoftMax(Module):
         return x / ops.summation(x, axes=-1, keepdims=True)
 
 
-class Attention(Module):
+class SelfAttention(Module):
     def __init__(self, input_size: int, device=None):
         super.__init__()
         # x = (1 / input_size)**0.5
@@ -660,6 +660,12 @@ class Attention(Module):
     def forward(self, x):
         skip
 
+
+class MultiHeadAttention(Module):
+    def forward(self, x):
+        skip
+
+
 class Transformer(Module):
     def forward(self, x):
-        skip    
+        skip

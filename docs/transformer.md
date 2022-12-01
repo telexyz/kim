@@ -1,3 +1,12 @@
+# Transformer implementation
+
+11785 https://www.youtube.com/watch?v=X2nUH6fXfbc
+10714 https://www.youtube.com/watch?v=OzFmKdAHJn0
+
+- - -
+
+# Attention and Transformer
+
 https://youtu.be/amqFoES3c1w?t=663
 
 ## Q, K, V in Attention

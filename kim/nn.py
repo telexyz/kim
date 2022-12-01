@@ -658,8 +658,9 @@ class SelfAttention(Module):
         # self.W_out = Parameter(init.)
 
     def forward(self, x):
-        skip
-
+        K,Q,V = ops.split(x * W_KQV, 1, chunks=3)
+        attn = SoftMax()(K @ Q.transpose() / np.sqrt(x.shape[1]))
+        return attn @ V @ W_out, attn
 
 class MultiHeadAttention(Module):
     def forward(self, x):

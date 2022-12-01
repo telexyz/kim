@@ -17,29 +17,22 @@ class MakeTensorTuple(TensorTupleOp):
         n_inputs = len(node.inputs)
         assert n_inputs == len(out_grad)
         # trả lại gradient thông qua ops.tuple_get_item
+        assert not isinstance(out_grad.op, MakeTensorTuple), "Cần thêm code https://github.com/dlsyscourse/hw4/blob/main/python/needle/ops.py#L31"
         return tuple([tuple_get_item(out_grad, index) for index in range(n_inputs)])
 
 def make_tensor_tuple(*args):
     return MakeTensorTuple()(*args)
 
-
 class TupleGetItem(TensorOp):
     def __init__(self, index):
         self.index = index
-
-    def __call__(self, a: TensorTuple, fold_const=True) -> Tensor:
-        assert isinstance(a, TensorTuple)
-        # constant folding
-        if fold_const and isinstance(a.op, MakeTensorTuple):
-            return a.inputs[self.index]
-        return Tensor.make_from_op(self, [a])
 
     def compute(self, a):
         return a[self.index]
 
     def gradient(self, out_grad, node):
         n_inputs = len(node.inputs[0])
-        in_grads = [init.zeros_like(out_grad) for _ in range(n_inputs - 1)]
+        in_grads = [ init.zeros_like(out_grad) ] * (n_inputs - 1)
         in_grads.insert(self.index, out_grad)
         return make_tensor_tuple(*in_grads),
 
@@ -75,7 +68,6 @@ class Stack(TensorOp):
 
     def gradient(self, out_grad, node):
         return split(out_grad, self.axis),
-        # return make_tensor_tuple(*split(out_grad, self.axis)),
 
 def stack(args, axis):
     tensor_tuple = make_tensor_tuple(*args)
@@ -369,7 +361,6 @@ class MatMul(TensorOp):
         ### numpy_backend
         if array_api == np: return a @ b
 
-        # return NDArray(a.numpy() @ b.numpy(), device=a.device) # use numpy for testing
         ### ndarray_backend
         assert a.shape[-1] == b.shape[-2], "MatMul: Sizes not matched %s @ %s" % (a.shape, b.shape)
 
@@ -432,25 +423,13 @@ class MatMul(TensorOp):
     def gradient(self, out_grad, node):
         a, b = node.inputs 
 
-        b_transpose = transpose(b)
-        l_grad = matmul(out_grad, b_transpose)
-        # chuẩn hóa shape l_grad
+        l_grad = matmul(out_grad, transpose(b))
         n = len(l_grad.shape) - len(a.shape)
-        if n > 0:
-            axes = ()
-            for i in range(n): 
-                axes += (i,)
-            l_grad = summation(l_grad, axes=axes)
+        if n > 0: l_grad = summation(l_grad, axes=tuple(i for i in range(n)))
 
-
-        a_transpose = transpose(a)
-        r_grad = matmul(a_transpose, out_grad)
-        # chuẩn hóa shape r_grad
+        r_grad = matmul(transpose(a), out_grad)
         n = len(r_grad.shape) - len(b.shape)
-        if n > 0:
-            axes = ()
-            for i in range(n): axes += (i,)
-            r_grad = summation(r_grad, axes=axes)
+        if n > 0: r_grad = summation(r_grad, axes=tuple(i for i in range(n)))
 
         return (l_grad, r_grad)
 
@@ -499,7 +478,7 @@ class ReLU(TensorOp):
     def gradient(self, out_grad, node):
         a = node.inputs[0].realize_cached_data()
         relu_a = Tensor(a > 0, device=out_grad.device)
-        return Tensor(out_grad * relu_a, device=out_grad.device),
+        return out_grad * relu_a,
 
 def relu(a):
     return ReLU()(a)
@@ -511,10 +490,9 @@ class LogSumExp(TensorOp):
 
     def compute(self, Z):
         Z_max = array_api.max(Z, axis=self.axes)
-        Z_max_reshape = Z_max.reshape(self.new_shape(Z.shape))
-        Z_max_broadcast = array_api.broadcast_to(Z_max_reshape, Z.shape)
-        ZZ = Z - Z_max_broadcast
-        return array_api.log(array_api.exp(ZZ).sum(self.axes)) + Z_max
+        ZZ = Z_max.reshape(self.new_shape(Z.shape)).broadcast_to(Z.shape)
+        ZZ = array_api.exp(Z - ZZ).sum(self.axes)
+        return array_api.log(ZZ) + Z_max
 
     def gradient(self, out_grad, node):
         a = node.inputs[0].realize_cached_data()
@@ -530,7 +508,6 @@ class LogSumExp(TensorOp):
         y = reshape(out_grad, new_shape)
         y = broadcast_to(y, a.shape)
         return (y * normalize,)
-
 
     def new_shape(self, shape):
         if self.axes is None:

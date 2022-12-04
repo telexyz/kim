@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/home/t/anaconda3/envs/kim/bin/python3
 
 import urllib.request
 import os

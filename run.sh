@@ -19,9 +19,7 @@
 # hw4 #
 #######
 
-BACKEND_DEVICE=cuda python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "resnet9"
-python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "rnn"
-python3 -m pytest -k "test_rnn[cuda-relu-False-False-12-11-1-1-13]"
+python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "resnet9"
 
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "lstm"
 python3 -m pytest -k "lstm_cell and cuda-False-False-12-1-15"
@@ -36,8 +34,6 @@ python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "language_model"
 python3 -m pytest -l -v -k "language_model_implementation"
 python3 -m pytest -l -v -k "language_model_training"
 
-KIM_DEVICE=cuda python3 -m pytest tests/test_sequence_models.py -k "test_rnn and cuda-relu-False-False-12-11-15-2-13"
-KIM_DEVICE=cuda python3 -m pytest tests/test_sequence_models.py -k "test_rnn"
 python3 -m pytest tests/test_sequence_models.py
 
 
@@ -45,7 +41,7 @@ python3 -m pytest tests/test_sequence_models.py
 # python3 -m pytest tests/test_conv.py
 # python3 -m pytest tests/test_nd_backend.py
 # python3 -m pytest tests/test_cifar_ptb_data.py
-# python3 -m pytest tests/test_sequence_models.py -k "rnn_cell"
+# python3 -m pytest tests/test_sequence_models.py -k "rnn"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "new_nd_backend"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "conv_forward"
 # python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "conv_backward"

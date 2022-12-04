@@ -94,7 +94,7 @@ class Tanh(Module):
 
 class Sigmoid(Module):
     def forward(self, x: Tensor) -> Tensor:
-        return (1 + ops.exp(ops.negate(x)))**(-1)
+        return (1 + ops.exp(ops.negate(x))) ** -1
 
 
 class SoftmaxLoss(Module):
@@ -454,14 +454,14 @@ class LSTMCell(Module):
         self.device = device
         self.dtype = dtype
         self.bias = bias
-        x = (1 / hidden_size)**0.5
+        x = 1 / hidden_size**0.5
 
-        self.W_ih = Parameter(init.rand(input_size, 4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
-        self.W_hh = Parameter(init.rand(hidden_size, 4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
+        self.W_ih = Parameter(init.rand( input_size, 4*hidden_size, low=-x, high=x), device=device)
+        self.W_hh = Parameter(init.rand(hidden_size, 4*hidden_size, low=-x, high=x), device=device)
 
         if bias:
-            self.bias_ih = Parameter(init.rand(4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
-            self.bias_hh = Parameter(init.rand(4*hidden_size, low=-x, high=x), dtype=dtype, device=device)
+            self.bias_ih = Parameter(init.rand(4*hidden_size, low=-x, high=x), device=device)
+            self.bias_hh = Parameter(init.rand(4*hidden_size, low=-x, high=x), device=device)
 
 
     def forward(self, X, h=None):
@@ -489,16 +489,14 @@ class LSTMCell(Module):
             h0, c0 = h
 
         out = X @ self.W_ih + h0 @ self.W_hh
-        if self.bias:
-            out += self.bias_ih.reshape((1, out.shape[-1])).broadcast_to(out.shape)
-            out += self.bias_hh.reshape((1, out.shape[-1])).broadcast_to(out.shape)
 
-        ifgo = ops.split(out, 1, chunks=4)
+        if self.bias:
+            out += self.bias_ih.reshape((1, 4*self.hidden_size)).broadcast_to(out.shape)
+            out += self.bias_hh.reshape((1, 4*self.hidden_size)).broadcast_to(out.shape)
+
         _sigmoid = Sigmoid()
-        i = _sigmoid(ops.tuple_get_item(ifgo, 0))
-        f = _sigmoid(ops.tuple_get_item(ifgo, 1))
-        g = ops.tanh(ops.tuple_get_item(ifgo, 2))
-        o = _sigmoid(ops.tuple_get_item(ifgo, 3))
+        i, f, g, o = ops.split(out, 1, chunks=4)
+        i, f, g, o = _sigmoid(i), _sigmoid(f), ops.tanh(g), _sigmoid(o)
 
         # print(">>> hidden_size,out",self.hidden_size,out.shape)
         # print(">>> f,c0,i,g",f.shape,c0.shape,i.shape,g.shape)

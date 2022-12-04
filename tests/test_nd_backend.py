@@ -168,7 +168,7 @@ STACK_PARAMETERS = [((5, 5), 0, 1),
     ((1,5,7), 2, 5), ((2, 3), 1, 2)]
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
-def test_stack_split(shape, axis, l, device):
+def test_stack_forward(shape, axis, l, device):
     _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
     A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
     A_t = [torch.Tensor(_A[i]) for i in range(l)]
@@ -176,30 +176,59 @@ def test_stack_split(shape, axis, l, device):
     out_t = torch.stack(A_t, dim=axis)
     np.testing.assert_allclose(out_t.numpy(), out.numpy(), atol=1e-5, rtol=1e-5)
     
-    B = kim.split(out, axis=axis).realize_cached_data()
-    print(">>> B:", B[0])
+    B = kim.split(out, axis=axis)
     for i, a in enumerate(A):
         np.testing.assert_allclose(B[i].numpy(), a.numpy(), atol=1e-5, rtol=1e-5)
-    
-    # TODO: test split backward
-    # kim.split(out, axis=axis).backward()
+
 
 @pytest.mark.parametrize("shape, axis, l", STACK_PARAMETERS)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
 def test_stack_backward(shape, axis, l, device):
-    _A = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
-    A = [kim.Tensor(nd.array(_A[i]), device=device) for i in range(l)]
-    A_t = [torch.Tensor(_A[i]) for i in range(l)]
-    for i in range(l): A_t[i].requires_grad = True
+    x = [np.random.randn(*shape).astype(np.float32) for i in range(l)]
+    A = [kim.Tensor(x[i], device=device) for i in range(l)]
+    A_t = [torch.Tensor(x[i]) for i in range(l)]
+    for x in A_t: x.requires_grad = True
     kim.stack(A, axis=axis).sum().backward()
     torch.stack(A_t, dim=axis).sum().backward()
-    for i in range(l): np.testing.assert_allclose(A_t[i].grad.numpy(), A[i].grad.numpy(), atol=1e-5, rtol=1e-5)
+    for i in range(l): 
+        np.testing.assert_allclose(A_t[i].grad.numpy(), A[i].grad.numpy(), atol=1e-5, rtol=1e-5)
 
-    # stacked = kim.stack(A, axis=axis).realize_cached_data()
-    # torch_stacked = torch.stack(A_t, dim=axis)
-    # torch_splited = torch.split(torch_stacked, axis)
-    # print(">>>", torch_splited)
-    # for x in torch_splited: x.backward()
+
+SPLIT_PARAMETERS = [((6, 5, 18), 2, 6),
+    ((5, 5), 0, 1), ((6, 5), 0, 2),
+    ((1,5,10), 2, 5), ((2, 6), 1, 3),
+]
+
+@pytest.mark.parametrize("shape, axis, l", SPLIT_PARAMETERS)
+@pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
+def test_split_forward(shape, axis, l, device):
+    print(">>>", shape, axis, l)
+    x = np.random.randn(*shape).astype(np.float32)
+    A = kim.Tensor(x, device=device)
+    A_t = torch.Tensor(x); A_t.requires_grad = True
+
+    b = kim.split(A, axis, chunks=l)    
+    b_t = torch.split(A_t, x.shape[axis] // l, dim=axis)
+
+    for i in range(l):
+        np.testing.assert_allclose(b[i].numpy(), b_t[i].detach().numpy(), atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("shape, axis, l", SPLIT_PARAMETERS)
+@pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
+def test_split_backward(shape, axis, l, device):
+    x = np.random.randn(*shape).astype(np.float32)
+    A = kim.Tensor(x, device=device)
+    A_t = torch.Tensor(x); A_t.requires_grad = True
+
+    b = kim.split(A, axis, chunks=l)    
+    b_t = torch.split(A_t, x.shape[axis] // l, dim=axis)
+
+    # for i in range(l):
+    i = 0
+    b[i].sum().backward()
+    b_t[i].sum().backward()
+    np.testing.assert_allclose(A_t.grad.numpy(), A.grad.numpy(), atol=1e-5, rtol=1e-5)
 
 
 SUMMATION_PARAMETERS = [((1, 1, 1), None),

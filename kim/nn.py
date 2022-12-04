@@ -498,9 +498,6 @@ class LSTMCell(Module):
         i, f, g, o = ops.split(out, 1, chunks=4)
         i, f, g, o = _sigmoid(i), _sigmoid(f), ops.tanh(g), _sigmoid(o)
 
-        # print(">>> hidden_size,out",self.hidden_size,out.shape)
-        # print(">>> f,c0,i,g",f.shape,c0.shape,i.shape,g.shape)
-
         c = f*c0 + i*g
         h = o*ops.tanh(c)
 
@@ -565,24 +562,19 @@ class LSTM(Module):
         seq_len, bs, input_size = X.shape
         assert input_size == self.input_size
 
-        outputs = [] # the output sequence, len(outputs) == seq_len
-        hiddens_h = [] # hidden states acrossing layers, len(hiddens) == self.num_layers
-        hiddens_c = [] # hidden states acrossing layers, len(hiddens) == self.num_layers
-
         # Init hiddens_h,c from h
         if h is None:
-            hiddens_h = [init.zeros(bs, self.hidden_size, device=self.device) for _ in range(self.num_layers)]
-            hiddens_c = [init.zeros(bs, self.hidden_size, device=self.device) for _ in range(self.num_layers)]
+            hiddens_h = [init.zeros(bs, self.hidden_size, device=self.device)] * self.num_layers
+            hiddens_c = [init.zeros(bs, self.hidden_size, device=self.device)] * self.num_layers
         else:
             h0, c0 = h
-            assert list(h0.shape) == [self.num_layers, bs, self.hidden_size]
-            assert list(c0.shape) == [self.num_layers, bs, self.hidden_size]
-            hiddens_h = list(ops.split(h0, 0).detach())
-            hiddens_c = list(ops.split(c0, 0).detach())
+            assert h0.shape == (self.num_layers, bs, self.hidden_size)
+            assert c0.shape == (self.num_layers, bs, self.hidden_size)
+            hiddens_h = list(ops.split(h0, 0))
+            hiddens_c = list(ops.split(c0, 0))
 
         # Init outputs from X
-        outputs = [ Tensor(X.realize_cached_data()[i,:,:].reshape((bs, input_size)).compact(), device=self.device)
-            for i in range(seq_len) ]
+        outputs = list(ops.split(X, 0)) # chuyển thành list để assign elems được
 
         for layer in range(self.num_layers):
             lstm_cell = self.lstm_cells[layer]

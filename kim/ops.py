@@ -74,7 +74,6 @@ def stack(args, axis):
     return Stack(axis)(tensor_tuple)
 
 
-import copy
 class Split(TensorTupleOp):
     def __init__(self, axis: int, chunks=None):
         """
@@ -89,28 +88,22 @@ class Split(TensorTupleOp):
     def compute(self, A: NDArray):
         shape = list(A.shape)
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
-        b_idxs = copy.deepcopy(idxs)
 
         if self.chunks is None:
-            del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
-            del  shape[self.axis] # xóa phần tử thứ self.axis của shape
+            del shape[self.axis] # xóa phần tử thứ self.axis của shape
             chunks = A.shape[self.axis]
             offset = 1
         else:
             chunks = self.chunks
             offset = A.shape[self.axis] // chunks
-            b_idxs[self.axis] = slice(0, offset, 1)
             shape[self.axis] = offset
 
         out = []
-        b_idxs = tuple(b_idxs)
         for i in range(chunks):
             start = i * offset
-            idxs[self.axis] = slice(start, start+offset, 1)
+            idxs[self.axis] = slice(start, start + offset, 1)
             a = A.__getitem__(tuple(idxs))
-            b = NDArray.make(shape, device=A.device)
-            b.__setitem__(b_idxs, a)
-            out.append(b)
+            out.append(a.compact().reshape(shape))
         # 
         return tuple(out)
 

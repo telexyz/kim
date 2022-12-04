@@ -1,5 +1,5 @@
 from numbers import Number
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from .autograd import NDArray, array_api
 from .autograd import Tensor, TensorOp
 from .autograd import TensorTuple, TensorTupleOp
@@ -50,7 +50,7 @@ class Stack(TensorOp):
         """
         self.axis = axis
 
-    def compute(self, arrays) -> Tensor:
+    def compute(self, arrays: Tuple[NDArray]) -> NDArray:
         # Vì compute luôn sử dụng dữ liệu từ .cached_data nên arrays ở đây phải là tupple của NDArray
         assert isinstance(arrays, tuple)
         array0 = arrays[0]

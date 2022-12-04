@@ -36,8 +36,8 @@ class TupleGetItem(TensorOp):
         in_grads.insert(self.index, out_grad)
         return make_tensor_tuple(*in_grads),
 
-def tuple_get_item(value, index):
-    return TupleGetItem(index)(value)
+def tuple_get_item(a, index):
+    return TupleGetItem(index)(a)
 
 
 class Stack(TensorOp):
@@ -91,7 +91,6 @@ class Split(TensorTupleOp):
         idxs = [ slice(0,shape[i],1) for i in range(len(shape)) ]
         b_idxs = copy.deepcopy(idxs)
 
-        out = []
         if self.chunks is None:
             del b_idxs[self.axis] # xóa phần tử thứ self.axis của b_idxs
             del  shape[self.axis] # xóa phần tử thứ self.axis của shape
@@ -103,25 +102,23 @@ class Split(TensorTupleOp):
             b_idxs[self.axis] = slice(0, offset, 1)
             shape[self.axis] = offset
 
+        out = []
+        b_idxs = tuple(b_idxs)
         for i in range(chunks):
-            idxs[self.axis] = slice(i, i+offset, 1)
+            start = i * offset
+            idxs[self.axis] = slice(start, start+offset, 1)
             a = A.__getitem__(tuple(idxs))
             b = NDArray.make(shape, device=A.device)
-            b.__setitem__(tuple(b_idxs), a)
+            b.__setitem__(b_idxs, a)
             out.append(b)
- 
+        # 
         return tuple(out)
 
 
     def gradient(self, out_grad, node):
         input_shape = node.inputs[0].shape
-        if isinstance(out_grad, TensorTuple):
-            return Stack(self.axis)(out_grad).reshape(input_shape),
-        # elif isinstance(out_grad, tuple):
-        #     return stack(out_grad, self.axis).reshape(input_shape),
-        # else:
-        #     chunks = input_shape[self.axis] // out_grad.shape[self.axis]
-        #     return stack([out_grad]*chunks, self.axis).reshape(input_shape),
+        assert isinstance(out_grad, TensorTuple)
+        return Stack(self.axis)(out_grad).reshape(input_shape),
 
 
 def split(a, axis, chunks=None):

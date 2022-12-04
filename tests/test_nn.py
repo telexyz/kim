@@ -2,6 +2,8 @@ import numpy as np
 import kim
 import kim.nn as nn
 from kim import as_numpy
+import torch
+import pytest
 
 """Deterministically generate a matrix"""
 def get_tensor(*shape, entropy=1):
@@ -305,6 +307,38 @@ def test_nn_linear_backward_3():
     [ 11.332953,   -5.698288 ,  -8.815561 ,  -7.673438 ,  -7.6161675,
      9.361553,   17.341637 ,  17.269142 ,  18.1076   ,  14.261493 ]]], dtype=np.float32), rtol=1e-5, atol=1e-5)
 
+@pytest.mark.parametrize("batch_size", [1,3,5,7])
+@pytest.mark.parametrize("input_size", [1,2,5,9])
+def test_sigmoid(batch_size, input_size):
+    x = np.random.randn(batch_size, input_size).astype(np.float32)
+
+    t_ = torch.tensor(x, requires_grad=True)
+    o_ = torch.nn.Sigmoid()(t_)
+    o_.sum().backward()
+  
+    t = kim.Tensor(x)
+    o = kim.nn.Sigmoid()(t) 
+    o.sum().backward()
+
+    np.testing.assert_allclose(o_.detach().numpy(), o.numpy(), atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(t_.grad.detach().numpy(), t.grad.numpy(), atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("batch_size", [1,3,5,7])
+@pytest.mark.parametrize("input_size", [1,2,5,9])
+def test_tanh(batch_size, input_size):
+    x = np.random.randn(batch_size, input_size).astype(np.float32)
+
+    t_ = torch.tensor(x, requires_grad=True)
+    o_ = torch.nn.Tanh()(t_)
+    o_.sum().backward()
+  
+    t = kim.Tensor(x)
+    o = kim.nn.Tanh()(t) 
+    o.sum().backward()
+
+    np.testing.assert_allclose(o_.detach().numpy(), o.numpy(), atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(t_.grad.detach().numpy(), t.grad.numpy(), atol=1e-5, rtol=1e-5)
 
 def test_nn_relu_forward_1():
     np.testing.assert_allclose(as_numpy(relu_forward(2, 2)),

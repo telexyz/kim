@@ -87,6 +87,7 @@ def test_lstm_cell(batch_size, input_size, hidden_size, bias, init_hidden, devic
         h, c = model(kim.Tensor(x, device=device), (kim.Tensor(h0, device=device), kim.Tensor(c0, device=device)))
     else:
         h, c = model(kim.Tensor(x, device=device), None)
+
     np.testing.assert_allclose(h_.detach().numpy(), h.numpy(), atol=1e-5, rtol=1e-5)
     np.testing.assert_allclose(c_.detach().numpy(), c.numpy(), atol=1e-5, rtol=1e-5)
 

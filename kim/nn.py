@@ -477,7 +477,7 @@ class LSTMCell(Module):
         Outputs: (h', c')
         h' of shape (bs, hidden_size): Tensor containing the next hidden state for each
             element in the batch
-.        c' of shape (bs, hidden_size): Tensor containing the next cell state for each
+.       c' of shape (bs, hidden_size): Tensor containing the next cell state for each
             element in the batch.
         """
         bs = X.shape[0]
@@ -501,10 +501,10 @@ class LSTMCell(Module):
         # print(">>> hidden_size,out",self.hidden_size,out.shape)
         # print(">>> f,c0,i,g",f.shape,c0.shape,i.shape,g.shape)
 
-        c_out = f*c0 + i*g
-        h_out = o*ops.tanh(c_out)
+        c = f*c0 + i*g
+        h = o*ops.tanh(c)
 
-        return h_out, c_out
+        return h, c
 
 
 

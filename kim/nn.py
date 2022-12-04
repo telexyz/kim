@@ -313,14 +313,14 @@ class RNNCell(Module):
         self.device = device
         self.dtype = dtype
         self.bias = bias
-        x = (1 / hidden_size)**0.5
+        x = 1 / hidden_size**0.5
 
-        self.W_ih = Parameter(init.rand(input_size, hidden_size, low=-x, high=x), dtype=dtype, device=device)
-        self.W_hh = Parameter(init.rand(hidden_size, hidden_size, low=-x, high=x), dtype=dtype, device=device)
+        self.W_ih = Parameter(init.rand( input_size, hidden_size, low=-x, high=x), device=device)
+        self.W_hh = Parameter(init.rand(hidden_size, hidden_size, low=-x, high=x), device=device)
 
         if bias:
-            self.bias_ih = Parameter(init.rand(hidden_size, low=-x, high=x), dtype=dtype, device=device)
-            self.bias_hh = Parameter(init.rand(hidden_size, low=-x, high=x), dtype=dtype, device=device)
+            self.bias_ih = Parameter(init.rand(hidden_size, low=-x, high=x), device=device)
+            self.bias_hh = Parameter(init.rand(hidden_size, low=-x, high=x), device=device)
 
 
     def forward(self, X, h=None):
@@ -342,12 +342,15 @@ class RNNCell(Module):
         assert self.hidden_size == hidden_size
 
         out = X @ self.W_ih + h @ self.W_hh
+
         if self.bias:
             out += self.bias_ih.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
             out += self.bias_hh.reshape((1, hidden_size)).broadcast_to((bs, hidden_size))
 
-        if self.nonlinearity == 'tanh': return ops.tanh(out)
-        else: return ops.relu(out)
+        if self.nonlinearity == 'tanh':
+            return ops.tanh(out)
+        else:
+            return ops.relu(out)
 
 
 
@@ -379,7 +382,7 @@ class RNN(Module):
         self.dtype = dtype
         self.bias = bias
 
-        # Init RNN Layers        
+        # Init RNN Layers
         self.rnn_cells = [RNNCell(input_size, hidden_size, bias=bias, nonlinearity=nonlinearity,
             dtype=dtype, device=device)] 
 
@@ -404,9 +407,6 @@ class RNN(Module):
         seq_len, bs, input_size = X.shape
         assert input_size == self.input_size
 
-        outputs = [] # the output sequence, len(outputs) == seq_len
-        hiddens = [] # hidden states acrossing layers, len(hiddens) == self.num_layers
-
         # Init hiddens from h0
         if h0 is None:
             hiddens = [init.zeros(bs, self.hidden_size, device=self.device)] * self.num_layers
@@ -415,8 +415,7 @@ class RNN(Module):
             hiddens = list(ops.split(h0, 0)) # chuyển thành list để assign elems được
 
         # Init outputs from X
-        outputs = [ Tensor(X.realize_cached_data()[i,:,:].reshape((bs, input_size)).compact(), device=self.device)
-            for i in range(seq_len) ]
+        outputs = list(ops.split(X, 0)) # chuyển thành list để assign elems được
 
         for layer in range(self.num_layers):
             rnn_cell = self.rnn_cells[layer]
@@ -427,7 +426,6 @@ class RNN(Module):
 
         assert len(outputs) == seq_len
         assert len(hiddens) == self.num_layers
-        assert outputs[-1] == hiddens[-1]
 
         return ops.stack(outputs, 0), ops.stack(hiddens, 0)
 

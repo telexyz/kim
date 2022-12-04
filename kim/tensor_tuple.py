@@ -30,7 +30,7 @@ class TensorTuple:
     def numpy(self):
         data = self.realize_cached_data()
         assert isinstance(data, tuple)
-        if array_api is np:
+        if kim.array_api is np:
             return list(data)
         else:
             return [x.numpy() for x in data]

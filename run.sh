@@ -24,11 +24,8 @@ python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "submit_ptb"
 python3 -m pytest -l -v -k "ptb_dataset"
 
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "language_model"
-python3 -m pytest -l -v -k "language_model_implementation"
-# FAILED tests/test_sequence_models.py::test_language_model_implementation[cuda-rnn-1-True-1-1-1-2-1] - IndexError: tuple index out of range
-# FAILED tests/test_sequence_models.py::test_language_model_implementation[cuda-lstm-1000-False-2-34-15-1-13] - TypeError: not all arguments converted during string formatting
-# FAILED tests/test_sequence_models.py::test_language_model_implementation[cuda-lstm-1000-False-12-34-15-1-1] - RuntimeError: an illegal memory access was encountered
-python3 -m pytest -l -v -k "language_model_training"
+python3 -m pytest -k "language_model_implementation"
+python3 -m pytest -k "language_model_training"
 
 python3 -m pytest tests/test_sequence_models.py
 

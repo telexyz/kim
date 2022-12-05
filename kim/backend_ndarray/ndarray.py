@@ -283,7 +283,7 @@ class NDArray:
         """
         if len(new_shape) == 2 and new_shape[0] == -1 and new_shape[1] > 0:
             new_shape = (prod(self.shape) // new_shape[1], new_shape[1])
-        assert prod(self.shape) == prod(new_shape), "%s shape != new_shape" % (new_shape)
+        assert prod(self.shape) == prod(new_shape), f"cannot reshape %s to %s" % (self.shape, new_shape)
         new_strides = self.compact().compact_strides(new_shape)
         return self.as_strided(new_shape, new_strides)
 

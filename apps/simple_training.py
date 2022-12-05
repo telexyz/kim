@@ -77,7 +77,7 @@ def train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,
         avg_acc, avg_loss = epoch_general_cifar10(dataloader, model, started_at, loss_fn=lf, opt=opt)
         time_passed = datetime.timedelta(seconds=timer() - started_at)
         print("\n>>> Training epoch: %s, acc: %s, loss: %s (%s)\n" % (epoch, avg_acc, avg_loss, time_passed))
-
+    return avg_acc, avg_loss
 
 def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
     """
@@ -98,11 +98,11 @@ def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
     avg_acc, avg_loss = epoch_general_cifar10(dataloader, model, started_at, loss_fn=lf, opt=None)
     time_passed = datetime.timedelta(seconds=timer() - started_at)
     print("\n>>> Test acc: %s, loss: %s (%s)\n" % (avg_acc, avg_loss, time_passed))
-
+    return avg_acc, avg_loss
 
 
 ### PTB training ###
-def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=None,
+def epoch_general_ptb(data, model, started_at, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=None,
         clip=None, device=None, dtype="float32"):
     """
     Iterates over the data. If optimizer is not None, sets the
@@ -124,7 +124,31 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    training = (opt is not None)
+    if training: model.train()
+    else: model.eval()
+
+    correct, total_loss = 0, 0
+    n = 0; niter = 0
+    nbatch, batch_size = data.shape
+    # print(">>>", data.shape, seq_len)
+    # assert False
+    for i in range(nbatch - seq_len):
+        X, y = kim.data.get_batch(data, i, seq_len)
+        out = model(X)[0]
+        loss = loss_fn(out, y)
+        correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
+        total_loss += loss.data.numpy()
+        if training:
+            opt.reset_grad()
+            loss.backward()
+            opt.step()
+        niter += 1; n += y.shape[0] # n += batch_size
+        if niter % 10 == 0:
+            time_passed = datetime.timedelta(seconds=timer() - started_at)
+            print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, correct/n, total_loss/niter, time_passed))
+
+    return correct/n, total_loss/niter
     ### END YOUR SOLUTION
 
 
@@ -151,7 +175,14 @@ def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=kim.optim.SGD,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    opt = optimizer(model.parameters(), lr=lr, weight_decay=weight_decay, device=device)
+    lf = loss_fn()
+    started_at = timer()
+    for epoch in range(n_epochs):
+        avg_acc, avg_loss = epoch_general_ptb(data, model, started_at, loss_fn=lf, opt=opt, seq_len=seq_len)
+        time_passed = datetime.timedelta(seconds=timer() - started_at)
+        print("\n>>> Training epoch: %s, acc: %s, loss: %s (%s)\n" % (epoch, avg_acc, avg_loss, time_passed))
+    return avg_acc, avg_loss
     ### END YOUR SOLUTION
 
 
@@ -172,13 +203,18 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
     """
     np.random.seed(4)
     ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    lf = loss_fn()
+    started_at = timer()
+    avg_acc, avg_loss = epoch_general_ptb(data, model, started_at, loss_fn=lf, opt=None, seq_len=seq_len)
+    time_passed = datetime.timedelta(seconds=timer() - started_at)
+    print("\n>>> Test acc: %s, loss: %s (%s)\n" % (avg_acc, avg_loss, time_passed))
+    return avg_acc, avg_loss
     ### END YOUR SOLUTION
 
 
 if __name__ == "__main__":
     ### For testing purposes
-    device = kim.cpu()
+    device = kim.cuda()
     #dataset = kim.data.CIFAR10Dataset("./data/cifar-10-batches-py", train=True)
     #dataloader = kim.data.DataLoader(\
     #         dataset=dataset,

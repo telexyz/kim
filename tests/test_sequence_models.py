@@ -347,7 +347,7 @@ def submit_language_model():
         mugrade_submit(h0_.numpy())
         mugrade_submit(output.numpy())
 
-    device = kim.cpu() # TODO CHANGE BACK
+    device = kim.cuda() # TODO CHANGE BACK
     # device = kim.cpu()
     corpus = kim.data.Corpus("data/ptb", max_lines=20)
     seq_len = 8

@@ -61,9 +61,13 @@ class LanguageModel(nn.Module):
         num_layers: Number of layers in RNN or LSTM
         """
         super(LanguageModel, self).__init__()
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.output_size = output_size
+
+        model = nn.RNN if seq_model == 'rnn' else nn.LSTM
+        self.embedding = nn.Embedding(output_size, embedding_size, device=device)
+        self.model = model(embedding_size, hidden_size, num_layers=num_layers, device=device)
+        self.linear = nn.Linear(hidden_size, output_size)
+
 
     def forward(self, x, h=None):
         """
@@ -78,9 +82,10 @@ class LanguageModel(nn.Module):
         h of shape (num_layers, bs, hidden_size) if using RNN,
             else h is tuple of (h0, c0), each of shape (num_layers, bs, hidden_size)
         """
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        x = self.embedding(x)
+        x, h = self.model(x, h)
+        out = self.linear(x).reshape((-1, self.output_size))
+        return out, h
 
 
 if __name__ == "__main__":

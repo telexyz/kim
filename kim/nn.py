@@ -625,7 +625,7 @@ class Embedding(Module):
         """
         #    x of shape (seq_len, bs) convert to one-hot vectors
         # => y of shape (seq_len, bs, num_embeddings)
-        y = Tensor(NDArray(self.eye[x.astype("int")], device=self.device))
+        y = Tensor(kim.NDArray(self.eye[x.numpy().astype("int")], device=self.device))
         return y @ self.weight
 
 # - - - - - - - - - - - - -

@@ -262,7 +262,8 @@ class Dictionary(object):
         return idx
 
     def lookup(self, idx):
-        return self.idx2word[idx]
+        if idx >= 0 and idx < len(self): return self.idx2word[idx]
+        else: return None
 
     def add_word(self, word):
         """
@@ -271,17 +272,14 @@ class Dictionary(object):
         and appends to the list of words.
         Returns the word's unique ID.
         """
-        try: n = self.word2idx[word]
-        except KeyError:
-            n = len(self.idx2word)
-            self.word2idx[word] = n
+        idx = self.find(word)
+        if idx is None:
+            idx = len(self)
+            self.word2idx[word] = idx
             self.idx2word.append(word)
-        return n
+        return idx
 
     def __len__(self):
-        """
-        Returns the number of unique words in the dictionary.
-        """
         return len(self.idx2word)
 
 
@@ -295,6 +293,9 @@ class Corpus(object):
         self.train = self.tokenize(os.path.join(base_dir, 'train.txt'), max_lines)
         self.test = self.tokenize(os.path.join(base_dir, 'test.txt'), max_lines)
 
+    def eos(self):
+        return self.dictionary.add_word('<eos>')
+
     def tokenize(self, path, max_lines=None):
         """
         Input:
@@ -307,22 +308,21 @@ class Corpus(object):
         Output:
         ids: List of ids
         """
+        eos_id = self.eos()
         txt = open(path).read()
         lines = txt.split("\n")
         if max_lines is None: max_lines = len(lines) - 1 # remove last blank line
         assert max_lines < len(lines)
 
-        eos_id = self.dictionary.add_word('<eos>')
         ids = []
         for i in range(max_lines):
             words = lines[i].split(" ")[1:-1] # remove first and last blank words
-            for word in words:
-                if len(word) > 0: ids.append(self.dictionary.add_word(word))
+            for word in words: ids.append(self.dictionary.add_word(word))
             ids.append(eos_id)
         return ids
 
     def lookup(self, idx):
-        return self.dictionary.idx2word[idx]
+        return self.dictionary.lookup(idx)
 
 
 def batchify(data, batch_size, device, dtype):
@@ -337,15 +337,14 @@ def batchify(data, batch_size, device, dtype):
     └ f l r x ┘.
 
     These columns are treated as independent by the model, which means that the
-    dependence of e. g. 'g' on 'f' cannot be learned, but allows more efficient
-    batch processing.
+    dependence of 'g' on 'f' cannot be learned, but allows more efficient batch processing.
 
     If the data cannot be evenly divided by the batch size, trim off the remainder.
     Returns the data as a numpy array of shape (nbatch, batch_size).
     """
     nbatch = len(data) // batch_size
-    n = nbatch * batch_size
-    return np.array(data[0:n]).astype(dtype).reshape((batch_size, nbatch)).transpose()
+    x = np.array(data[0 : nbatch * batch_size]).astype(dtype)
+    return x.reshape((batch_size, nbatch)).transpose()
 
 
 def get_batch(batches, i, bptt, device=None, dtype=None):
@@ -372,10 +371,9 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     """
     n = batches.shape[0]
     assert i < n
-    assert bptt > 0 and bptt < n - i
+    # assert bptt > 0 and bptt < n - i
     
-    data = batches[i : i+bptt, : ]
-    i += 1
+    data   = batches[i : i+bptt, : ]; i += 1
     target = batches[i : i+bptt, : ].flatten()
 
     return Tensor(data, device=device, dtype=dtype), Tensor(target, device=device, dtype=dtype)

@@ -26,7 +26,7 @@ def test_cifar10_dataset(train):
     assert X.shape == (3, 32, 32)
 
 
-BATCH_SIZES = [1, 15]
+BATCH_SIZES = [1, 3, 5]
 @pytest.mark.parametrize("batch_size", BATCH_SIZES)
 @pytest.mark.parametrize("train", TRAIN)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
@@ -41,7 +41,7 @@ def test_cifar10_loader(batch_size, train, device):
     assert X.dtype == 'float32'
 
 
-BPTT = [3, 32]
+BPTT = [6, 10]
 @pytest.mark.parametrize("batch_size", BATCH_SIZES)
 @pytest.mark.parametrize("bptt", BPTT)
 @pytest.mark.parametrize("train", TRAIN)
@@ -118,9 +118,7 @@ def submit_cifar10():
 
 
 def submit_ptb():
-    # devices = [kim.cpu(), kim.cuda()] if kim.cuda().enabled() else [kim.cpu()]
     devices = [kim.cpu(), kim.cuda()]
-
     corpus = kim.data.Corpus("data/ptb")
     mugrade_submit(np.array(len(corpus.dictionary)))
     for train in TRAIN:
@@ -129,10 +127,18 @@ def submit_ptb():
                 data = kim.data.batchify(corpus.train, batch_size, device=device, dtype="float32")
             else:
                 data = kim.data.batchify(corpus.test, batch_size, device=device, dtype="float32")
-            X, y = kim.data.get_batch(data, np.random.randint(len(data)), bptt)
+
+            i = np.random.randint(len(data))
+            X, y = kim.data.get_batch(data, i, bptt)
+
+            print("\n>>>", train, batch_size, bptt, data.shape, i)
             mugrade_submit(np.array(len(data)))
+            
             mugrade_submit(X.numpy()[0, :])
+            # False 5 6, False 3 10,
+            
             mugrade_submit(y.numpy()[0])
+            # True 5 10, False 3 6, 
 
 
 if __name__ == "__main__":

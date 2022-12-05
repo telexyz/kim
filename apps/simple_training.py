@@ -145,7 +145,7 @@ def epoch_general_ptb(data, model, started_at, seq_len=40, loss_fn=nn.SoftmaxLos
             opt.reset_grad()
             loss.backward()
             opt.step()
-        niter += 1; n += y.shape[0] # n += batch_size
+        niter += 1; n += batch_size
         if niter % 10 == 0:
             time_passed = datetime.timedelta(seconds=timer() - started_at)
             print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, correct/n, total_loss/niter, time_passed))
@@ -229,9 +229,10 @@ if __name__ == "__main__":
     #      lr=0.001, weight_decay=0.001)
 
     corpus = kim.data.Corpus("../data/ptb")
-    seq_len = 40
-    batch_size = 16
-    hidden_size = 100
+    seq_len = 40 # ko được thay đổi, nếu ko loss sẽ tăng
+    batch_size = 16 # ko được thay đổi, nếu ko loss sẽ tăng
+    hidden_size = 128
+
     train_data = kim.data.batchify(corpus.train, batch_size, device=device, dtype="float32")
     model = LanguageModel(1, len(corpus.dictionary), hidden_size, num_layers=2, device=device)
     train_ptb(model, train_data, seq_len, n_epochs=10, device=device)

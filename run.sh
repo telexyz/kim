@@ -24,8 +24,8 @@ python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "submit_ptb"
 python3 -m pytest -l -v -k "ptb_dataset"
 
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "language_model"
-python3 -m pytest -k "language_model_implementation"
-python3 -m pytest -k "language_model_training"
+python3 -m pytest -l -v -k "language_model_implementation"
+python3 -m pytest -l -v -k "language_model_training"
 
 python3 -m pytest tests/test_sequence_models.py
 

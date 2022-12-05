@@ -564,9 +564,10 @@ class NDArray:
         """
 
         assert self.ndim == 2 and other.ndim == 2, "matmul 2D arrays only"
-        assert self.shape[1] == other.shape[0]
-
-        m, n, p = self.shape[0], self.shape[1], other.shape[1]
+        m, n = self.shape
+        n_, p = other.shape
+        assert n == n_, f"cannot matmul %s and %s" % (self.shape, other.shape)
+        assert self.device == other.device, "cannot matmul diff devices %s and %s" % (self.device, other.device)
 
         # if the matrix is aligned, use tiled matrix multiplication
         if hasattr(self.device, "matmul_tiled") and all(

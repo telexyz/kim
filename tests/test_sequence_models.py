@@ -331,6 +331,9 @@ def submit_language_model():
         h0 = kim.Tensor(np.random.randn(num_layers, batch_size, hidden_size).astype(np.float32), device=device)
         c0 = kim.Tensor(np.random.randn(num_layers, batch_size, hidden_size).astype(np.float32), device=device)
         model = LanguageModel(embedding_size, output_size, hidden_size, num_layers, seq_model, device=device)
+   
+        print("\n>>>", device, seq_length, num_layers, batch_size, embedding_size, hidden_size, seq_model, output_size)
+
         if seq_model == 'lstm':
             h = (h0, c0)
         elif seq_model == 'rnn':

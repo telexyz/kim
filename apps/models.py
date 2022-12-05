@@ -66,7 +66,7 @@ class LanguageModel(nn.Module):
         model = nn.RNN if seq_model == 'rnn' else nn.LSTM
         self.embedding = nn.Embedding(output_size, embedding_size, device=device)
         self.model = model(embedding_size, hidden_size, num_layers=num_layers, device=device)
-        self.linear = nn.Linear(hidden_size, output_size)
+        self.linear = nn.Linear(hidden_size, output_size, device=device)
 
 
     def forward(self, x, h=None):

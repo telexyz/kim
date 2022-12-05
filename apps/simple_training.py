@@ -140,13 +140,13 @@ def epoch_general_ptb(data, model, started_at, seq_len=40, loss_fn=nn.SoftmaxLos
         out = model(X)[0]
         loss = loss_fn(out, y)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
-        total_loss += loss.data.numpy()
+        total_loss += loss.numpy()
         if training:
             opt.reset_grad()
             loss.backward()
             opt.step()
         niter += 1; n += batch_size
-        if niter % 10 == 0:
+        if niter % 20 == 0:
             time_passed = datetime.timedelta(seconds=timer() - started_at)
             print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, correct/n, total_loss/niter, time_passed))
 
@@ -216,7 +216,7 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
 
 if __name__ == "__main__":
     ### For testing purposes
-    device = kim.cuda()
+    device = None
     #dataset = kim.data.CIFAR10Dataset("./data/cifar-10-batches-py", train=True)
     #dataloader = kim.data.DataLoader(\
     #         dataset=dataset,
@@ -234,5 +234,10 @@ if __name__ == "__main__":
     hidden_size = 128
 
     train_data = kim.data.batchify(corpus.train, batch_size, device=device, dtype="float32")
+    print("Train data:", train_data.shape)
+    print("seq, batch, hidden:", seq_len, batch_size, hidden_size)
     model = LanguageModel(1, len(corpus.dictionary), hidden_size, num_layers=2, device=device)
     train_ptb(model, train_data, seq_len, n_epochs=10, device=device)
+
+    test_data = kim.data.batchify(corpus.test, batch_size, device=device, dtype="float32")
+    evaluate_ptb(model, test_data, seq_len, device=device)

@@ -594,7 +594,7 @@ class LSTM(Module):
 
 
 class Embedding(Module):
-    def __init__(self, num_embeddings, embedding_dim, device=None, dtype="float32"):
+    def __init__(self, dict_size, embed_dim, device=None, dtype="float32"):
         super().__init__()
         """
         Maps one-hot word vectors from a dictionary of fixed size to embeddings.
@@ -604,12 +604,13 @@ class Embedding(Module):
         embedding_dim (int) - The size of each embedding vector
 
         Variables:
-        weight - The learnable weights of shape (num_embeddings, embedding_dim)
-            initialized from N(0, 1).
+        weight - The learnable weights of shape (num_embeddings, embedding_dim) initialized from N(0, 1).
         """
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        self.num_embeddings = dict_size
+        self.embedding_dim = embed_dim
+        self.device = device
+        self.weight = Parameter(init.rand(dict_size, embed_dim, low=0, high=1, device=device))
+        self.eye = np.eye(self.num_embeddings, dtype=dtype)
 
 
     def forward(self, x: Tensor) -> Tensor:
@@ -622,10 +623,10 @@ class Embedding(Module):
         Output:
         output of shape (seq_len, bs, embedding_dim)
         """
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
-
+        #    x of shape (seq_len, bs) convert to one-hot vectors
+        # => y of shape (seq_len, bs, num_embeddings)
+        y = Tensor(NDArray(self.eye[x.astype("int")], device=self.device))
+        return y @ self.weight
 
 # - - - - - - - - - - - - -
 # Transformer

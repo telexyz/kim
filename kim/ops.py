@@ -274,39 +274,33 @@ def reshape(a, shape):
 class BroadcastTo(TensorOp):
     def __init__(self, shape):
         self.shape = shape
+        self.new_shape = None
 
     def compute(self, a):
         n = len(a.shape)
-        if n < len(self.shape):
-            shape = []
+        if n == len(self.shape):
+            self.new_shape = a.shape
+        else:
+            new_shape = []
             k = 0
             for i in range(len(self.shape)):
                 if n == 0 or k == n:
-                    shape.insert(0, 1)
+                    new_shape.insert(0, 1)
                 else:
-                    shape.append(a.shape[k])
+                    new_shape.append(a.shape[k])
                     k += 1
-            a = a.reshape(tuple(shape))
+
+            self.new_shape = tuple(new_shape)
+            a = a.reshape(self.new_shape)
 
         return array_api.broadcast_to(a, self.shape)
 
+
     def gradient(self, out_grad, node):
         a = node.inputs[0]
-
         axes = ()
-        n = len(a.shape)
-        if n == len(self.shape):
-            for i in range(len(self.shape)):
-                if i >= n or self.shape[i] != a.shape[i]:
-                    axes += (i,)
-        else:
-            k = 0
-            for i in range(len(self.shape)):
-                if n == 0 or self.shape[i] != a.shape[k]:
-                    axes += (i,)
-                else:
-                    k += 1
-
+        for i, x in enumerate(self.new_shape):
+            if x == 1: axes += (i,)
         accum_grads = summation(out_grad, axes=axes)
         return reshape(accum_grads, a.shape),
 

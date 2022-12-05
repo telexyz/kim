@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 import kim
 import kim.nn as nn
 from kim import backend_ndarray as nd
@@ -226,7 +228,7 @@ if __name__ == "__main__":
     #train_cifar10(model, dataloader, n_epochs=10, optimizer=kim.optim.Adam,
     #      lr=0.001, weight_decay=0.001)
 
-    corpus = kim.data.Corpus("./data/ptb")
+    corpus = kim.data.Corpus("../data/ptb")
     seq_len = 40
     batch_size = 16
     hidden_size = 100

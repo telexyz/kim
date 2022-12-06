@@ -251,13 +251,12 @@ class NDArray:
 
     def compact(self) -> "NDArray":
         """ Convert a matrix to be compact """
-        if self.is_compact():
+        if self.is_compact(): # or self.device == cuda_triton():
             return self
         else:
             '''Tạo một compact NDArray mới và copy dữ liệu sang'''
             out = NDArray.make(self.shape, device=self.device)
-            self.device.compact(self._handle, out._handle, 
-                self._shape, self._strides, self._offset)
+            self.device.compact(self._handle, out._handle, self._shape, self._strides, self._offset)
             return out
 
 

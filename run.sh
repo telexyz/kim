@@ -1,7 +1,9 @@
 # Train and test cifar10
 # - - - - - - - - - - - 
+# ./get_data.py
 # cd apps
-# KIM_BACKEND=cuda python3 cifar10.py
+# python3 cifar10.py
+# KIM_DEVICE=cuda_triton python3 simple_training.py
 
 # Common tests for a specific backend
 # - - - - - - - - - - - - - - - - - -

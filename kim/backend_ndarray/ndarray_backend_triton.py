@@ -20,12 +20,14 @@ class Array:
 
 _datatype_size = np.dtype(np.float32).itemsize
 def to_numpy(a, shape, strides, offset) -> np.ndarray:
-    # return torch.as_strided(a.array, shape, strides, storage_offset=offset).cpu().numpy()
-    # Note: torch.as_strided only works with positive strides so must use numpy's stride_tricks
-    array = a.array.cpu().numpy()
-    return np.lib.stride_tricks.as_strided(
-        array[offset:], shape, tuple([s * _datatype_size for s in strides])
-    )
+    if all(s > 0 for s in strides):
+        return torch.as_strided(a.array, shape, strides, storage_offset=offset).cpu().numpy()
+    else:
+        # Note: torch.as_strided only works with positive strides so must use numpy's stride_tricks
+        array = a.array.cpu().numpy()
+        return np.lib.stride_tricks.as_strided(
+            array[offset:], shape, tuple([s * _datatype_size for s in strides])
+        )
 
 def from_numpy(a, out): out.array[:] = torch.from_numpy(a.flatten())
 

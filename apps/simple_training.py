@@ -104,7 +104,7 @@ def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
 
 
 ### PTB training ###
-def epoch_general_ptb(data, model, started_at, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=None,
+def epoch_general_ptb(data, model, started_at, step=1, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=None,
         clip=None, device=None, dtype="float32"):
     """
     Iterates over the data. If optimizer is not None, sets the
@@ -133,10 +133,10 @@ def epoch_general_ptb(data, model, started_at, seq_len=40, loss_fn=nn.SoftmaxLos
     correct, total_loss = 0, 0
     n = 0; niter = 0
     nbatch, batch_size = data.shape
-    # print(">>>", data.shape, seq_len)
-    # assert False
-    for i in range(nbatch - seq_len):
-        X, y = kim.data.get_batch(data, i, seq_len)
+
+    total = (nbatch - seq_len) // step
+    for i in range(total):
+        X, y = kim.data.get_batch(data, i * step, seq_len)
         out = model(X)[0]
         loss = loss_fn(out, y)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
@@ -148,13 +148,13 @@ def epoch_general_ptb(data, model, started_at, seq_len=40, loss_fn=nn.SoftmaxLos
         niter += 1; n += batch_size
         if niter % 20 == 0:
             time_passed = datetime.timedelta(seconds=timer() - started_at)
-            print("iter: %s, acc: %.5f, loss: %.5f (%s)" % (niter, correct/n, total_loss/niter, time_passed))
+            print("iter: %s/%s, acc: %.5f, loss: %.5f (%s)" % (niter, total, correct/n, total_loss/niter, time_passed))
 
     return correct/n, total_loss/niter
     ### END YOUR SOLUTION
 
 
-def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=kim.optim.SGD,
+def train_ptb(model, data, seq_len=40, n_epochs=1, step=1, optimizer=kim.optim.SGD,
           lr=4.0, weight_decay=0.0, loss_fn=nn.SoftmaxLoss, clip=None,
           device=None, dtype="float32"):
     """
@@ -181,7 +181,7 @@ def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=kim.optim.SGD,
     lf = loss_fn()
     started_at = timer()
     for epoch in range(n_epochs):
-        avg_acc, avg_loss = epoch_general_ptb(data, model, started_at, loss_fn=lf, opt=opt, seq_len=seq_len)
+        avg_acc, avg_loss = epoch_general_ptb(data, model, started_at, step=step, loss_fn=lf, opt=opt, seq_len=seq_len)
         time_passed = datetime.timedelta(seconds=timer() - started_at)
         print("\n>>> Training epoch: %s, acc: %s, loss: %s (%s)\n" % (epoch, avg_acc, avg_loss, time_passed))
     return avg_acc, avg_loss
@@ -232,12 +232,15 @@ if __name__ == "__main__":
     seq_len = 40 # ko được thay đổi, nếu ko loss sẽ tăng
     batch_size = 16 # ko được thay đổi, nếu ko loss sẽ tăng
     hidden_size = 128
+    embedding_dim = 2
+    n_epochs = 1
+    step = 2
 
     train_data = kim.data.batchify(corpus.train, batch_size, device=device, dtype="float32")
     print("Train data:", train_data.shape)
-    print("seq, batch, hidden:", seq_len, batch_size, hidden_size)
-    model = LanguageModel(1, len(corpus.dictionary), hidden_size, num_layers=2, device=device)
-    train_ptb(model, train_data, seq_len, n_epochs=10, device=device)
+    print("seq, batch, hidden, embed, epochs:", seq_len, batch_size, hidden_size, embedding_dim, n_epochs)
+    model = LanguageModel(embedding_dim, len(corpus.dictionary), hidden_size, num_layers=2, device=device)
+    train_ptb(model, train_data, seq_len, step=step, n_epochs=n_epochs, device=device)
 
     test_data = kim.data.batchify(corpus.test, batch_size, device=device, dtype="float32")
     evaluate_ptb(model, test_data, seq_len, device=device)

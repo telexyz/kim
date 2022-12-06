@@ -8,6 +8,16 @@ import numpy as np
 from kim import backend_ndarray as nd
 from kim import init
 
+# numpy backend vs other backend united interfaces
+def compact(a):
+    if array_api == np: return a
+    else: return a.compact()
+
+def make(ndarray, shape, array):
+    if ndarray == np.ndarray: return np.empty(shape)
+    else: return ndarray.make(shape, device=array.device)
+
+# - - - -
 
 class MakeTensorTuple(TensorTupleOp):
     def compute(self, *args) -> tuple: return tuple(args)
@@ -58,7 +68,7 @@ class Stack(TensorOp):
         shape = list(array0.shape)
         shape.insert(self.axis, len(arrays)) # thêm 1 chiều không gian nữa
         idxs = [ slice(0, shape[i], 1) for i in range(len(shape)) ]
-        out = NDArray.make(shape, device=array0.device)
+        out = make(NDArray, shape, array0)
         for i, arrayi in enumerate(arrays):
             assert array0.shape == arrayi.shape, "stacked arrays must be same shape"
             idxs[self.axis] = slice(i, i+1, 1) # gán dữ liệu vào từng lát cát của chiều self.axis
@@ -103,7 +113,7 @@ class Split(TensorTupleOp):
             start = i * offset
             idxs[self.axis] = slice(start, start + offset, 1)
             a = A.__getitem__(tuple(idxs))
-            out.append(a.compact().reshape(shape))
+            out.append(compact(a).reshape(shape))
         # 
         return tuple(out)
 
@@ -554,8 +564,6 @@ class Flip(TensorOp):
 def flip(a, axes):
     return Flip(axes)(a)
 
-
-
 class Dilate(TensorOp):
     def __init__(self, axes: tuple, dilation: int):
         self.axes = axes
@@ -571,7 +579,7 @@ class Dilate(TensorOp):
             # 1 ô cho phần tử gốc và self.dilation ô cho 0 padding
             idxs[axis] = slice(0, new_shape[axis], 1 + self.dilation)
         out = a.device.zeros(*new_shape)
-        out.__setitem__(tuple(idxs), a.compact())
+        out.__setitem__(tuple(idxs), compact(a))
         return out
 
     def gradient(self, out_grad, node):

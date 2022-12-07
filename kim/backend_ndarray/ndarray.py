@@ -256,7 +256,7 @@ class NDArray:
         else:
             '''Tạo một compact NDArray mới và copy dữ liệu sang'''
             out = NDArray.make(self.shape, device=self.device)
-            self.device.compact(self._handle, out._handle, self._shape, self._strides, self._offset)
+            self.device.compact(self._handle, out._handle, out._strides, self._shape, self._strides, self._offset)
             return out
 
 

@@ -44,8 +44,8 @@ void Fill(AlignedArray* out, scalar_t val) {
 }
 
 
-void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> shape,
-             std::vector<int32_t> strides, size_t offset) {
+void Compact(const AlignedArray& a, AlignedArray* out, std::vector<int32_t> out_strides,
+      std::vector<uint32_t> shape, std::vector<int32_t> strides, size_t offset) {
   /**
    * Compact an array in memory
    *

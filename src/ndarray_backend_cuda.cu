@@ -88,7 +88,7 @@ void Fill(CudaArray* out, scalar_t val) {
 
 // Untility function to convert contiguous index i to memory location from strides
 
-__global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, 
+__global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, CudaVec out_strides, 
     CudaVec shape, CudaVec strides, size_t offset) {
   /**
    * The CUDA kernel for the compact operation.
@@ -108,12 +108,11 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size,
     /// BEGIN YOUR SOLUTION
     size_t a_idx = offset; 
     size_t remain = gid;
-    size_t stride = size;
     size_t indexx = 0;
     for(size_t i = 0; i < shape.size; i++) {
-      stride = stride / shape.data[i];
+      size_t stride = out_strides.data[i];
       indexx = remain / stride;
-      remain = remain % stride;
+      remain = remain - stride * indexx;
       a_idx += strides.data[i] * indexx;
     }
     out[gid] = a[a_idx];
@@ -121,8 +120,8 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size,
   }
 }
 
-void Compact(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape,
-             std::vector<int32_t> strides, size_t offset) {
+void Compact(const CudaArray& a, CudaArray* out, std::vector<int32_t> out_strides,
+        std::vector<int32_t> shape, std::vector<int32_t> strides, size_t offset) {
   /**
    * Compact an array in memory. Unlike the C++ version, in CUDA this will 
    * primarily call the relevant CUDA kernel. In this case, we illustrate 
@@ -139,7 +138,7 @@ void Compact(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape,
    *   offset: offset of the *a* array (not out, which has zero offset)
    */
   CudaDims dim = CudaOneDim(out->size);
-  CompactKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, 
+  CompactKernel<<<dim.grid, dim.block>>>(a.ptr, out->ptr, out->size, VecToCuda(out_strides),
     VecToCuda(shape), VecToCuda(strides), offset);
 }
 

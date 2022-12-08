@@ -1,3 +1,5 @@
+#!/home/t/anaconda3/envs/kim/bin/python3
+
 import sys
 sys.path.append('..')
 import kim
@@ -104,7 +106,7 @@ def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
 
 
 ### PTB training ###
-def epoch_general_ptb(data, model, started_at, step=1, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=None,
+def epoch_general_ptb(data, model, started_at, step=None, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=None,
         clip=None, device=None, dtype="float32"):
     """
     Iterates over the data. If optimizer is not None, sets the
@@ -130,31 +132,44 @@ def epoch_general_ptb(data, model, started_at, step=1, seq_len=40, loss_fn=nn.So
     if training: model.train()
     else: model.eval()
 
-    correct, total_loss = 0, 0
-    n = 0; niter = 0
-    nbatch, batch_size = data.shape
+    correct, total_loss, n, niter = 0, 0, 0, 0
+    total_seq_len, batch_size = data.shape
 
-    total = (nbatch - seq_len) // step
-    for i in range(total):
+    if step is None: step = seq_len
+    total_steps = (total_seq_len - seq_len) // step
+
+    hiddens = None
+    for i in range(total_steps):
         X, y = kim.data.get_batch(data, i * step, seq_len)
-        out = model(X)[0]
+        out, hiddens = model(X, hiddens)
+
+        # detach hiddens
+        if isinstance(model, nn.LSTM):
+            h, c = hiddens
+            hiddens = (h.detach(), c.detach())
+        else: hiddens = hiddens.detach()
+
         loss = loss_fn(out, y)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
         total_loss += loss.numpy()
+
         if training:
             opt.reset_grad()
             loss.backward()
             opt.step()
-        niter += 1; n += batch_size
+
+        niter += 1
+        n += batch_size
+
         if niter % 20 == 0:
             time_passed = datetime.timedelta(seconds=timer() - started_at)
-            print("iter: %s/%s, acc: %.5f, loss: %.5f (%s)" % (niter, total, correct/n, total_loss/niter, time_passed))
+            print("iter: %s/%s, acc: %.5f, loss: %.5f (%s)" % (niter, total_steps, correct/n, total_loss/niter, time_passed))
 
     return correct/n, total_loss/niter
     ### END YOUR SOLUTION
 
 
-def train_ptb(model, data, seq_len=40, n_epochs=1, step=1, optimizer=kim.optim.SGD,
+def train_ptb(model, data, seq_len=40, n_epochs=1, step=None, optimizer=kim.optim.SGD,
           lr=4.0, weight_decay=0.0, loss_fn=nn.SoftmaxLoss, clip=None,
           device=None, dtype="float32"):
     """
@@ -213,28 +228,17 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
     return avg_acc, avg_loss
     ### END YOUR SOLUTION
 
-
 if __name__ == "__main__":
     ### For testing purposes
     device = None
-    #dataset = kim.data.CIFAR10Dataset("./data/cifar-10-batches-py", train=True)
-    #dataloader = kim.data.DataLoader(\
-    #         dataset=dataset,
-    #         batch_size=128,
-    #         shuffle=True
-    #         )
-    #
-    #model = ResNet9(device=device, dtype="float32")
-    #train_cifar10(model, dataloader, n_epochs=10, optimizer=kim.optim.Adam,
-    #      lr=0.001, weight_decay=0.001)
 
     corpus = kim.data.Corpus("../data/ptb")
     seq_len = 40 # ko được thay đổi, nếu ko loss sẽ tăng
     batch_size = 16 # ko được thay đổi, nếu ko loss sẽ tăng
     hidden_size = 128
     embedding_dim = 2
-    n_epochs = 1
-    step = 2
+    n_epochs = 3
+    step = seq_len
 
     train_data = kim.data.batchify(corpus.train, batch_size, device=device, dtype="float32")
     print("Train data:", train_data.shape)

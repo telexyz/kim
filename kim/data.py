@@ -325,7 +325,7 @@ class Corpus(object):
         return self.dictionary.lookup(idx)
 
 
-def batchify(data, batch_size, device, dtype):
+def batchify(data, batch_size, device=None, dtype="float32"):
     """
     Starting from sequential data, batchify arranges the dataset into columns.
     For instance, with the alphabet as the sequence and batch size 4, we'd get

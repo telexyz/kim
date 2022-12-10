@@ -1,10 +1,10 @@
-DEFAULT_DEVICE = "cpu_numpy"
-# DEFAULT_DEVICE = "cuda"
+# DEFAULT_DEVICE = "cpu_numpy"
+DEFAULT_DEVICE = "cuda"
 # DEFAULT_DEVICE = "cuda_triton"
 
 import operator
 import math
-from functools import reduce
+from functools impqort reduce
 import numpy as np
 from . import ndarray_backend_numpy
 from . import ndarray_backend_cpu

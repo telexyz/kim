@@ -267,7 +267,6 @@ class NDArray:
 
 
     def reshape(self, new_shape: tuple) -> "NDArray":
-        self = self.compact()
         """
         Reshape the matrix without copying memory. This will return a matrix
         that corresponds to a reshaped array but points to the same memory as
@@ -280,7 +279,6 @@ class NDArray:
         Returns:
             NDArray: reshaped array; this will point to the same memory as the original NDArray.
         """
-        assert self.is_compact(), "ndarray x must be compact before x.reshape()"
 
         # Xử lý riêng cho trường hợp reshape((-1, n))
         if len(new_shape) == 2 and new_shape[0] == -1 and new_shape[1] > 0:
@@ -288,7 +286,14 @@ class NDArray:
 
         assert prod(self.shape) == prod(new_shape), f"cannot reshape %s to %s" % (self.shape, new_shape)
         new_strides = NDArray.compact_strides(new_shape)
-        return self.as_strided(new_shape, new_strides)
+
+        strides_is_compact = ( self._strides == NDArray.compact_strides(self._shape) )
+        if strides_is_compact:
+            return NDArray.make(new_shape, strides=new_strides, device=self.device, 
+                handle=self._handle, offset=self._offset)
+        else:
+            self = self.compact()
+            return self.as_strided(new_shape, new_strides)
 
 
     def permute(self, new_axes: tuple) -> "NDArray":

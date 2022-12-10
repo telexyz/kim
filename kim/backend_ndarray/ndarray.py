@@ -445,7 +445,7 @@ class NDArray:
         assert len(new_shape) == len(new_strides)
         return NDArray.make(
             tuple(new_shape), strides=tuple(new_strides), device=self.device, 
-            handle=self._handle, offset=new_offset
+            handle=self._handle, offset=self._offset + new_offset
         )
 
 
@@ -509,47 +509,51 @@ class NDArray:
         return self.ewise_or_scalar(
             other, self.device.ewise_div, self.device.scalar_div)
 
-    def __pow__(self, other) -> "NDArray":
-        out = NDArray.make(self.shape, device=self.device)
-        self.device.scalar_power(self._handle, other, out._handle)
-        return out
-
     def maximum(self, other) -> "NDArray":
         return self.ewise_or_scalar(
             other, self.device.ewise_maximum, self.device.scalar_maximum)
 
     ### Binary operators all return (0.0, 1.0) floating point values, could of course be optimized
-    def __eq__(self, other):
+    def __eq__(self, other) -> "NDArray":
         return self.ewise_or_scalar(other, self.device.ewise_eq, self.device.scalar_eq)
 
-    def __ge__(self, other):
+    def __ge__(self, other) -> "NDArray":
         return self.ewise_or_scalar(other, self.device.ewise_ge, self.device.scalar_ge)
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> "NDArray":
         return 1 - (self == other)
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> "NDArray":
         return (self >= other) * (self != other)
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> "NDArray":
         return 1 - (self >= other)
 
-    def __le__(self, other):
+    def __le__(self, other) -> "NDArray":
         return 1 - (self > other)
 
     ### Elementwise functions
 
+    def __pow__(self, other) -> "NDArray":
+        self = self.compact()
+        out = NDArray.make(self.shape, device=self.device)
+        self.device.scalar_power(self._handle, other, out._handle)
+        return out
+
     def log(self) -> "NDArray":
+        self = self.compact()
         out = NDArray.make(self.shape, device=self.device)
         self.device.ewise_log(self._handle, out._handle)
         return out
 
     def exp(self) -> "NDArray":
+        self = self.compact()
         out = NDArray.make(self.shape, device=self.device)
         self.device.ewise_exp(self._handle, out._handle)
         return out
 
     def tanh(self) -> "NDArray":
+        self = self.compact()
         out = NDArray.make(self.shape, device=self.device)
         self.device.ewise_tanh(self._handle, out._handle)
         return out

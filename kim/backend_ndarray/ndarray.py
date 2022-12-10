@@ -289,10 +289,11 @@ class NDArray:
 
         strides_is_compact = ( self._strides == NDArray.compact_strides(self._shape) )
         if strides_is_compact:
+            assert self._offset == 0, ">>> OFFSET NOT ZERO "
             return NDArray.make(new_shape, strides=new_strides, device=self.device, 
                 handle=self._handle, offset=self._offset)
         else:
-            self = self.compact()
+            # self = self.compact()
             return self.as_strided(new_shape, new_strides)
 
 

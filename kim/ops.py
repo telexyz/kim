@@ -113,7 +113,7 @@ class Split(TensorTupleOp):
             start = i * offset
             idxs[self.axis] = slice(start, start + offset, 1)
             a = A.__getitem__(tuple(idxs))
-            out.append(compact(a).reshape(shape))
+            out.append(a.reshape(shape))
         # 
         return tuple(out)
 
@@ -358,11 +358,11 @@ class MatMul(TensorOp):
         # 2D @ nD
         if a.ndim == 2:
             if b.ndim == 3:
-                c = b.permute((1,2,0)).compact().reshape((b.shape[1], b.shape[2]*b.shape[0]))
+                c = b.permute((1,2,0)).reshape((b.shape[1], b.shape[2]*b.shape[0]))
                 return (a @ c).reshape((a.shape[0], b.shape[2], b.shape[0])).permute((2,0,1))
 
             assert b.ndim == 4, "MatMul: Only support 2D @ 3,4D MatMul"
-            c = b.permute((2,3,0,1)).compact().reshape((b.shape[2], b.shape[3]*b.shape[0]*b.shape[1]))
+            c = b.permute((2,3,0,1)).reshape((b.shape[2], b.shape[3]*b.shape[0]*b.shape[1]))
             return (a @ c).reshape((a.shape[0], b.shape[3], b.shape[0], b.shape[1])).permute((3,0,1,2))
 
         # nD @ 2D
@@ -379,8 +379,8 @@ class MatMul(TensorOp):
             assert a.shape[0] == b.shape[0], "MatMul: Batch need to be same size"
             c = NDArray.make((a.shape[0], a.shape[-2], b.shape[-1]), device=a.device)
             for i in range(a.shape[0]):
-                _a = a[i,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
-                _b = b[i,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
+                _a = a[i,:,:].reshape((a.shape[-2], a.shape[-1]))
+                _b = b[i,:,:].reshape((b.shape[-2], b.shape[-1]))
                 c[i,:,:] = (_a @ _b).reshape((1, a.shape[-2], b.shape[-1]))
             return c
 
@@ -388,9 +388,9 @@ class MatMul(TensorOp):
         if b.ndim == 4 and a.ndim == 3 and b.shape[1] == a.shape[0]:
             c = NDArray.make((b.shape[0], a.shape[-3], a.shape[-2], b.shape[-1]), device=a.device)
             for i in range(a.shape[0]):
-                _a = a[i,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
+                _a = a[i,:,:].reshape((a.shape[-2], a.shape[-1]))
                 for j in range(b.shape[0]):
-                    _b = b[j,i,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
+                    _b = b[j,i,:,:].reshape((b.shape[-2], b.shape[-1]))
                     c[j,i,:,:] = (_a @ _b).reshape((1, 1, a.shape[-2], b.shape[-1]))
             return c
 
@@ -399,8 +399,8 @@ class MatMul(TensorOp):
             c = NDArray.make((a.shape[-4], a.shape[-3], a.shape[-2], b.shape[-1]), device=a.device)
             for i in range(a.shape[0]):
                 for j in range(b.shape[1]):
-                    _a = a[i,j,:,:].compact().reshape((a.shape[-2], a.shape[-1]))
-                    _b = b[i,j,:,:].compact().reshape((b.shape[-2], b.shape[-1]))
+                    _a = a[i,j,:,:].reshape((a.shape[-2], a.shape[-1]))
+                    _b = b[i,j,:,:].reshape((b.shape[-2], b.shape[-1]))
                     c[i,j,:,:] = (_a @ _b).reshape((1, 1, a.shape[-2], b.shape[-1]))
             return c
 
@@ -579,7 +579,7 @@ class Dilate(TensorOp):
             # 1 ô cho phần tử gốc và self.dilation ô cho 0 padding
             idxs[axis] = slice(0, new_shape[axis], 1 + self.dilation)
         out = a.device.zeros(*new_shape)
-        out.__setitem__(tuple(idxs), compact(a))
+        out.__setitem__(tuple(idxs), a)
         return out
 
     def gradient(self, out_grad, node):
@@ -626,9 +626,9 @@ class Conv(TensorOp):
         # img2col multi-channel conv
         inner_dim = K * K * C_in
         A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
-        A = A.compact().reshape((-1, inner_dim))
+        A = A.reshape((-1, inner_dim))
 
-        out = A @ weight.compact().reshape((-1, C_out))
+        out = A @ weight.reshape((-1, C_out))
         out = out.reshape((N, H-K+1, W-K+1, C_out))
 
         # stride or not stride

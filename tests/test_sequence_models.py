@@ -19,7 +19,7 @@ np.random.seed(3)
 
 BATCH_SIZES = [1, 15]
 INPUT_SIZES = [1, 11]
-HIDDEN_SIZES = [1, 2, 12]
+HIDDEN_SIZES = [1, 12]
 BIAS = [True, False]
 INIT_HIDDEN = [True, False]
 NONLINEARITIES = ['tanh', 'relu']
@@ -64,7 +64,6 @@ def test_rnn_cell(batch_size, input_size, hidden_size, bias, init_hidden, nonlin
 @pytest.mark.parametrize("init_hidden", INIT_HIDDEN)
 @pytest.mark.parametrize("device", _DEVICES, ids=CPU_CUDA)
 def test_lstm_cell(batch_size, input_size, hidden_size, bias, init_hidden, device):
-    # print(">>>", hidden_size) # lstm cell fail at hidden_size > 1
     x = np.random.randn(batch_size, input_size).astype(np.float32)
     h0 = np.random.randn(batch_size, hidden_size).astype(np.float32)
     c0 = np.random.randn(batch_size, hidden_size).astype(np.float32)

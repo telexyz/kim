@@ -263,7 +263,10 @@ class NDArray:
     def as_strided(self, shape: tuple, strides: tuple) -> "NDArray":
         """ Restride the matrix without copying memory. """
         assert len(shape) == len(strides)
-        return NDArray.make(shape, strides=strides, device=self.device, handle=self._handle)
+        return NDArray.make(shape, strides=strides, device=self.device, handle=self._handle, offset=self._offset)
+
+    def strides_is_compact(self) -> bool:
+        return self._strides == NDArray.compact_strides(self._shape)
 
 
     def reshape(self, new_shape: tuple) -> "NDArray":
@@ -287,14 +290,9 @@ class NDArray:
         assert prod(self.shape) == prod(new_shape), f"cannot reshape %s to %s" % (self.shape, new_shape)
         new_strides = NDArray.compact_strides(new_shape)
 
-        strides_is_compact = ( self._strides == NDArray.compact_strides(self._shape) )
-        if strides_is_compact:
-            assert self._offset == 0, ">>> OFFSET NOT ZERO "
-            return NDArray.make(new_shape, strides=new_strides, device=self.device, 
-                handle=self._handle, offset=self._offset)
-        else:
-            self = self.compact()
-            return self.as_strided(new_shape, new_strides)
+        # We need strides is compact if not hw4 tests will fail
+        if not self.strides_is_compact(): self = self.compact()
+        return self.as_strided(new_shape, new_strides)
 
 
     def permute(self, new_axes: tuple) -> "NDArray":
@@ -308,7 +306,7 @@ class NDArray:
           - For a 2D array, .permute((1,0)) would transpose the array.
 
         Like reshape, this operation should not copy memory, but achieves the
-        permuting by just adjusting the shape/strides of the array.  That is,
+        permuting by just adjusting the shape/strides of the array. That is,
         it returns a new array that has the dimensions permuted as desired, but
         which points to the same memory as the original array.
 
@@ -325,7 +323,7 @@ class NDArray:
         return self.as_strided(new_shape, new_strides)
 
 
-    def swapaxes(self, a1, a2) -> "NDArray":
+    def swapaxes(self, a1: "NDArray", a2: "NDArray") -> "NDArray":
         new_shape = list(self.shape)
         new_strides = list(self.strides)
 
@@ -407,7 +405,7 @@ class NDArray:
             corresponding to the subset of the matrix to get
         Returns:
             NDArray: a new NDArray object corresponding to the selected
-            subset of elements.  As before, this should not copy memory but just
+            subset of elements. As before, this should not copy memory but just
             manipulate the shape/strides/offset of the new array, referencing
             the same array as the original one.
         """
@@ -441,7 +439,7 @@ class NDArray:
 
         '''Returns:
             NDArray: a new NDArray object corresponding to the selected
-            subset of elements.  As before, this should not copy memory but just
+            subset of elements. As before, this should not copy memory but just
             manipulate the shape/strides/offset of the new array, referencing
             the same array as the original one.'''
         assert len(new_shape) == len(new_strides)
@@ -457,8 +455,9 @@ class NDArray:
         view = self.__getitem__(idxs)
         if isinstance(other, NDArray):
             assert prod(view.shape) == prod(other.shape)
+            other = other.compact() # other must be compact
             self.device.ewise_setitem(
-                other.compact()._handle,
+                other._handle,
                 view._handle,
                 view._shape,
                 view._strides,
@@ -480,12 +479,14 @@ class NDArray:
         """Run either an element-wise or scalar version of a function,
         depending on whether "other" is an NDArray or scalar
         """
+        self = self.compact()
         out = NDArray.make(self.shape, device=self.device)
         if isinstance(other, NDArray):
+            other = other.compact()
             assert self.shape == other.shape, "operation needs two equal-sized arrays"
-            ewise_func(self.compact()._handle, other.compact()._handle, out._handle)
+            ewise_func(self._handle, other._handle, out._handle)
         else:
-            scalar_func(self.compact()._handle, other, out._handle)
+            scalar_func(self._handle, other, out._handle)
         return out
 
     def __add__(self, other) -> "NDArray":
@@ -510,7 +511,7 @@ class NDArray:
 
     def __pow__(self, other) -> "NDArray":
         out = NDArray.make(self.shape, device=self.device)
-        self.device.scalar_power(self.compact()._handle, other, out._handle)
+        self.device.scalar_power(self._handle, other, out._handle)
         return out
 
     def maximum(self, other) -> "NDArray":
@@ -540,17 +541,17 @@ class NDArray:
 
     def log(self) -> "NDArray":
         out = NDArray.make(self.shape, device=self.device)
-        self.device.ewise_log(self.compact()._handle, out._handle)
+        self.device.ewise_log(self._handle, out._handle)
         return out
 
     def exp(self) -> "NDArray":
         out = NDArray.make(self.shape, device=self.device)
-        self.device.ewise_exp(self.compact()._handle, out._handle)
+        self.device.ewise_exp(self._handle, out._handle)
         return out
 
     def tanh(self) -> "NDArray":
         out = NDArray.make(self.shape, device=self.device)
-        self.device.ewise_tanh(self.compact()._handle, out._handle)
+        self.device.ewise_tanh(self._handle, out._handle)
         return out
 
 
@@ -577,38 +578,28 @@ class NDArray:
         n_, p = other.shape
         assert n == n_, f"cannot matmul %s and %s" % (self.shape, other.shape)
         assert self.device == other.device, "cannot matmul diff devices %s and %s" % (self.device, other.device)
-        self = self.compact()
-        other = other.compact()
+      
+        self, other = self.compact(), other.compact()
 
-        assert self.is_compact() and other.is_compact(), "matmul inputs must be compact"
-
-        # if the matrix is aligned, use tiled matrix multiplication
+        # if cpu device and the matrix is aligned, use tiled matrix multiplication
         if hasattr(self.device, "matmul_tiled") and all(
             d % self.device.__tile_size__ == 0 for d in (m, n, p)
         ):
-
             def tile(a, tile):
-                return a.as_strided(
-                    (a.shape[0] // tile, a.shape[1] // tile, tile, tile),
-                    (a.shape[1] * tile, tile, a.shape[1], 1),)
+                new_shape = (a.shape[0] // tile, a.shape[1] // tile, tile, tile)
+                new_strides = (a.shape[1] * tile, tile, a.shape[1], 1)
+                return a.as_strided(new_shape, new_strides).compact()
 
             t = self.device.__tile_size__
-            a = tile(self.compact(), t).compact()
-            b = tile(other.compact(), t).compact()
+            a, b = tile(self, t), tile(other, t)
             out = NDArray.make((a.shape[0], b.shape[1], t, t), device=self.device)
             self.device.matmul_tiled(a._handle, b._handle, out._handle, m, n, p)
 
-            return (
-                out.permute((0, 2, 1, 3))
-                .compact()
-                .reshape((self.shape[0], other.shape[1]))
-            )
+            return out.permute((0, 2, 1, 3)).reshape((self.shape[0], other.shape[1]))
 
         else:
             out = NDArray.make((m, p), device=self.device)
-            self.device.matmul(
-                self.compact()._handle, other.compact()._handle, out._handle, m, n, p
-            )
+            self.device.matmul(self._handle, other._handle, out._handle, m, n, p)
             return out
 
 
@@ -616,7 +607,7 @@ class NDArray:
     def reduce_view_out(self, axis, keepdims=False):
         """ Return a view to the array set up for reduction functions and output array. """
         if axis is None:
-            view = self.compact().reshape((1,) * (self.ndim - 1) + (prod(self.shape),))
+            view = self.reshape((1,) * (self.ndim - 1) + (prod(self.shape),))
             # out = NDArray.make((1,), device=self.device)
             if keepdims:
                 out = NDArray.make((1,) * self.ndim, device=self.device)
@@ -636,7 +627,7 @@ class NDArray:
         new_shape = new_shape + (prod([self.shape[x] for x in axes]),)
 
         view = self.permute(fixed_axes + axes)
-        if len(axes) > 1: view = view.compact().reshape(new_shape)
+        if len(axes) > 1: view = view.reshape(new_shape)
 
         # Create out
         if keepdims:
@@ -646,18 +637,18 @@ class NDArray:
 
         out = NDArray.make(tuple(new_shape), device=self.device)
 
-        return view, out
+        return view.compact(), out
 
 
     def sum(self, axis=None, keepdims=False):
         view, out = self.reduce_view_out(axis, keepdims=keepdims)
-        self.device.reduce_sum(view.compact()._handle, out._handle, view.shape[-1])
+        self.device.reduce_sum(view._handle, out._handle, view.shape[-1])
         return out
 
 
     def max(self, axis=None, keepdims=False):
         view, out = self.reduce_view_out(axis, keepdims=keepdims)
-        self.device.reduce_max(view.compact()._handle, out._handle, view.shape[-1])
+        self.device.reduce_max(view._handle, out._handle, view.shape[-1])
         return out
 
 
@@ -666,17 +657,18 @@ class NDArray:
         Flip this ndarray along the specified axes.
         Note: compact() before returning.
         """
-        x = self.compact()
         new_offset = 0
-        new_strides = list(x.strides)
+        new_strides = list(self.strides)
+
         for a in axes:
             new_strides[a] *= -1
-            offset = x.shape[a] - 1
-            for b in range(len(x.shape) - a - 1): offset *= x.shape[a + b + 1]
+            offset = self.shape[a] - 1
+            for b in range(len(self.shape) - a - 1): offset *= self.shape[a + b + 1]
             new_offset += offset
+
         out = NDArray.make(
-            x.shape, strides=tuple(new_strides), device=x.device, 
-            handle=x._handle, offset=new_offset
+            self.shape, strides=tuple(new_strides), device=self.device, 
+            handle=self._handle, offset=new_offset
         )
         return out.compact()
 
@@ -688,7 +680,7 @@ class NDArray:
             if axis >= a.ndim: return a # !!! Add this to pass mugrade !!!
             new_shape[axis] //= (dilation + 1)
             idxs[axis] = slice(0, a.shape[axis], dilation + 1)
-        return a.compact().__getitem__(tuple(idxs))
+        return a.__getitem__(tuple(idxs))
 
 
     def pad(self, axes):
@@ -706,7 +698,7 @@ class NDArray:
             shape[i] += axes[i][1]
 
         out = self.device.zeros(*shape)
-        out.__setitem__(idx, self.compact())
+        out.__setitem__(idx, self)
         return out
 
 

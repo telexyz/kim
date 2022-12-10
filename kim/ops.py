@@ -9,10 +9,6 @@ from kim import backend_ndarray as nd
 from kim import init
 
 # numpy backend vs other backend united interfaces
-def compact(a):
-    if array_api == np: return a
-    else: return a.compact()
-
 def make(ndarray, shape, array):
     if ndarray == np.ndarray: return np.empty(shape)
     else: return ndarray.make(shape, device=array.device)

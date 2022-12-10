@@ -21,6 +21,7 @@
 # hw4 #
 #######
 
+python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "resnet9"
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "submit_ptb"
 python3 -m mugrade submit _r1VOvEAgPZvLXFJ18agr -k "language_model"
 

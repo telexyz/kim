@@ -169,12 +169,11 @@ class NDArray:
     @staticmethod
     def compact_strides(shape) -> tuple:
         """ Utility function to compute compact strides """
-        stride = 1
-        res = []
-        for i in range(1, len(shape) + 1):
-            res.append(stride)
-            stride *= shape[-i]
-        return tuple(res[::-1])
+        strides = [1]
+        for n in reversed(shape):
+            strides.insert(0, strides[0] * n)
+        return tuple(strides[1:])
+
 
     @staticmethod
     def make(shape, strides=None, device=None, handle=None, offset=0) -> "NDArray":
@@ -247,7 +246,7 @@ class NDArray:
     def is_compact(self) -> bool:
         """Return true if array is compact in memory and internal size equals product
         of the shape dimensions"""
-        return (self._strides == self.compact_strides(self._shape)
+        return (self._strides == NDArray.compact_strides(self._shape)
             and prod(self.shape) == self._handle.size)
 
     def compact(self) -> "NDArray":
@@ -264,11 +263,11 @@ class NDArray:
     def as_strided(self, shape: tuple, strides: tuple) -> "NDArray":
         """ Restride the matrix without copying memory. """
         assert len(shape) == len(strides)
-        return NDArray.make(shape, strides=strides,
-            device=self.device, handle=self._handle)
+        return NDArray.make(shape, strides=strides, device=self.device, handle=self._handle)
 
 
     def reshape(self, new_shape: tuple) -> "NDArray":
+        self = self.compact()
         """
         Reshape the matrix without copying memory. This will return a matrix
         that corresponds to a reshaped array but points to the same memory as
@@ -281,10 +280,14 @@ class NDArray:
         Returns:
             NDArray: reshaped array; this will point to the same memory as the original NDArray.
         """
+        assert self.is_compact(), "ndarray x must be compact before x.reshape()"
+
+        # Xử lý riêng cho trường hợp reshape((-1, n))
         if len(new_shape) == 2 and new_shape[0] == -1 and new_shape[1] > 0:
             new_shape = (prod(self.shape) // new_shape[1], new_shape[1])
+
         assert prod(self.shape) == prod(new_shape), f"cannot reshape %s to %s" % (self.shape, new_shape)
-        new_strides = self.compact().compact_strides(new_shape)
+        new_strides = NDArray.compact_strides(new_shape)
         return self.as_strided(new_shape, new_strides)
 
 
@@ -568,6 +571,10 @@ class NDArray:
         n_, p = other.shape
         assert n == n_, f"cannot matmul %s and %s" % (self.shape, other.shape)
         assert self.device == other.device, "cannot matmul diff devices %s and %s" % (self.device, other.device)
+        self = self.compact()
+        other = other.compact()
+
+        assert self.is_compact() and other.is_compact(), "matmul inputs must be compact"
 
         # if the matrix is aligned, use tiled matrix multiplication
         if hasattr(self.device, "matmul_tiled") and all(

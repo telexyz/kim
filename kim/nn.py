@@ -612,6 +612,8 @@ class Embedding(Module):
         self.weight = Parameter(init.rand(dict_size, embed_dim, low=0, high=1, device=device))
         self.eye = np.eye(self.num_embeddings, dtype=dtype)
 
+    def to_one_hot(self, x: Tensor) -> Tensor:
+        return Tensor(self.eye[x.numpy().astype("int")], device=x.device)
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -625,8 +627,7 @@ class Embedding(Module):
         """
         #    x of shape (seq_len, bs) convert to one-hot vectors
         # => y of shape (seq_len, bs, num_embeddings)
-        y = Tensor(self.eye[x.numpy().astype("int")], device=x.device)
-        return y @ self.weight
+        return self.to_one_hot(x) @ self.weight
 
 # - - - - - - - - - - - - -
 # Transformer

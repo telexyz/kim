@@ -149,6 +149,8 @@ def epoch_general_ptb(data, model, started_at, step=None, seq_len=40, loss_fn=nn
             hiddens = (h.detach(), c.detach())
         else: hiddens = hiddens.detach()
 
+        # print(f">>>epoch_general_ptb X%s, y%s, out%s" % (X.shape, y.shape, out.shape))
+
         loss = loss_fn(out, y)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
         total_loss += loss.numpy()
@@ -159,7 +161,7 @@ def epoch_general_ptb(data, model, started_at, step=None, seq_len=40, loss_fn=nn
             opt.step()
 
         niter += 1
-        n += batch_size
+        n += y.shape[0]
 
         if niter % 20 == 0:
             time_passed = datetime.timedelta(seconds=timer() - started_at)

@@ -4,7 +4,7 @@ DEFAULT_DEVICE = "cuda"
 
 import operator
 import math
-from functools impqort reduce
+from functools import reduce
 import numpy as np
 from . import ndarray_backend_numpy
 from . import ndarray_backend_cpu

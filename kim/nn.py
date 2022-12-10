@@ -607,7 +607,7 @@ class Embedding(Module):
         weight - The learnable weights of shape (num_embeddings, embedding_dim) initialized from N(0, 1).
         """
         self.weight = Parameter(init.rand(num_embeddings, embedding_dim, low=0, high=1, device=device))
-        self.eye = np.eye(embedding_dim, dtype=dtype)
+        self.eye = np.eye(num_embeddings, dtype=dtype)
 
     def to_one_hot(self, x: Tensor) -> Tensor:
         return Tensor(self.eye[x.numpy().astype("int")], device=x.device)
@@ -624,7 +624,9 @@ class Embedding(Module):
         Output:
         output of shape (seq_len, bs, embed_dim)
         """
-        return self.to_one_hot(x) @ self.weight
+        y = self.to_one_hot(x)
+        y.requires_grad = False
+        return y @ self.weight
 
 # - - - - - - - - - - - - -
 # Transformer

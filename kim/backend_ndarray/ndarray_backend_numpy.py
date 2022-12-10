@@ -25,7 +25,7 @@ def fill(out, val):
     out.array.fill(val)
 
 
-def compact(a, out, shape, strides, offset):
+def compact(a, out, out_shape, shape, strides, offset):
     out.array[:] = to_numpy(a, shape, strides, offset).flatten()
 
 

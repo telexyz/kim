@@ -1,4 +1,4 @@
-#!/home/t/anaconda3/envs/kim/bin/python3
+#!/usr/bin/python3
 
 import numpy as np
 import torch

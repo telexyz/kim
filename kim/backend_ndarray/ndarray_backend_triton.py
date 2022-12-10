@@ -33,7 +33,7 @@ def from_numpy(a, out): out.array[:] = torch.from_numpy(a.flatten())
 
 def fill(out, val): out.array.fill_(val)
 
-def compact(a, out, shape, strides, offset):
+def compact(a, out, out_shape, shape, strides, offset):
     from_numpy(to_numpy(a, shape, strides, offset).flatten(), out)
 
 ''' Triton ops

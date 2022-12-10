@@ -1,4 +1,5 @@
-DEFAULT_DEVICE = "cuda"
+DEFAULT_DEVICE = "cpu_numpy"
+# DEFAULT_DEVICE = "cuda"
 # DEFAULT_DEVICE = "cuda_triton"
 
 import operator

@@ -293,9 +293,6 @@ class Corpus(object):
         self.train = self.tokenize(os.path.join(base_dir, 'train.txt'), max_lines)
         self.test = self.tokenize(os.path.join(base_dir, 'test.txt'), max_lines)
 
-    def eos(self):
-        return self.dictionary.add_word('<eos>')
-
     def tokenize(self, path, max_lines=None):
         """
         Input:
@@ -308,17 +305,14 @@ class Corpus(object):
         Output:
         ids: List of ids
         """
-        eos_id = self.eos()
-        txt = open(path).read()
-        lines = txt.split("\n")
-        if max_lines is None: max_lines = len(lines) - 1 # remove last blank line
-        assert max_lines < len(lines)
+        lines = open(path).readlines()
+        if max_lines is None: max_lines = len(lines)# - 1 # remove last blank line
 
         ids = []
-        for i in range(max_lines):
-            words = lines[i].split(" ")[1:-1] # remove first and last blank words
-            for word in words: ids.append(self.dictionary.add_word(word))
-            ids.append(eos_id)
+        for line in lines[:max_lines]:
+            # words = line.split(" ")[1:-1] # remove first and last blank words
+          words = line.split() + ["<eos>"]
+          for word in words: ids.append(self.dictionary.add_word(word))
         return ids
 
     def lookup(self, idx):

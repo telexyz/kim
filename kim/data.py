@@ -306,13 +306,10 @@ class Corpus(object):
         ids: List of ids
         """
         lines = open(path).readlines()
-        if max_lines is None: max_lines = len(lines)# - 1 # remove last blank line
-
+        if max_lines is None: max_lines = len(lines)
         ids = []
         for line in lines[:max_lines]:
-            # words = line.split(" ")[1:-1] # remove first and last blank words
-          words = line.split() + ["<eos>"]
-          for word in words: ids.append(self.dictionary.add_word(word))
+          ids += [self.dictionary.add_word(w) for w in (line.split() + ["<eos>"])]
         return ids
 
     def lookup(self, idx):

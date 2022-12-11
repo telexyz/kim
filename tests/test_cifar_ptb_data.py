@@ -131,14 +131,16 @@ def submit_ptb():
             i = np.random.randint(len(data))
             X, y = kim.data.get_batch(data, i, bptt)
 
-            print("\n>>>", train, batch_size, bptt, data.shape, i)
+            print("\n>>>", device, train, batch_size, bptt, data.shape, i)
             mugrade_submit(np.array(len(data)))
             
             mugrade_submit(X.numpy()[0, :])
-            # False 5 6, False 3 10,
+            # cpu()  False 5  6 (16486, 5) 7061
+            # cuda() False 3 10 (27476, 3) 19960
             
             mugrade_submit(y.numpy()[0])
-            # True 5 10, False 3 6, 
+            # cpu()  True 5 10 (185917, 5) 48056
+            # cpu() False 3  6 (27476, 3) 18089 
 
 
 if __name__ == "__main__":

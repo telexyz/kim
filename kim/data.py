@@ -373,7 +373,7 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     assert i < n
     # assert bptt > 0 and bptt < n - i
     
-    data   = batches[i : i+bptt, : ]; i += 1
-    target = batches[i : i+bptt, : ].flatten()
+    data   = batches[i   : i+bptt,    ]
+    target = batches[i+1 : i+1+bptt,  ].flatten()
 
     return Tensor(data, device=device, dtype=dtype), Tensor(target, device=device, dtype=dtype)

@@ -606,7 +606,7 @@ class Embedding(Module):
         Variables:
         weight - The learnable weights of shape (num_embeddings, embedding_dim) initialized from N(0, 1).
         """
-        self.weight = Parameter(init.rand(num_embeddings, embedding_dim, low=0, high=1, device=device))
+        self.weight = Parameter(init.randn(num_embeddings, embedding_dim, device=device))
         self.eye = np.eye(num_embeddings, dtype=dtype)
 
     def to_one_hot(self, x: Tensor) -> Tensor:

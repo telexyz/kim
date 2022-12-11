@@ -144,7 +144,7 @@ def epoch_general_ptb(data, model, started_at, step=None, seq_len=40, loss_fn=nn
         out, hiddens = model(X, hiddens)
 
         # detach hiddens
-        if isinstance(model, nn.LSTM):
+        if isinstance(hiddens, tuple):
             h, c = hiddens
             hiddens = (h.detach(), c.detach())
         else: hiddens = hiddens.detach()

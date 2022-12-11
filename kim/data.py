@@ -309,7 +309,8 @@ class Corpus(object):
         if max_lines is None: max_lines = len(lines)
         ids = []
         for line in lines[:max_lines]:
-          ids += [self.dictionary.add_word(w) for w in (line.split() + ["<eos>"])]
+            words = line.split() + ["<eos>"]
+            ids += [self.dictionary.add_word(w) for w in words]
         return ids
 
     def lookup(self, idx):

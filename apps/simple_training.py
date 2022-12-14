@@ -139,8 +139,9 @@ def epoch_general_ptb(data, model, started_at, step=None, seq_len=40, loss_fn=nn
     total_steps = (total_seq_len - seq_len) // step
 
     hiddens = None
-    for i in range(total_steps):
-        X, y = kim.data.get_batch(data, i * step, seq_len)
+    maxx = total_seq_len - 1 if training else total_steps * step
+    for i in range(0, maxx, step):
+        X, y = kim.data.get_batch(data, i, seq_len, device=device)
         out, hiddens = model(X, hiddens)
 
         # detach hiddens
@@ -153,7 +154,7 @@ def epoch_general_ptb(data, model, started_at, step=None, seq_len=40, loss_fn=nn
 
         loss = loss_fn(out, y)
         correct += np.sum(np.argmax(out.numpy(), axis=1) == y.numpy())
-        total_loss += loss.numpy()
+        total_loss += loss.numpy().item()
 
         if training:
             opt.reset_grad()

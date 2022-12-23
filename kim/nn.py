@@ -230,32 +230,26 @@ class BatchNorm2d(BatchNorm1d):
         return y.transpose((2,3)).transpose((1,2))
 
 
-class Conv(Module):
-    """
-    Multi-channel 2D convolutional layer
-    IMPORTANT: Accepts inputs in NCHW format, outputs also in NCHW format
-    Only supports padding=same
-    No grouped convolution or dilation
-    Only supports square kernels
-    """
-    def __init__(self, i, o, k, stride=1, bias=True, device=None, dtype="float32"):
+class MyConv(Module):
+    def __init__(self, i, o, kw, kh, stride=1, bias=True, device=None, dtype="float32"):
         super().__init__() # normalize kernel_size and stride so that:
-        if isinstance(k, tuple): k = k[0] # Only supports square kernels and padding=same
         if isinstance(stride, tuple): stride = stride[0]
 
         self.in_channels = i
         self.out_channels = o
-        self.kernel_size = k
+        self.kernel_size_w = kw
+        self.kernel_size_h = kh
         self.stride = stride
 
-        # Initialize the (k, k, i, o) weight tensor using Kaiming uniform initialization 
+        # Initialize the (kw, kh, i, o) weight tensor using Kaiming uniform initialization 
         # with default settings.
+        k = (kw + kh) // 2;
         # Previously, we have implemented Kaiming uniform/normal initializations, where we essentially 
         # assigned fan_in = input_size and fan_out = output_size.
         # For convolution, this becomes somewhat more detailed, in that you should multiply both of these 
         # by the "receptive field size", which is in this case just the product of the kernel sizes 
-        # -- which in our case are always going to be the same, i.e., `k x k` kernels.
-        weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(k, k, i, o), 
+        # -- which in our case are always going to be the same, i.e., `kw x kh` kernels.
+        weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(kw, kh, i, o), 
             dtype=dtype, device=device, requires_grad=True)
         self.weight = Parameter(weight_init)
 
@@ -275,7 +269,8 @@ class Conv(Module):
         xt = x.transpose(axes=(1,2)).transpose(axes=(2,3))
 
         # Calculate the appropriate padding to ensure input and output dimensions are the same
-        out = ops.conv(xt, self.weight, padding=self.kernel_size//2, stride=self.stride)
+        pw, ph = self.kernel_size_w // 2, self.kernel_size_h // 2
+        out = ops.my_conv(xt, self.weight, padding_w=pw, padding_h=ph, stride=self.stride)
         out = out.transpose(axes=(2,3)).transpose(axes=(1,2))
 
         # Calculate the convolution, then add the properly-broadcasted bias term if present
@@ -284,6 +279,18 @@ class Conv(Module):
             out += bias.broadcast_to(out.shape)
         # 
         return out
+
+
+class Conv(MyConv):
+    """
+    Multi-channel 2D convolutional layer
+    IMPORTANT: Accepts inputs in NCHW format, outputs also in NCHW format
+    Only supports padding=same
+    No grouped convolution or dilation
+    Only supports square kernels
+    """
+    def __init__(self, i, o, k, stride=1, bias=True, device=None, dtype="float32"):
+        super().__init__(i, o, k, k, stride=stride, bias=bias, device=device, dtype=dtype);
 
 
 class RNNCell(Module):

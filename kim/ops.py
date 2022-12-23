@@ -602,17 +602,19 @@ def undilate(a, axes, dilation):
     return UnDilate(axes, dilation)(a)
 
 
-class Conv(TensorOp):
-    def __init__(self, stride: Optional[int] = 1, padding: Optional[int] = 0):
+# MyConv accept aribity (padding_w, padding_h) padding
+class MyConv(TensorOp):
+    def __init__(self, stride: Optional[int] = 1, padding_w: Optional[int] = 0, padding_h: Optional[int] = 0):
         self.stride = stride
-        self.padding = padding
+        self.padding_w = padding_w
+        self.padding_h = padding_h
 
     def compute(self, Z, weight):
         assert len(Z.shape) == 4 and len(weight.shape) == 4, "ops.Conv only accept 4D, 4D args"
 
         # padding
-        pad = self.padding
-        if pad > 0: Z = array_api.pad(Z, ( (0, 0), (pad, pad), (pad, pad), (0, 0) ))
+        pw, ph = self.padding_w, self.padding_h
+        if pw != 0 or ph != 0: Z = array_api.pad(Z, ( (0, 0), (pw, ph), (pw, ph), (0, 0) ))
 
         # init params
         N,H,W,C_in = Z.shape
@@ -640,18 +642,25 @@ class Conv(TensorOp):
         if self.stride > 1: out_grad = dilate(out_grad, (1,2), self.stride-1) # NWHC
 
         # This padding depends on both the kernel size and the padding argument to the convolution
-        pad = X.shape[1] - out_grad.shape[1] + self.padding
+        pw = X.shape[1] - out_grad.shape[1] + self.padding_w
+        ph = X.shape[2] - out_grad.shape[2] + self.padding_h
 
         # W should be flipped over both the kernel dimensions then transpose
-        X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=pad)
+        X_grad = my_conv(out_grad, flip(W, axes=(0,1)).transpose(), padding_w=pw, padding_h=ph)
  
         # You can "permute" axes with multiple calls to transpose
         out_grad = out_grad.transpose(axes=(0,2)).transpose(axes=(0,1))
-        W_grad = conv(X.transpose(axes=(0,3)), out_grad, padding=self.padding)
+        W_grad = my_conv(X.transpose(axes=(0,3)), out_grad, padding_w=self.padding_w, padding_h=self.padding_h)
         W_grad = transpose(W_grad, axes=(0,2)).transpose(axes=(0,1))
 
         return X_grad, W_grad
 
+def my_conv(a, b, stride=1, padding_w=1, padding_h=1):
+    return MyConv(stride, padding_w, padding_h)(a, b)
+
+class Conv(MyConv):
+    def __init__(self, stride: Optional[int] = 1, padding: Optional[int] = 0):
+         super().__init__(stride, padding, padding);
 
 def conv(a, b, stride=1, padding=1):
     return Conv(stride, padding)(a, b)

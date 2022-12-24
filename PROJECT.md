@@ -1,5 +1,8 @@
 ![](docs/files/project.png)
 
+## (h, w) kernel implementation
+https://gist.github.com/tiendung/1f8fc03707da89139ad1508f2ca262dd
+
 ## pytorch max-pooling
 https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html
 
@@ -17,9 +20,3 @@ a * mask
 ![](docs/files/project1.jpg)
 
 ![](docs/files/project2.jpg)
-
-
-- - -
-
-More Advanced Model
-https://towardsdatascience.com/block-recurrent-transformer-lstm-and-transformer-combined-ec3e64af971a

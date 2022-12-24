@@ -604,11 +604,8 @@ def undilate(a, axes, dilation):
     return UnDilate(axes, dilation)(a)
 
 
-# MyConv accept aribity (padding_w, padding_h) padding
-class MyConv(TensorOp):
-    def __init__(self, stride_w: Optional[int] = 1, stride_h: Optional[int] = 1, 
-        padding_w: Optional[int] = 0, padding_h: Optional[int] = 0
-    ):
+class Conv(TensorOp):
+    def __init__(self, stride_w=1, stride_h=1, padding_w=0, padding_h=0):
         self.stride_w = stride_w
         self.stride_h = stride_h
         self.padding_w = padding_w
@@ -619,26 +616,28 @@ class MyConv(TensorOp):
 
         # padding
         pw, ph = self.padding_w, self.padding_h
-        if pw != 0 or ph != 0: Z = array_api.pad(Z, ( (0, 0), (pw, ph), (pw, ph), (0, 0) ))
+        if pw != 0 or ph != 0:
+            Z = array_api.pad(Z, ( (0, 0), (ph, ph), (pw, pw), (0, 0) ))
 
         # init params
-        N,H,W,C_in = Z.shape
-        K,_,_,C_out = weight.shape
+        N, H, W, C_in = Z.shape
+        Kh, Kw, C_in_, C_out = weight.shape
         Ns, Hs, Ws, Cs = Z.strides
+        assert(C_in == C_in_)
 
         # img2col multi-channel conv
-        inner_dim = K * K * C_in
-        A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
+        inner_dim = Kw * Kh * C_in
+        A = Z.as_strided((N, H-Kh+1, W-Kw+1, Kh, Kw, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
         #                ^^^ new shape ^^^^^^^^^^^^^^^  ^^^ new strides ^^^^^^^^
         A = A.reshape((-1, inner_dim))
 
         out = A @ weight.reshape((-1, C_out))
-        out = out.reshape((N, H-K+1, W-K+1, C_out))
+        out = out.reshape((N, H-Kh+1, W-Kw+1, C_out))
 
         # stride or not stride
         # stride will skip conv result on specific coordinates (use undilate) 
         if self.stride_w > 1 or self.stride_h > 1:
-            return out.undilate((1, 2), (self.stride_w - 1, self.stride_h - 1))
+            return out.undilate((1, 2), (self.stride_h - 1, self.stride_w - 1))
         else:
             return out
 
@@ -647,24 +646,23 @@ class MyConv(TensorOp):
         X, W = node.inputs
         # If the convolution is strided, increase the size of out_grad with a corresponding dilation
         if self.stride_w > 1 or self.stride_h > 1:
-            out_grad = dilate(out_grad, (1, 2), (self.stride_w-1, self.stride_h-1)) # NWHC => (1,2)==(W,H)
+            out_grad = dilate(out_grad, (1, 2), (self.stride_h-1, self.stride_w-1)) # NHWC => (1,2)==(H,W)
 
         # This padding depends on both the kernel size and the padding argument to the convolution
-        pw = X.shape[1] - out_grad.shape[1] + self.padding_w
-        ph = X.shape[2] - out_grad.shape[2] + self.padding_h
+        ph = X.shape[1] - out_grad.shape[1] + self.padding_h
+        pw = X.shape[2] - out_grad.shape[2] + self.padding_w
 
         # W should be flipped over both the kernel dimensions then transpose
-        X_grad = my_conv(out_grad, flip(W, axes=(0,1)).transpose(), padding_w=pw, padding_h=ph)
+        X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=(ph, pw))
  
         # You can "permute" axes with multiple calls to transpose
         out_grad = out_grad.transpose(axes=(0,2)).transpose(axes=(0,1))
-        W_grad = my_conv(X.transpose(axes=(0,3)), out_grad, padding_w=self.padding_w, padding_h=self.padding_h)
+        W_grad = conv(X.transpose(axes=(0,3)), out_grad, padding=(self.padding_h, self.padding_w))
         W_grad = transpose(W_grad, axes=(0,2)).transpose(axes=(0,1))
 
         return X_grad, W_grad
 
-def my_conv(a, b, stride_w=1, stride_h=1, padding_w=1, padding_h=1):
-    return MyConv(stride_w, stride_h, padding_w, padding_h)(a, b)
-
 def conv(a, b, stride=1, padding=1):
-    return MyConv(stride, stride, padding, padding)(a, b)
+    if isinstance(stride, int): stride = (stride, stride)
+    if isinstance(padding, int): padding = (padding, padding)
+    return Conv(stride_h=stride[0], stride_w=stride[1], padding_h=padding[0], padding_w=padding[1])(a, b)

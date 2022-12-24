@@ -332,7 +332,9 @@ conv_forward_params = [
     (32, 8, 16, 3, 2),
     (32, 8, 8, 3, 2),
     (32, 16, 8, 3, 1),
-    (32, 16, 8, 3, 2)
+    (32, 16, 8, 3, 2),
+    (32, 16, 8, (1,3), 2),
+    (32, 16, 8, (3,2), 2),
 ]
 @pytest.mark.parametrize("s,cin,cout,k,stride", conv_forward_params)
 @pytest.mark.parametrize("device", _DEVICES)
@@ -342,7 +344,9 @@ def test_nn_conv_forward(s, cin, cout, k, stride, device):
     f = kim.nn.Conv(cin, cout, k, stride=stride, device=device)
     x = kim.init.rand(10, cin, s, s, device=device)
 
-    g = torch.nn.Conv2d(cin, cout, k, stride=stride, padding=k//2)
+    if isinstance(k, int): k = (k, k)
+    padding = (k[0] // 2, k[1] // 2)
+    g = torch.nn.Conv2d(cin, cout, k, stride=stride, padding=padding)
     g.weight.data = torch.tensor(f.weight.cached_data.numpy().transpose(3, 2, 0, 1))
     g.bias.data = torch.tensor(f.bias.cached_data.numpy())
     z = torch.tensor(x.cached_data.numpy())
@@ -405,6 +409,11 @@ op_conv_shapes = [
     ( (3, 17, 17, 16), (5, 5, 16, 1),  1, 0 ),
     ( (3, 17, 17, 16), (1, 1, 16, 1),  1, 0 ),
     ( (1, 14, 14, 2), (3, 3, 2, 2),    1, 0 ),
+
+    ( (3, 16, 16, 24), (3, 3, 24, 14), (1, 2), 0 ),
+    ( (3, 14, 14, 8), (5, 5, 8, 16),   (2, 1), 0 ),
+    ( (3, 17, 17, 8), (5, 5, 8, 16),   1, (2, 1) ),
+    ( (3, 17, 17, 1), (5, 5, 1, 16) ,  1, (1, 3) ),
 ]
 @pytest.mark.parametrize("Z_shape, W_shape, stride, padding", op_conv_shapes)
 @pytest.mark.parametrize("device", _DEVICES)
@@ -428,16 +437,17 @@ def test_op_conv(Z_shape, W_shape, stride, padding, backward, device):
     Wtch.requires_grad=True
     out = torch.nn.functional.conv2d(Ztch.permute(0, 3, 1, 2), Wtch.permute(3, 2, 0, 1), padding=padding, stride=stride)
     out2 = out.sum()
+    print(">>>", Z.shape, W.shape, padding, stride, "\n>>>", out.shape, y.shape)
+
     if backward:
         out2.backward()
-    if backward:
         err1 = np.linalg.norm(Ztch.grad.numpy() - Z.grad.numpy())
         err2 = np.linalg.norm(Wtch.grad.numpy() - W.grad.numpy())
-    err3 = np.linalg.norm(out2.detach().numpy() - y2.numpy())
-    if backward:
         assert err1 < 1e-2, "input grads match"
         assert err2 < 1e-2, "weight grads match"
-    assert err3 < 1e-1, "outputs match %s, %s" % (y2, out2)
+
+    err3 = np.linalg.norm(out2.detach().numpy() - y2.numpy())
+    assert err3 < 0.12, "outputs match %s, %s" % (y2, out2)
 
 
 @pytest.mark.parametrize("device", _DEVICES)

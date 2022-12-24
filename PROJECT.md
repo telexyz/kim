@@ -1,5 +1,8 @@
 ![](docs/files/project.png)
 
+## pytorch max-pooling
+https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html
+
 ## 2x1 max-pool trick
 
 ```py

@@ -678,12 +678,13 @@ class NDArray:
 
 
     def undilate(a, axes, dilation):
+        if isinstance(dilation, int): dilation = [dilation] * len(axes)
         new_shape = list(a.shape)
         idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
-        for axis in axes:
+        for i, axis in enumerate(axes):
             if axis >= a.ndim: return a # !!! Add this to pass mugrade !!!
-            new_shape[axis] //= (dilation + 1)
-            idxs[axis] = slice(0, a.shape[axis], dilation + 1)
+            new_shape[axis] //= (dilation[i] + 1)
+            idxs[axis] = slice(0, a.shape[axis], dilation[i] + 1)
         return a.__getitem__(tuple(idxs))
 
 

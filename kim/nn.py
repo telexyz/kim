@@ -231,15 +231,15 @@ class BatchNorm2d(BatchNorm1d):
 
 
 class MyConv(Module):
-    def __init__(self, i, o, kw, kh, stride=1, bias=True, device=None, dtype="float32"):
+    def __init__(self, i, o, kw, kh, stride_w=1, stride_h=1, bias=True, device=None, dtype="float32"):
         super().__init__() # normalize kernel_size and stride so that:
-        if isinstance(stride, tuple): stride = stride[0]
 
         self.in_channels = i
         self.out_channels = o
         self.kernel_size_w = kw
         self.kernel_size_h = kh
-        self.stride = stride
+        self.stride_w = stride_w
+        self.stride_h = stride_h
 
         # Initialize the (kw, kh, i, o) weight tensor using Kaiming uniform initialization 
         # with default settings.
@@ -270,7 +270,8 @@ class MyConv(Module):
 
         # Calculate the appropriate padding to ensure input and output dimensions are the same
         pw, ph = self.kernel_size_w // 2, self.kernel_size_h // 2
-        out = ops.my_conv(xt, self.weight, padding_w=pw, padding_h=ph, stride=self.stride)
+        out = ops.my_conv(xt, self.weight, padding_w=pw, padding_h=ph, 
+            stride_w=self.stride_w, stride_h=self.stride_h)
         out = out.transpose(axes=(2,3)).transpose(axes=(1,2))
 
         # Calculate the convolution, then add the properly-broadcasted bias term if present
@@ -290,7 +291,8 @@ class Conv(MyConv):
     Only supports square kernels
     """
     def __init__(self, i, o, k, stride=1, bias=True, device=None, dtype="float32"):
-        super().__init__(i, o, k, k, stride=stride, bias=bias, device=device, dtype=dtype);
+        if isinstance(stride, tuple): stride = stride[0]
+        super().__init__(i, o, k, k, stride_w=stride, stride_h=stride, bias=bias, device=device, dtype=dtype);
 
 
 class RNNCell(Module):

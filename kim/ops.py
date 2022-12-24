@@ -1,5 +1,5 @@
 from numbers import Number
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 from .autograd import NDArray, array_api
 from .autograd import Tensor, TensorOp
 from .autograd import TensorTuple, TensorTupleOp
@@ -561,19 +561,20 @@ def flip(a, axes):
     return Flip(axes)(a)
 
 class Dilate(TensorOp):
-    def __init__(self, axes: tuple, dilation: int):
+    def __init__(self, axes: tuple, dilation: Union[int, tuple, list]):
         self.axes = axes
+        if isinstance(dilation, int): dilation = [dilation] * len(axes)
         self.dilation = dilation
 
     def compute(self, a):
         new_shape = list(a.shape)
         idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
-        for axis in self.axes:
+        for i, axis in enumerate(self.axes):
             if axis >= a.ndim: return a # !!! Add this to pass mugrade !!!
             assert(axis < a.ndim), "dilating axis exceed ndim: %s > len(shape%s)" % (axis, a.shape)
-            new_shape[axis] *= (self.dilation + 1)
+            new_shape[axis] *= (self.dilation[i] + 1)
             # 1 ô cho phần tử gốc và self.dilation ô cho 0 padding
-            idxs[axis] = slice(0, new_shape[axis], 1 + self.dilation)
+            idxs[axis] = slice(0, new_shape[axis], 1 + self.dilation[i])
         out = a.device.zeros(*new_shape)
         out.__setitem__(tuple(idxs), a)
         return out
@@ -587,8 +588,9 @@ def dilate(a, axes, dilation):
 
 
 class UnDilate(TensorOp):
-    def __init__(self, axes: tuple, dilation: int):
+    def __init__(self, axes: tuple, dilation:  Union[int, tuple, list]):
         self.axes = axes
+        if isinstance(dilation, int): dilation = [dilation] * len(axes)
         self.dilation = dilation
 
     def compute(self, a):
@@ -604,8 +606,11 @@ def undilate(a, axes, dilation):
 
 # MyConv accept aribity (padding_w, padding_h) padding
 class MyConv(TensorOp):
-    def __init__(self, stride: Optional[int] = 1, padding_w: Optional[int] = 0, padding_h: Optional[int] = 0):
-        self.stride = stride
+    def __init__(self, stride_w: Optional[int] = 1, stride_h: Optional[int] = 1, 
+        padding_w: Optional[int] = 0, padding_h: Optional[int] = 0
+    ):
+        self.stride_w = stride_w
+        self.stride_h = stride_h
         self.padding_w = padding_w
         self.padding_h = padding_h
 
@@ -624,14 +629,16 @@ class MyConv(TensorOp):
         # img2col multi-channel conv
         inner_dim = K * K * C_in
         A = Z.as_strided((N, H-K+1, W-K+1, K, K, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
+        #                ^^^ new shape ^^^^^^^^^^^^^^^  ^^^ new strides ^^^^^^^^
         A = A.reshape((-1, inner_dim))
 
         out = A @ weight.reshape((-1, C_out))
         out = out.reshape((N, H-K+1, W-K+1, C_out))
 
         # stride or not stride
-        if isinstance(self.stride, int) and self.stride > 1:
-            return out.undilate((1, 2), self.stride - 1)
+        # stride will skip conv result on specific coordinates (use undilate) 
+        if self.stride_w > 1 or self.stride_h > 1:
+            return out.undilate((1, 2), (self.stride_w - 1, self.stride_h - 1))
         else:
             return out
 
@@ -639,7 +646,8 @@ class MyConv(TensorOp):
     def gradient(self, out_grad, node):
         X, W = node.inputs
         # If the convolution is strided, increase the size of out_grad with a corresponding dilation
-        if self.stride > 1: out_grad = dilate(out_grad, (1,2), self.stride-1) # NWHC
+        if self.stride_w > 1 or self.stride_h > 1:
+            out_grad = dilate(out_grad, (1, 2), (self.stride_w-1, self.stride_h-1)) # NWHC => (1,2)==(W,H)
 
         # This padding depends on both the kernel size and the padding argument to the convolution
         pw = X.shape[1] - out_grad.shape[1] + self.padding_w
@@ -655,12 +663,8 @@ class MyConv(TensorOp):
 
         return X_grad, W_grad
 
-def my_conv(a, b, stride=1, padding_w=1, padding_h=1):
-    return MyConv(stride, padding_w, padding_h)(a, b)
-
-class Conv(MyConv):
-    def __init__(self, stride: Optional[int] = 1, padding: Optional[int] = 0):
-         super().__init__(stride, padding, padding);
+def my_conv(a, b, stride_w=1, stride_h=1, padding_w=1, padding_h=1):
+    return MyConv(stride_w, stride_h, padding_w, padding_h)(a, b)
 
 def conv(a, b, stride=1, padding=1):
-    return Conv(stride, padding)(a, b)
+    return MyConv(stride, stride, padding, padding)(a, b)

@@ -10,12 +10,12 @@ import pytest
 
 
 @pytest.mark.parametrize("N", [1, 2])
-@pytest.mark.parametrize("H", [4, 6, 16, 24, 64])
-@pytest.mark.parametrize("W", [1, 3, 5, 15, 100, 200])
+@pytest.mark.parametrize("H", [4, 6, 16])
+@pytest.mark.parametrize("W", [1, 3, 100])
 @pytest.mark.parametrize("C_in", [1, 3, 5])
 @pytest.mark.parametrize("C_out", [1, 16, 32])
-@pytest.mark.parametrize("kh", [1, 2, 3])
-@pytest.mark.parametrize("kw", [4, 5, 6])
+@pytest.mark.parametrize("kh", [5, 1, 3])
+@pytest.mark.parametrize("kw", [1, 4, 9])
 def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw):
     # kh, kw = 1, 4
     seed = 1

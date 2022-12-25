@@ -70,6 +70,12 @@ class Module:
 
 # - - - short modules - - -
 
+class MaxPooling2x1(Module):
+    def forward(self, x):
+        y = ops.max_pooling_1x2(x.transpose())
+        return y.transpose()
+
+
 class Identity(Module):
     def forward(self, x):
         return x

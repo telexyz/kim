@@ -8,29 +8,36 @@ import kim as ndl
 import torch
 import pytest
 
-def test_max_pooling():
-    seed = 1
+@pytest.mark.parametrize("N", [1,2])
+@pytest.mark.parametrize("H", [1, 3, 6, 16])
+@pytest.mark.parametrize("W", [2, 4, 100])
+@pytest.mark.parametrize("C", [1,3])
+def test_max_pooling(N,H,W,C):
+# def test_max_pooling():
     N,C,H,W = 2, 1, 3, 4
+    seed = 1
     X = np.random.default_rng(seed=seed).normal(size=(N, C, H, W))
     X_ = torch.Tensor(X)
     X_.requires_grad = True
     X = ndl.Tensor(X)
     imp_torch = torch.nn.MaxPool2d((1,2))
     res_torch = imp_torch(X_)
-
-    res_ndl = ndl.ops.MaxPooling1x2()(X)
-
-    print(">>>", X.shape)
-    print(">>>", X)
-
-    print(">>>", res_torch.detach().shape)
-    print(">>>", res_torch.detach().numpy())
-
-    print(">>>", res_ndl.shape)
-    print(">>>", res_ndl.numpy())
+    res_ndl = ndl.ops.max_pooling_1x2(X)
  
     np.testing.assert_allclose(res_torch.detach().numpy(
-    ), res_ndl.detach().numpy(), rtol=1e-04, atol=1e-04)
+    ), res_ndl.numpy(), rtol=1e-04, atol=1e-04)
+
+    # backward
+    res_torch.sum().backward()
+    res_ndl.sum().backward()
+    res_torch_grad = X_.grad.numpy()
+    res_ndl_grad = X.grad.numpy()
+
+    np.testing.assert_allclose(res_torch_grad, res_ndl_grad, rtol=1e-04, atol=1e-04)
+
+    np.testing.assert_allclose(
+        X_.grad.numpy(), X.grad.numpy(), rtol=1e-04, atol=1e-04)
+
 
 @pytest.mark.parametrize("N", [1, 2])
 @pytest.mark.parametrize("H", [4, 6, 16])
@@ -67,3 +74,8 @@ def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw):
     res_torch_grad = X_.grad.numpy()
     res_ndl_grad = X.grad.numpy()
     np.testing.assert_allclose(res_torch_grad, res_ndl_grad, rtol=1e-04, atol=1e-04)
+
+    err1 = np.linalg.norm(X_.grad.numpy() - X.grad.numpy())
+    assert err1 < 1e-3, "input grads match"
+    # err2 = np.linalg.norm(Wtch.grad.numpy() - W.grad.numpy())
+    # assert err2 < 1e-2, "weight grads match"

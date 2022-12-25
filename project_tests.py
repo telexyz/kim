@@ -8,6 +8,29 @@ import kim as ndl
 import torch
 import pytest
 
+def test_max_pooling():
+    seed = 1
+    N,C,H,W = 2, 1, 3, 4
+    X = np.random.default_rng(seed=seed).normal(size=(N, C, H, W))
+    X_ = torch.Tensor(X)
+    X_.requires_grad = True
+    X = ndl.Tensor(X)
+    imp_torch = torch.nn.MaxPool2d((1,2))
+    res_torch = imp_torch(X_)
+
+    res_ndl = ndl.ops.MaxPooling1x2()(X)
+
+    print(">>>", X.shape)
+    print(">>>", X)
+
+    print(">>>", res_torch.detach().shape)
+    print(">>>", res_torch.detach().numpy())
+
+    print(">>>", res_ndl.shape)
+    print(">>>", res_ndl.numpy())
+ 
+    np.testing.assert_allclose(res_torch.detach().numpy(
+    ), res_ndl.detach().numpy(), rtol=1e-04, atol=1e-04)
 
 @pytest.mark.parametrize("N", [1, 2])
 @pytest.mark.parametrize("H", [4, 6, 16])
@@ -17,7 +40,6 @@ import pytest
 @pytest.mark.parametrize("kh", [5, 1, 3])
 @pytest.mark.parametrize("kw", [1, 4, 9])
 def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw):
-    # kh, kw = 1, 4
     seed = 1
     X = np.random.default_rng(seed=seed).normal(size=(N, C_in, H, W))
 

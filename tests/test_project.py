@@ -10,11 +10,9 @@ import pytest
 
 @pytest.mark.parametrize("N", [1,2])
 @pytest.mark.parametrize("H", [2, 6, 16])
-@pytest.mark.parametrize("W", [2, 4, 100])
+@pytest.mark.parametrize("W", [1, 3, 100])
 @pytest.mark.parametrize("C", [1,3])
 def test_max_pooling(N,H,W,C):
-# def test_max_pooling():
-    # N,C,H,W = 2, 1, 2, 4
     seed = 1
     X = np.random.default_rng(seed=seed).normal(size=(N, C, H, W))
     X_ = torch.Tensor(X)

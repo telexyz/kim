@@ -666,3 +666,30 @@ def conv(a, b, stride=1, padding=1):
     if isinstance(stride, int): stride = (stride, stride)
     if isinstance(padding, int): padding = (padding, padding)
     return Conv(stride_h=stride[0], stride_w=stride[1], padding_h=padding[0], padding_w=padding[1])(a, b)
+
+
+class MaxPooling2x1(TensorOp):
+    def compute(self, a: NDArray) -> NDArray:
+        # Mặc định max-pooling at matrix of 2 last axes, kernel size (2 x 1)
+        a = a.compact()
+        b = kim.NDArray.make((a.size // 2, 2), strides=(2, -1),
+                             handle=a._handle, offset=1).compact()
+        c = (b < a) * a
+        new_shape = list(a.shape)
+        new_shape[-1] = new_shape[-1] // 2
+        d = c.max(axis=1).reshape(new_shape)
+        return d
+
+    def gradient(self, out_grad: Tensor, node) -> Tensor:
+        a = node.inputs[0].realize_cached_data().compact()
+        b = ndl.NDArray.make((a.size // 2, 2), strides=(2, -1),
+                             handle=a._handle, offset=1).compact()
+        mask = a > b
+        d = out_grad.realize_cached_data().compact()
+        e = kim.NDArray.make((d.size, 2), strides=(1, 0), handle=a._handle, offset=1).compact()
+        f = mask * e
+        return Tensor(f)
+''' https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html
+In the simplest case, the output value of the layer with input size (N, C, H, W), 
+output (N, C, H_{out}, W_{out})
+'''

@@ -483,7 +483,8 @@ class NDArray:
         out = NDArray.make(self.shape, device=self.device)
         if isinstance(other, NDArray):
             other = other.compact()
-            assert self.shape == other.shape, "operation needs two equal-sized arrays"
+            # assert self.shape == other.shape, "operation needs two equal-sized arrays"
+            assert self.size == other.size, "operation needs two equal-sized arrays"
             ewise_func(self._handle, other._handle, out._handle)
         else:
             scalar_func(self._handle, other, out._handle)
@@ -751,7 +752,4 @@ def flip(a, axes):
     return a.flip(axes)
 
 def summation(a, axis=None, keepdims=False):
-    return a.sum(axis=axis, keepdims=keepdims)
-
-def sum(a, axis=None, keepdims=False):
     return a.sum(axis=axis, keepdims=keepdims)

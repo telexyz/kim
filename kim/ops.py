@@ -657,14 +657,11 @@ def conv(a, b, stride=1, padding=1):
 
 class MaxPooling1x2(TensorOp):
     def compute(self, a: NDArray) -> NDArray:
-        # Mặc định max-pooling at matrix of 2 last axes, kernel size (1 x 2)
-        a = a.compact()
-        b = NDArray.make((a.size // 2, 2), strides=(2, -1), handle=a._handle, offset=1).compact()
-        c = (b < a) * a
+        # Max-pooling at matrix of 2 last axes, kernel size (1 x 2)
+        b = a.reshape((a.size // 2, 2)).max(axis=1)
         new_shape = list(a.shape)
         new_shape[-1] = new_shape[-1] // 2
-        d = c.sum(axis=1).reshape(new_shape)
-        return d
+        return b.reshape(new_shape)
 
     def gradient(self, out_grad: Tensor, node) -> Tensor:
         a = node.inputs[0].realize_cached_data().compact()

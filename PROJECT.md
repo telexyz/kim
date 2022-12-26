@@ -1,3 +1,34 @@
+https://dlsyscourse.org/project
+
+a recording of a slideshow with voiceover,
+a screen-capture of the system you’ve built,
+no more than 90 seconds.
+
+Your project will be graded primarily on how well you are able to extend the ideas presented in class to build an interesting and useful extension of the methods we have covered. Your project will be graded based both upon your prose and code, so the code should be written in a legible manner meant to be read, with appropriate structure and comments, etc.
+
+## Video report
+
+I did some works for A/ diff (w,h) kernel for convolution and B/ max-pooling-2x1 and here is what I want to summary:
+
+A/ https://gist.github.com/tiendung/1f8fc03707da89139ad1508f2ca262dd
+
+To support different (w, h) kernel for convolution we need to modify related ops/functions to support that difference.
+The first ops need to modify is `dilate/undilate` to support different dilation over selected axes.
+
+[[ we can show a screenshot of diff code to illustrate]]
+
+![](docs/files/prj_undilate_diff.png)
+...
+
+B/ https://gist.github.com/tiendung/79579e8b248975c59980ff001ba6c109
+
+For max-pooling, we should write a new NDArray function to do it efficiently. But since for this project we need to do 2x1 max-pooling only, we can apply some stride tricks to complete the function without writing new C++ code.
+
+![](docs/files/prj_max-pooling.png)
+
+## Final report
+
+
 ![](docs/files/project.png)
 
 ## [Conv as matmul](https://youtu.be/7kclgMIcMq0?t=1581)

@@ -601,24 +601,36 @@ class Conv(TensorOp):
     def compute(self, Z, weight):
         assert len(Z.shape) == 4 and len(weight.shape) == 4, "ops.Conv only accept 4D, 4D args"
 
-        # padding
+        # Tự động tính toán padding để ảnh đầu ra có kích cỡ bằng ảnh đầu vào ((W, H) ko đổi)
         pw, ph = self.padding_w, self.padding_h
         if pw != 0 or ph != 0:
             Z = array_api.pad(Z, ( (0, 0), (ph, ph), (pw, pw), (0, 0) ))
 
-        # init params
+        # Z là N ảnh đầu vào kích cỡ (N,H,W,C_in)
         N, H, W, C_in = Z.shape
-        Kh, Kw, C_in_, C_out = weight.shape
         Ns, Hs, Ws, Cs = Z.strides
+
+        # weight là conv kernel kích cỡ (Kh, Kw, C_in, C_out)
+        # Với (Kh, Kw) là kích thước kernel, và biến ảnh C_in channels thành ảnh C_out channels
+        Kh, Kw, C_in_, C_out = weight.shape
         assert(C_in == C_in_)
 
-        # img2col multi-channel conv
-        inner_dim = Kw * Kh * C_in
-        A = Z.as_strided((N, H-Kh+1, W-Kw+1, Kh, Kw, C_in), (Ns, Hs, Ws, Hs, Ws, Cs))
-        #                ^^^ new shape ^^^^^^^^^^^^^^^  ^^^ new strides ^^^^^^^^
-        A = A.reshape((-1, inner_dim))
+        # `im2col` là kỹ thuật biến đổi N ảnh đầu vào thành dữ liệu sẵn sàng cho conv chỉ bằng 1 matmul
+        # làm được điều này bằng cách chuẩn bị sẵn đối ứng (Kh, Kw) để nhân với kernels bằng a neat strides trick!
+        A = Z.as_strided((N, H-Kh+1, W-Kw+1, Kh, Kw, C_in), (Ns, Hs, Ws, Hs, Ws, Cs)).compact()
+        #                ^^^ new shape ^^^^^^^^^^^^          ^^^ new strides ^^
+        # Bỏ qua N/Ns, C_in/Cs vì 2 chiều này của ma trận được giữ nguyên
+        # Với (H-Kh+1, W-Kw+1, Kh, Kw) hãy phân tích từng cặp indexes (H-Kh+1, W-Kw+1) và (Kh, Kw):
+        # - Với (Kh, Kw) 
+        #   - Khi index của Kw tăng một là dịch chuyển tới cột tiếp theo nên stride của Kw là Ws
+        #   - Khi index của Kh tăng một là dịch chuyển tới hàng tiếp theo nên stride của Kh là Hs
+        # - Với (H-Kh+1, W-Kw+1) cũng tương tự như vậy nên strides của nó cũng là (Hs, Ws)
 
-        out = A @ weight.reshape((-1, C_out))
+        # Duỗi tensor 4D về ma trận 2D để hợp thức hóa phép nhân ma trận
+        inner_dim = Kw * Kh * C_in
+        A = A.reshape((-1, inner_dim))
+        out = A @ weight.reshape((inner_dim, C_out))
+        # Sau đó reshape lần nữa để biến kết quả là ma trận 2D thành tensor 4D
         out = out.reshape((N, H-Kh+1, W-Kw+1, C_out))
 
         # stride or not stride

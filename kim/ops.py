@@ -641,6 +641,35 @@ class Conv(TensorOp):
             return out
 
 
+    '''
+    matmul(a, b).backward() =>
+    a_grad = matmul(out_grad, transpose(b))
+    b_grad = matmul(transpose(a), out_grad)
+
+    matmul gradient: a(m, n) @ b(n, p) = c(m, p)
+    out_grad(m, p) @ b_T(p, n) = a_grad(m, n)
+    a_T(n, m) @ out_grad(m, p) = b_grad(n, p)
+
+    Gần tương tự:
+    conv(a, b).backward() =>
+    a_grad = conv(out_grad, b_T)
+    b_grad_T = conv(a_T, out_grad_T)
+    Với x_T thu được qua 1 vài phép biến đổi từ x.
+
+    a: (N,W,H,C_in)
+    b: (K,K,C_in,C_out)
+    out: (N,W,H,C_out)
+
+    out_grad: (N,W,H,C_out)
+    a_grad: (N,W,H,C_in)
+    => b_T: (K,K,C_out,C_in)
+    
+    b_grad must be accumulated over the batches => turning batches into channels
+    a_T: (C_in,W,H,N) <= turning batches into channels to accumulate grad over the batches 
+    out_grad_T: (W,H,N,C_out) 
+    b_grad_T: (C_in,K,K,C_out)
+     => cần padding K,K vào a_T để nhân W+K,H+K với W,H được K,K 
+    '''
     def gradient(self, out_grad, node):
         X, W = node.inputs
         # If the convolution is strided, increase the size of out_grad with a corresponding dilation
@@ -653,13 +682,18 @@ class Conv(TensorOp):
 
         # W should be flipped over both the kernel dimensions then transpose
         X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=(ph, pw))
+        # => W_T: (K,K,C_out,C_in) thu được từ flip rồi transpose W
  
+        # W_grad must be accumulated over the batches => turning batches into channels
+        X_T = X.transpose(axes=(0,3)) # <= turning batches into channels
         # You can "permute" axes with multiple calls to transpose
-        out_grad = out_grad.transpose(axes=(0,2)).transpose(axes=(0,1))
-        W_grad = conv(X.transpose(axes=(0,3)), out_grad, padding=(self.padding_h, self.padding_w))
-        W_grad = transpose(W_grad, axes=(0,2)).transpose(axes=(0,1))
+        out_grad_T = out_grad.transpose(axes=(0,1)).transpose(axes=(1,2))
+
+        W_grad_T = conv(X_T, out_grad_T, padding=(self.padding_h, self.padding_w))
+        W_grad = W_grad_T.transpose(axes=(0,1)).transpose(axes=(1,2))
 
         return X_grad, W_grad
+
 
 def conv(a, b, stride=1, padding=1):
     if isinstance(stride, int): stride = (stride, stride)

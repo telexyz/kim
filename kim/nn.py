@@ -72,9 +72,12 @@ class Module:
 
 class MaxPooling2x1(Module):
     def forward(self, x):
-        y = ops.max_pooling_1x2(x.transpose())
-        return y.transpose()
-
+        # X is (N,H,W,C) and we do 2x1 pooling on (H,W)
+        x = x.transpose(axes=(1,3))  # x now (N,C,W,H)
+        # 1x2 pooling on (W,H) equivelant to 2x1 pooling on (H,W)
+        y = ops.max_pooling_1x2(x)
+        # then transpose back the result
+        return y.transpose(axes=(1,3))
 
 class Identity(Module):
     def forward(self, x):

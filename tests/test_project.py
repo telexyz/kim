@@ -6,26 +6,26 @@ import torch
 import pytest
 
 @pytest.mark.parametrize("N", [1, 2])
+@pytest.mark.parametrize("C", [1, 3])
 @pytest.mark.parametrize("H", [2, 6, 16])
 @pytest.mark.parametrize("W", [2, 4, 100])
-@pytest.mark.parametrize("C", [1, 3])
 def test_max_pooling(N,H,W,C):
     X = kim.init.randn(N, C, H, W, requires_grad=True)
     X_ = torch.Tensor(X.numpy())
     X_.requires_grad = True
 
+    # Forward
     res_ = torch.nn.MaxPool2d((2, 1))(X_)
-    res = kim.nn.MaxPooling2x1()(X)
-
-    # res_ = torch.nn.MaxPool2d((1, 2))(X_)
-    # res = kim.ops.max_pooling_1x2(X)
-
-    np.testing.assert_allclose(res_.detach().numpy(), res.numpy(), rtol=1e-04, atol=1e-04)
+    X = X.transpose(axes=(1, 2)).transpose(axes=(2, 3)) # N,C,H,W => N,H,W,C
+    res = kim.nn.MaxPooling2x1()(X)  # N,H,W,C => N,C,H,W
+    np.testing.assert_allclose(res_.detach().numpy(), res.transpose(
+        axes=(2, 3)).transpose(axes=(1, 2)).numpy(), rtol=1e-04, atol=1e-04)
 
     # backward
     res_.sum().backward()
     res.sum().backward()
-    np.testing.assert_allclose(X_.grad.numpy(), X.grad.numpy(), rtol=1e-04, atol=1e-04)
+    np.testing.assert_allclose(X_.grad.numpy(), X.grad.transpose(
+        axes=(2, 3)).transpose(axes=(1, 2)).numpy(), rtol=1e-04, atol=1e-04)
 
 
 @pytest.mark.parametrize("N", [1, 2])

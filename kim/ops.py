@@ -702,20 +702,26 @@ def conv(a, b, stride=1, padding=1):
 
 
 class MaxPooling1x2(TensorOp):
+    # Max-pooling at matrix of 2 last axes, kernel size (1 x 2)
     def compute(self, a: NDArray) -> NDArray:
-        # Max-pooling at matrix of 2 last axes, kernel size (1 x 2)
+        # Find out the max value of 2 adjacent elements
         b = a.reshape((a.size // 2, 2)).max(axis=1)
+        # Then reshape to new_shape that match the desired output
         new_shape = list(a.shape)
         new_shape[-1] = new_shape[-1] // 2
         return b.reshape(new_shape)
 
     def gradient(self, out_grad: Tensor, node) -> Tensor:
         a = node.inputs[0].realize_cached_data().compact()
+        # Use strides trick to swap values of 2 adjacent elements
         b = NDArray.make((a.size // 2, 2), strides=(2, -1), handle=a._handle, offset=1).compact()
-        mask = a > b
+        # Create a mask of which show which one really contribute to out_grad
+        mask = a > b # mask[element] = 1 => element is the contributor
+
         d = out_grad.realize_cached_data().compact()
+        # Use strides trick to duplicate out_grad elements to create a matrix that match input size
         e = NDArray.make((d.size, 2), strides=(1, 0), handle=d._handle, offset=0).compact()
-        f = mask * e
+        f = mask * e # then multiple mask with it to create final gradient
         return Tensor(f, device=out_grad.device),
   
 def max_pooling_1x2(a):

@@ -19,7 +19,7 @@ dataloader = kim.data.DataLoader(\
          shuffle=True,
          device=device,
 )
-train_cifar10(model, dataloader, n_epochs=3, optimizer=kim.optim.Adam,
+train_cifar10(model, dataloader, n_epochs=1, optimizer=kim.optim.Adam,
       lr=0.001, weight_decay=0.001)
 
 test_dataset = kim.data.CIFAR10Dataset("../data/cifar-10-batches-py", train=False)

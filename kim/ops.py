@@ -689,12 +689,12 @@ class Conv(TensorOp):
         X_T = X.transpose(axes=(0,3)) # <= turning batches into channels
  
         # You can "permute" axes with multiple calls to transpose
-        if kim.USE_PERMUTE: out_grad_T = out_grad.permute((1, 2, 0, 3))
+        if kim.KIM_FUSE: out_grad_T = out_grad.permute((1, 2, 0, 3))
         else: out_grad_T = out_grad.transpose(axes=(0,1)).transpose(axes=(1,2)) # N,H,W,C => H,W,N,C
 
         W_grad_T = conv(X_T, out_grad_T, padding=(self.padding_h, self.padding_w))
 
-        if kim.USE_PERMUTE: W_grad = W_grad_T.permute((1, 2, 0, 3))
+        if kim.KIM_FUSE: W_grad = W_grad_T.permute((1, 2, 0, 3))
         else: W_grad = W_grad_T.transpose(axes=(0,1)).transpose(axes=(1,2))
 
         return X_grad, W_grad

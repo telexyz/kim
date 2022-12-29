@@ -10,4 +10,4 @@ from . import optim
 from . import utils
 from .utils import as_numpy, prod
 
-USE_PERMUTE = os.environ.get("USE_PERMUTE", False)
+KIM_FUSE = os.environ.get("KIM_FUSE", False)

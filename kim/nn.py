@@ -234,10 +234,12 @@ class BatchNorm2d(BatchNorm1d):
     def forward(self, x: Tensor):
         # nchw -> nhcw -> nhwc
         s = x.shape
-        _x = x.transpose((1, 2)).transpose((2, 3)).reshape((s[0] * s[2] * s[3], s[1]))
-        y = super().forward(_x).reshape((s[0], s[2], s[3], s[1]))
-        return y.transpose((2,3)).transpose((1,2))
+        if kim.USE_PERMUTE: _x = x.permute((0, 2, 3, 1)).reshape((-1, s[1]))
+        else: _x = x.transpose((1, 2)).transpose((2, 3)).reshape((-1, s[1]))
 
+        y = super().forward(_x).reshape((s[0], s[2], s[3], s[1]))
+        if kim.USE_PERMUTE: return y.permute((0, 3, 1, 2))
+        else: return y.transpose((2, 3)).transpose((1, 2))  # 0,1,2,3 => 0,3,1,2
 
 class Conv(Module):
     """
@@ -282,12 +284,16 @@ class Conv(Module):
     def forward(self, x: Tensor) -> Tensor:
         # Ensure nn.Conv works for (N, C, H, W) tensors even though we implemented 
         #          the conv op for (N, H, W, C) tensors
-        xt = x.transpose(axes=(1,2)).transpose(axes=(2,3))
+
+        if kim.USE_PERMUTE: xt = x.permute((0, 2, 3, 1))
+        else: xt = x.transpose(axes=(1,2)).transpose(axes=(2,3)) # 0,1,2,3 => 0,2,3,1
 
         # Calculate the appropriate padding to ensure input and output dimensions are the same
         pw, ph = self.kernel_size_w // 2, self.kernel_size_h // 2
         out = ops.conv(xt, self.weight, padding=(ph, pw), stride=(self.stride_h, self.stride_w))
-        out = out.transpose(axes=(2,3)).transpose(axes=(1,2))
+
+        if kim.USE_PERMUTE: out = out.permute((0,3,1,2))
+        else: out = out.transpose(axes=(2,3)).transpose(axes=(1,2)) # 0,1,2,3 => 0,3,1,2
 
         # Calculate the convolution, then add the properly-broadcasted bias term if present
         if self.bias is not None:

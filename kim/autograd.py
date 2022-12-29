@@ -191,6 +191,9 @@ class Tensor:
     def transpose(self, axes=None):
         return kim.ops.Transpose(axes)(self)
 
+    def permute(self, axes=None):
+        return kim.ops.Permute(axes)(self)
+
     __radd__ = __add__
     __rmul__ = __mul__
 

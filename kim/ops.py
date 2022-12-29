@@ -7,6 +7,7 @@ from .autograd import TensorTuple, TensorTupleOp
 import numpy as np
 from kim import backend_ndarray as nd
 from kim import init
+import kim
 
 # numpy backend vs other backend united interfaces
 def make(ndarray, shape, array):
@@ -688,11 +689,13 @@ class Conv(TensorOp):
         X_T = X.transpose(axes=(0,3)) # <= turning batches into channels
  
         # You can "permute" axes with multiple calls to transpose
-        # out_grad_T = out_grad.transpose(axes=(0,1)).transpose(axes=(1,2)) # N,H,W,C => H,W,N,C
-        out_grad_T = permute(out_grad, (1,2,0,3))
+        if kim.USE_PERMUTE: out_grad_T = out_grad.permute((1, 2, 0, 3))
+        else: out_grad_T = out_grad.transpose(axes=(0,1)).transpose(axes=(1,2)) # N,H,W,C => H,W,N,C
 
         W_grad_T = conv(X_T, out_grad_T, padding=(self.padding_h, self.padding_w))
-        W_grad = W_grad_T.transpose(axes=(0,1)).transpose(axes=(1,2))
+
+        if kim.USE_PERMUTE: W_grad = W_grad_T.permute((1, 2, 0, 3))
+        else: W_grad = W_grad_T.transpose(axes=(0,1)).transpose(axes=(1,2))
 
         return X_grad, W_grad
 
@@ -749,18 +752,22 @@ def relu(a):
 # backward pass of a neural network     #
 # # # # # # # # # # # # # # # # # # # # #
 
+# Use permute to replace multiple transpose ops
 class Permute(TensorOp):
     def __init__(self, axes: tuple):
         self.axes = axes
 
     def compute(self, a: NDArray) -> NDArray:
-        assert len(self.axes) == len(a.shape), "permute must received a full list of axes"
+        assert len(self.axes) == len(a.shape), "permute must received a full list of axes len(%s) != len(%s)" % (self.axes, a.shape)
         return a.permute(self.axes)
 
     def gradient(self, out_grad: Tensor, node: Tensor) -> Tuple[Tensor]:
-        # (0,1,2,3) => (0,3,2,1) => (0,3,2,1)
-        # return permute(out_grad, self.axes)
-        return Tensor(out_grad.realize_cached_data().permute(self.axes)),
+        # (0,1,2,3) => (3,1,0,2) => (2,1,3,0)
+        new_axes = list(self.axes)
+        for i, axis in enumerate(self.axes): new_axes[axis] = i
+        # return permute(out_grad, new_axes),
+        return Tensor(out_grad.realize_cached_data().permute(new_axes)),
 
 def permute(a: Tensor, axes: tuple):
     return Permute(axes)(a)
+

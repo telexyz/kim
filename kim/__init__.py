@@ -9,3 +9,5 @@ from . import nn
 from . import optim
 from . import utils
 from .utils import as_numpy, prod
+
+USE_PERMUTE = os.environ.get("USE_PERMUTE", False)

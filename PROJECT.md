@@ -28,6 +28,12 @@ For max-pooling, we should write a new NDArray function to do it efficiently. Bu
 
 ## Final report
 
+https://ssrn.com/abstract=3756587
+
+https://www.bilibili.com/video/BV1TT4y1k7Jx
+
+![](docs/files/project-00.png)
+
 
 ![](docs/files/project.png)
 

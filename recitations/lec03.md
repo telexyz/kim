@@ -22,7 +22,7 @@ Hướng nào đồng nhất nhiều nhất với mỗi điểm dữ liệu (x1,
 Với dữ liệu 2 lớp thì đường phân chia dữ liệu sẽ là 1 đường thẳng, nhiều lớp dữ liệu cần nhiều đường phân chia hơn.
 
 Hạn chế của hàm giả thiết tuyến tính là không hoạt động được với dữ liệu không phân chia được bằng các vùng tuyến tính.
-Ý tưởng đơn giản để giải quyết vđ trên là áp dụng phân lớp tuyến tính vào vài đặc trưng (features) của dữ liệu có (nhiều khả năng các features đó ở không gian cao hơn so với dữ liệu) `h_theta(x) = theta^T dot phi(x)` với theta thuộc R^{d x k} và phi là ánh xạ từ R^n tới R^d.
+Ý tưởng đơn giản để giải quyết vđ trên là áp dụng phân lớp tuyến tính vào vài đặc trưng (features) của dữ liệu có (nhiều khả năng các features đó ở không gian cao hơn so với dữ liệu) `h_theta(x) = theta^T phi(x)` với theta thuộc R^{d x k} và phi là ánh xạ từ R^n tới R^d.
 
 Đây là cách machine learning hoạt động trong một khoảng thời gian dài, nhất là trong thực hành, và hiện tại có nhiều machine learning đang hoạt động theo cách này. Cách chúng chạy các thuật toán học máy là tạo ra một hàm phi của tập dự liệu đầu vào, phi được hiểu là ánh xạ đặc trưng (feature mapping) đặc tả dữ liệu đầu vào theo cách mà chúng ta tin rằng chúng sẽ dễ dàng hơn cho việc phân loại tuyến tính. Đó là mấu chốt của vấn đề.
 
@@ -42,13 +42,13 @@ Tổng kết lại, có 2 cách để xây dựng hàm đặc trưng phi:
 
 Mạng nơ-ron là một cách, theo nghĩa nào đó, trích xuất những đặc trưng tốt nhất từ dữ liệu đầu vào và thực hiện nó theo cách hoàn toàn tự động không cần sự điều chỉnh của chúng ta. Khóa học này chúng ta sẽ tập trung vào việc suy nghĩ xem liệu chúng ta có thể làm cho máy học cách trích xuất dữ liệu tự động trực tiếp từ dữ liệu hay không?
 
-Học phần trước cho thay dự đoán tuyến tính là một cách học mạnh mẽ, chúng ta thu được tỉ lệ lỗi chỉ ở 8% cho tập dữ liệu MNIST bằng cách chỉ sử dụng phân loại tuyến tính. Liệu chúng ta có thể sử dụng một hàm ánh xạ tuyến tính từ không gian n chiều (input vectors) sang không gian d chiều (feature vectors) hay không? Câu trả lời là không vì nếu làm như vậy hàm giả thiết cuối cùng của chúng ta cũng chỉ là phân loại tuyến tính. `h_theta(x) = theta_T dot phi(x) = theta_T dot W_T dot x` khi đó `theta_T dot W_T` chỉ là 1 ma trận (k, n). Cụ thể hơn với cách lựa chọn đặc trưng này, chúng ta chỉ mở rộng tập các giả thuyết đang được xem xét!
+Học phần trước cho thay dự đoán tuyến tính là một cách học mạnh mẽ, chúng ta thu được tỉ lệ lỗi chỉ ở 8% cho tập dữ liệu MNIST bằng cách chỉ sử dụng phân loại tuyến tính. Liệu chúng ta có thể sử dụng một hàm ánh xạ tuyến tính từ không gian n chiều (input vectors) sang không gian d chiều (feature vectors) hay không? Câu trả lời là không vì nếu làm như vậy hàm giả thiết cuối cùng của chúng ta cũng chỉ là phân loại tuyến tính. `h_theta(x) = theta_T phi(x) = theta_T W_T x` khi đó `theta_T W_T` chỉ là 1 ma trận (k, n). Cụ thể hơn với cách lựa chọn đặc trưng này, chúng ta chỉ mở rộng tập các giả thuyết đang được xem xét!
 
 Rất may là có cách làm khác thực hiện được điều này.
 
 ## Nonlinear features https://youtu.be/OyrqSYJs7NQ?t=757
 
-Chúng ta áp dụng một hàm phi tuyến tính vào sau ánh xạ tuyến tính `phi(x)=sigma(W_T dot x)` với W thuộc R^{n x d}, và sigma: R^d -> R^d, có thể là bất kỳ hàm phi tuyến tính nào.
+Chúng ta áp dụng một hàm phi tuyến tính vào sau ánh xạ tuyến tính `phi(x)=sigma(W_T x)` với W thuộc R^{n x d}, và sigma: R^d -> R^d, có thể là bất kỳ hàm phi tuyến tính nào.
 
 Ví dụ: với W là một ma trận của các giá trị ngẫu nhiên trong phân bố Gaussian, và sigma là hàm cosine, ta thu được một loại "vector đặc trưng fourier ngẫu nhiên" hoạt động rất tốt với nhiều bài toán.
 
@@ -139,3 +139,57 @@ Về cơ bản, lập luận kể trên ít thỏa mãn nhất, nhưng có lẽ 
 ## Backpropagation
 https://www.youtube.com/watch?v=JLg1HkzDsKI
 Huấn luyện mạng nơ-ron bằng cách tính gradient và lan truyền ngược.
+
+![](files/lec03-09.png)
+
+Ôn bài: nhớ rằng NN chỉ là một trong 3 thành phần của một thuật toán học máy, ngoài NN (hàm giả thiết) chúng ta còn cần:
+- Hàm mất mát: cross entropy loss hay còn gọi là softmax loss
+- Phương thức tối ưu hóa: SGD (stochatic gradient descent)
+
+Sự khác biệt duy nhất trong việc triển khai NN so với hồi quy softmax (bài trước), là chúng ta chỉ cần một cách tính gradient cho với bộ tham số theta (ở đây là W_1 và W_2 ...)
+
+Và để thực sự tìm ra những gradient này là gì? Và khi làm như vậy, chúng ta sẽ rút ra quy tắc lan truyền ngược thực sự!
+
+## Gradient(s) of 2-layer network
+
+Ta cần tính gradient của hàm mất mát với từng bộ tham số W_1 và W_2 `gradient_{W_1,W_2} l_ce(sigma(X W_1)W_2,y)`
+
+Gradient w.r.t W_2 (w.r.t = with respect to), đạo hàm riêng của W_2 giống như softmax regsression:
+`delta{l_ce(sigma(X W_1)W_2,y)} / delta{W_2} = 
+ delta{l_ce(sigma(X W_1)W_2,y)} / delta{sigma(X W_1)W_2,y)} delta{sigma(X W_1)W_2} / delta{W_2}` (chain-rule)
+
+Ở đây, `delta{sigma(X W_1)W_2} / delta{W_2} = sigma(X W_1)` và
+`delta{l_ce(sigma(X W_1)W_2,y)} / delta{sigma(X W_1)W_2,y)}` giống trường hợp hồi quy softmax với sigma(X W_1) là vector đầu vào (cố định / hằng số vì nó không bị biến đổi khi W_2 thay đổi).
+
+![](files/lec03-10.png)
+
+Vì thế `gradient_{W_2} l_ce(sigma(X W_1)W_2,y) = sigma(X W_1)^T (Z - e_y)`
+Với Z = normalize(exp(sigma(X W_1)W_2)), e_y = vector{1[y=i] else 0} (kind of one-hot encoding across labels)
+
+- - -
+
+`delta{l_ce(sigma(X W1)W2, y)} / delta{W_1} = 
+ delta{l_ce(sigma(X W1)W2, y)} / delta{sigma(X W1) W2} * 
+ delta{sigma(X W1) W2} / delta{sigma(X W1)} * 
+ delta{sigma(X W1)} / delta{X W1} *
+ delta{X W1} / delta{W1}`
+
+`delta{X W1} / delta{W1} = X`
+`delta{sigma(X W1)} / delta{X W1} = sigma'(X W_1)`
+`delta{sigma(X W1) W2} / delta{sigma(X W1)} = W2`
+`delta{l_ce(sigma(X W1)W2, y)} / delta{sigma(X W1) W2}` giống như trên.
+
+Vì thế `= (Z - e_y) W_2 sigma'(X W_1) X`
+
+![](files/lec03-11.png)
+
+- Kết quả cuối cùng (n, d) và chỉ có X có n nên X^T (n, m) đứng đầu tiên
+- Phần còn phải phải là (m, d) ta có sẵn sigma'(X W1) là (m, d)
+- (Z - e_y) W_2^T cũng là (m, d)
+
+Vậy cách kết hợp cuối cùng là  `gradient{W_1} l_ce(X W1)W2,y) = X^T @ (sigma'(X W_1) dot (Z - e_y)@W_2T^)` với dot là elementwise multiple.
+
+## Computing the real gradients https://youtu.be/JLg1HkzDsKI?t=1688
+
+
+

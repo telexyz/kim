@@ -189,7 +189,123 @@ Vì thế `= (Z - e_y) W_2 sigma'(X W_1) X`
 
 Vậy cách kết hợp cuối cùng là  `gradient{W_1} l_ce(X W1)W2,y) = X^T @ (sigma'(X W_1) dot (Z - e_y)@W_2T^)` với dot là elementwise multiple.
 
+## Backpropagation in general https://youtu.be/JLg1HkzDsKI?t=1187
+
+Quay trở lại mạng nơ-ron nhiều lớp, Z_i ở đây đại diện cho layer i của mạng.
+`Z_i+1 = sigma_i(Z_i W_i)`, i = 1 .. L
+
+`delta{l(Z_L+1,y)} / delta{W_i} = 
+ delta{l} / delta{Z_L+1} *
+ delta{Z_L+1} / delta{Z_L} *
+ delta{Z_L} / delta{Z_L-1} *
+ ....
+ delta{Z_i+2} / delta{Z_i+1} *
+ delta{Z_i+1} / delta{W_i}`
+
+![](files/lec03-12.png)
+
+Ta đặt `G_i+1 = delta{ l(Z_L+1, y) } / delta{Z_i+1}`
+Ta có `G_i = G_i+1 . delta{Z_i+1} / delta{Z_i}`
+=> Có thể sử dụng lại gradient của lớp trước để tính gradient của lớp sau!
+
+Với `delta{Z_i+1} / delta{Z_i} = delta{ sigmoid_i(Z_i W_i) } / delta{ Z_i W_i } * delta{ Z_i W_i } / delta{ Z_i }` 
+
+=> `G_i = G_i+1 . sigmoid_i'(Z_i W_i) . W_i`
+
+Cách tính trên vẫn được coi là cheating vì chúng ta đang coi matrix / vector như là scalar (coi có hướng như là vô hướng). 
+
+> This is last time we do it, at least last time you do it for a whole derivative, not just for sort of individual operations in automatic differentiation.
+
+Ý muốn nói là đây là lần cuối cùng chúng ta tính đạo hàm bằng tay cho cả biểu thức lớn, vì sau này khi áp dụng autodiff ta chỉ phải tính gradient cho từng op một. Và với gradient của từng op ta vẫn có thể áp dụng mẹo coi có hướng là vô hướng để áp dụng chain-rule.
+
 ## Computing the real gradients https://youtu.be/JLg1HkzDsKI?t=1688
 
+Bước trên được coi là cheating vì ta coi biến có hướng như biến vô hướng để áp dụng chain-rule vào biểu thức, làm cho việc tính gradient của layer trước sử dụng lại gradient của layer sau ... Ở bước này ta làm mịn công thức ở bước trên để tính được gradient thực sự phù hợp với kích thước của ma trận. Lưu ý: mẹo tính gradient này luôn cần phải được check lại với numerical diff.
+
+Z_i: (m, n_i) với m là batch size, và n_i là chiều của feature vector của tầng thứ i.
+
+Vì G_i = delta{ l(Z_L+1, y)} / delta{ Z_i } nên G_i: (m, n_i) => G_i+1: (m, n_i+1)
+
+Quay trở lại công thức `G_i = G_i+1 . sigmoid_i'(Z_i W_i) . W_i`
+- G_i: (m, n_i)
+- W_i: (n_i, n_i+1)
+- G_i+1: (m, n_i+1)
+- sigmoid_i'(Z_i W_i): (m, n_i+1)
+
+=> W_i^T: (n_i+1, n_i) đứng ở cuối `( .... ) W_i^T` và ( .... ) có hình dạng (m, n_i+1)
+- G_i+1: (m, n_i+1) đã có sẵn hình dạng đó
+- sigmoid_i'(Z_i W_i) đã có sẵn hình dạng đó
+
+=> `G_i = (G_i+1 dot sigmoid_i'(Z_i W_i)) @ W_i^T`
+
+Hiện giờ đã có công thức cụ thể để tính G_i, ta sẽ tính gradient cho từng tham số W_i như sau:
+
+Trước hết xem lại công thức ở bước trên:
+![](files/lec03-12.png)
 
 
+=> `delta{ l(Z_L+1, y) } / delta{ W_i } = G_i+1 . delta{ Z_i+1 } / delta{ W_i } =
+    G_i+1 . delta{ sigmoid_i(Z_i W_i) } / delta{ Z_i W_i } / delta{ W_i } =
+    G_i+1 . sigmoid_i'(Z_i W_i) . Z_i`
+
+![](files/lec03-13.png)
+
+- W_i: (n_i, n_i+1) => delta{ l(Z_L+1, y) } / delta{ W_i }: (n_i, n_i+1)
+- G_i+1: (m, n_i+1)
+- sigmoid_i'(Z_i W_i): (m, n_i+1)
+- Z_i: (m, n_i)
+
+=> Z_i^T . ( ... ), với ( ... ): (m, n_i+1) =>
+=> `delta{ l(Z_L+1, y) } / delta{ W_i } = Z_i^T @ (G_i+1 dot sigmoid_i'(Z_i W_i))`
+
+Điều này có thể phức tạp hơn một chút, so với những biểu thức đạo hàm trước đó, vậy nên tôi muốn dừng ở đây một chút và tranh luận tại sao tôi lại làm theo cách này? Rất nhiều lần bạn sẽ thấy gradient cho NN sẽ được viết ra dưới dạng từng phần tử (element by element).
+
+Chỉ vì vô hướng dễ làm việc với, bạn sẽ có đạo hàm của các số hạng khác nhau, các số hạng riêng lẻ của W_i, sẽ liên quan tới rất nhiều tổng và những thứ như thế. Thực tế là không ai muốn thực hiện nó theo cách đó. Ý tôi là không ai sẽ thực hiện nó cả bởi vì mọi người đã sử dụng autodiff. Nhưng ngay cả khi bạn đang thực sự triển khai loại lan truyền ngược như thế này ngay từ đầu, bạn sẽ luôn triển khai nó bằng cách sử dụng các phép toán ma trận. Và vì vậy, điều tôi thực sự muốn làm ngay từ đầu là chỉ cho bạn cách rút ra các biểu thức ma trận trên thực tế thực sự trông như thế nào, bởi vì bạn sẽ thực hiện phần nhỏ của điều đó khi bạn thực hiện các phép toán ma trận tương đương trong vi phân tự động (autodiff).
+
+Vì vậy mặc dù theo một nghĩa nào đó, điều này có vẻ khó hiểu, chúng ta đang sử dụng các kích thước kì lạ và làm cho chúng vừa vặn theo cách thực sự khó hiểu này (ý là mẹo coi biến có hướng như biến vô hướng để áp dụng chain-rule rồi, tìm các phép toán ma trận phù hợp để kết hợp chúng lại với nhau để tạo ra kích thước ma trận cuối cùng là phù hợp). Tôi thừa nhận điều đó hơi khó hiểu, nhưng thực sự có lý do tại sao chúng ta làm theo cách này. Sẽ tốt hơn nhiều nếu tìm hiểu cách những thứ này thực sự hoạt động, và __hoạt động theo cách chúng ta sẽ thực sự triển khai chúng__, hơn là suy diễn từng biểu thức riêng lẻ, theo cách mà không ai thực sự triển khai nó.
+
+Vì vậy, với tất cả những điều này, hình thức cuối cùng cho thuật toán của chúng ta là gì?
+
+## Lan truyền ngược: forward and backward passes
+https://youtu.be/JLg1HkzDsKI?t=2285
+
+Thuật toán lan truyền ngược, có 2 lần lan truyền khác nhau qua các lớp của NN. Một lần lan truyền thuận và 1 lần lan truyền n gược. Về cơ bản ta tính toán các số hạng Z_i ở lần lan truyền thuận và các số hạng G_i ở lần lan truyền ngược. Để làm cho điều này rõ ràng hơn, cách chúng ta tính toán lan truyền thuận và lan truyền ngược là một cách tính toán tất cả các gradients cần thiết.  
+
+Ta có thể tính mọi gradients ta cần cho một NN bằng các biểu thức sau:
+1. Khởi tạo Z_1 = X
+   Lặp lại Z_i+1 = sigmoid_i(Z_i W_i), i=1..L (forward pass)
+
+Với forward, ta khởi tạo Z_1 = X và nó chỉ là quy ước để lặp lại cách tính Z_i+1 ở các bước tiếp theo với i=1..L
+
+
+2. Khởi tạo G_L+1 = gradient_{Z_L+1} l(Z_L+1,y) = S - I_y 
+   (với S = normalize(...), I_y one-hot encoding với I_y[i] = 2 nếu i==y otherwise 0)
+   Lặp lại G_i = (G_i+1 dot sigma_i'(Z_i W_i)) Wi_T, i = L..1 (backward pass)
+
+Với backward, ta khởi tạo G_L+1 là gradient của cross entropy loss.
+
+Và ta có thể tính toán mọi gradient cần thiết bởi biểu thức:
+`gradient{W_i} l(Z_L+1,y)`
+
+![](files/lec03-14.png)
+
+Điều quan trọng cần ghi nhớ ở đây là, kiểu tính toán này đồng thời tất cả các tham số trong một lần truyền tiến, và một lần truyền ngược. Bởi vì ta có thể sử dụng các thuật ngữ G_i và Z_i để tính toán tất cả các thành phần cần thiết. Nhưng để làm được điều đó, chúng ta cần lưu trữ mọi thứ vào bộ nhớ (cache) để tái sử dụng chúng, vì chúng ta sẽ không tính toán lại từ đầu. Và theo nghĩa rộng hơn, tất cả thuật toán lan truyền ngược, chỉ là áp dụng chain-rule và ghi nhớ để sử dụng lại kết quả tính toán một cách thông minh !!!
+
+Một điểm quan trọng tôi muốn nhấn mạnh đó là: hãy xem biểu thức được yêu cầu để tính toán gradient của hàm mất mát với từng biến có hướng W_i và nó chứa cả Z_i và G_i. Điều đó có nghĩa là để tính toán các gradient này, chúng ta phải lưu lại Z_i của tiến trình forward, chúng ta không thể loại bỏ bất kỳ số hạng trung gian nào trong lần truyền dẫn tiến, và phải giữ chúng lại để tái sử dụng trong tiến trình backward. Và vì vậy điều này có phần hiệu quả, vì chúng ta chỉ cần thực hiện 1 lần truyền dẫn tiến và một lần truyền dẫn ngược, nhưng cuối cùng nó thực sự chỉ phức tạp gấp đôi so với 1 lần truyền dẫn đơn lẻ. Thì theo một nghĩa nào đó, nó kém hiệu quả hơn về bộ nhớ, vì chúng ta phải lưu trữ tất cả các mục thông tin trên đường đi của mình, chúng ta không thể nếu tôi chỉ cố tính toán đầu ra Z_i+1 và có thể bỏ đi Z_i. Và khái niệm về việc duy trì các phần tử trung gian này trong tiến trình truyền dẫn tiến và truyền dẫn ngược thực sự quan trọng với thuật toán lan truyền ngược và trở thành một trong những loại đánh đổi của thuật toán lan truyền ngược. Nó cho phép tính toán gradient hiệu quả hơn, với chi phi là dùng nhiều bộ nhớ hơn. Hãy nhớ điều đó khi chúng ta nói về độ hiệu quả của thuật toán lan truyền ngược! Tức là không thể nói về độ hiệu quả trong tính toán của backpropagation mà quên đi chi phí phát sinh về bộ nhớ !!!
+
+## A closer look at these operations
+https://youtu.be/JLg1HkzDsKI?t=2617
+
+![](files/lec03-15.png)
+
+Công thức trên là nền tảng chung của NN nhiều lớp ở dạng ma trận thực sự. Và tôi nghĩ thật công bằng khi nói rằng hầu hết các khóa học về học máy (ML courses) khi thảo luận về backprop, chúng thường kết thúc ở đó. Đại loại "đây là cách bạn thực hiện backprop", có thể họ sẽ nói về tích chập (convolution), nhưng họ thậm chí không nói về cách bạn lấy được, backprob cho một tích chập. Bạn biết đấy, họ chỉ nói về cách tính forward của một tích chập và cho rằng mọi thứ đều ổn. Khi bạn nói về backprob, hầu hết các khóa học đều dừng lại ở đó. Có thể thậm chí họ còn chưa đạt tới điều đó tức là chưa đạt được dạng ma trận thực sự.
+
+Điều cuối cùng tôi muốn để lại cho các bạn, trước khi chúng ta không bao giờ đề cập lại những thứ này nữa, là suy nghĩ thêm một chút điều gì đã thực sự xảy ra trong quá trình lan truyền ngược?
+
+Để tính toán gradient của, bạn cần G_i+1, và sau đó nhân nó với đạo hàm riêng chỉ ở lớp thứ i (delta Z_i+1 / delta W_i). Và một cách để thực hiện điều này là theo một nghĩa nào đó công việc của layer thứ i là gì? Layer thứ i trước hết là nó phải tự tính toán như là trách nhiệm của layer này, và đó là một cách diễn đạt kỳ lạ, nhưng trách nhiệm trước tiên là có thể tính toán phần việc của nó trong forward, tính toán lớp của nó, tính toán chính nó, nó cũng phải sử dụng G_i+1 (incomming backward gradient) và nhân với đạo hàm riêng của nó (đạo hàm của Z_i+1 từng phần W_i), đây thực sự là một thứ kiểu Jacobian, nhưng hãy bỏ qua điều này một chút, nó thực sự phải tìm ra cách nhân G_i+1 với đạo hàm riêng của nó (delta Z_i+1 / delta W_i) để kết quả đầu ra có kích cỡ thực sự có ý nghĩa. Và đây thực sự là một cái nhìn sâu sắc và quan trọng, trong việc làm cho toàn bộ quá trình trở nên mô-đun hóa hơn. Bởi vì đây là một tuyên bố rất chung chung.
+
+Nói chung tất cả những gì mà bất kỳ layer nào phải có khả năng thực hiện để phù hợp với việc lan truyền ngược, là có thể nhân gradient ngược (incomming backward gradient) G_i+1 với đạo hàm riêng của nó. Trên thực tế, đây là một thứ phổ biến có tên riêng của nó là "tích Jacobian của vector". Thuật ngữ đó khá là sai lệch, bởi vì trong thực tế G_i+1 không phải là một vector (mà là ma trận) vì đầu vào là theo batch, nhưng nếu xét đầu vào chỉ là một input vector x, thì G_i+1 cũng sẽ chỉ là 1 vector. Điều cần xem xét ở đây là nếu bạn coi toàn bộ G_i+1 là một vector, và bạn coi đạo hàm riêng thực sự là một phép tính đa biến, như cái được gọi là Jacobian, phép toán nhân G_i+1 với đạo hàm riêng của layer i, đó được gọi là vector Jacobian product. 
+
+Và điều rất thú vị ở đây là quá trình này có thể được thực hiện theo mô-đun hơn và tổng quá hơn nhiều ... Và đây chính xác là quá trình mà chúng ta sẽ học ở bài tiếp theo, có thể là vài bài tiếp theo và cả bài tập về nhà nữa. Đây chính xác là quá trình mà bạn sẽ thực hiện khi nói đến autodiff, mà sau đó một cách tuyệt vời, sẽ tránh được sự cần thiết của bất kỳ phép toán hóc búa nào và loại bỏ việc ứng dụng thủ công của chain-rule. Vì vậy, bạn phải làm điều đó một lần thật tốt, và là cần thiết khi tính gradient bằng tay cho mạng nơ-ron nhiều lớp một lần. Bây giờ, hãy treo nó lên, kệ nó đi, và lần tới hãy nói về autodiff :D hoặc cách chúng ta thực sự làm điều đó trong thực tế.
+
+Xem thêm https://phamdinhkhanh.github.io/deepai-book/ch_calculus/nb_appendix_calculus.html

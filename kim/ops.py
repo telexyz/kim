@@ -686,8 +686,10 @@ class Conv(TensorOp):
  
         # W_grad must be accumulated over the batches => turning batches into channels
         X_T = X.transpose(axes=(0,3)) # <= turning batches into channels
+ 
         # You can "permute" axes with multiple calls to transpose
-        out_grad_T = out_grad.transpose(axes=(0,1)).transpose(axes=(1,2))
+        # out_grad_T = out_grad.transpose(axes=(0,1)).transpose(axes=(1,2)) # N,H,W,C => H,W,N,C
+        out_grad_T = permute(out_grad, (1,2,0,3))
 
         W_grad_T = conv(X_T, out_grad_T, padding=(self.padding_h, self.padding_w))
         W_grad = W_grad_T.transpose(axes=(0,1)).transpose(axes=(1,2))
@@ -727,6 +729,7 @@ class MaxPooling1x2(TensorOp):
 def max_pooling_1x2(a):
     return MaxPooling1x2()(a)
 
+
 class ReLU(TensorOp):
     def gradient(self, out_grad, node):
         a = node.inputs[0].realize_cached_data()
@@ -738,3 +741,26 @@ class ReLU(TensorOp):
 
 def relu(a):
     return ReLU()(a)
+
+
+# # # # # # # # # # # # # # # # # # # # #
+# Fused Ops to apply what learned from  #
+# how to calculate gradient in in       #
+# backward pass of a neural network     #
+# # # # # # # # # # # # # # # # # # # # #
+
+class Permute(TensorOp):
+    def __init__(self, axes: tuple):
+        self.axes = axes
+
+    def compute(self, a: NDArray) -> NDArray:
+        assert len(self.axes) == len(a.shape), "permute must received a full list of axes"
+        return a.permute(self.axes)
+
+    def gradient(self, out_grad: Tensor, node: Tensor) -> Tuple[Tensor]:
+        # (0,1,2,3) => (0,3,2,1) => (0,3,2,1)
+        # return permute(out_grad, self.axes)
+        return Tensor(out_grad.realize_cached_data().permute(self.axes)),
+
+def permute(a: Tensor, axes: tuple):
+    return Permute(axes)(a)

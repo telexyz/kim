@@ -67,8 +67,10 @@ class Tensor:
     def __init__(self, array: Union["Tensor", NDArray], 
         device: Optional[Device] = None,
         dtype=None,
-        requires_grad=True
+        requires_grad=True,
+        update_params=True,
     ):
+        self.update_params = update_params
         if isinstance(array, Tensor):
             if device is None: device = array.device
             if dtype is None: dtype = array.dtype

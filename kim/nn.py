@@ -6,6 +6,7 @@ from kim import ops
 import kim.init as init
 import numpy as np
 import kim
+import pickle
 
 class Parameter(Tensor):
     """A special kind of tensor that represents parameters."""
@@ -46,6 +47,17 @@ def _child_modules(value: object) -> List["Module"]:
 class Module:
     def __init__(self):
         self.training = True
+
+    def save(self, filename):
+        params_np = [x.numpy() for x in self.parameters()]
+        with open(filename, 'wb') as handle:
+            pickle.dump(params_np, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def load(self, filename):
+        with open(filename, 'rb') as handle:
+            params_np = pickle.load(handle)
+            for i, x in enumerate(self.parameters()):
+                x.data = Tensor(params_np[i], device=x.device)
 
     def parameters(self) -> List[Tensor]:
         """Return the list of parameters in the module."""

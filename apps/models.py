@@ -5,7 +5,6 @@ import math
 import numpy as np
 np.random.seed(0)
 
-
 def ConvBN(in_channels, out_channels, kernel_size, stride, dtype="float32", device=None):
     return nn.Sequential(
         nn.Conv(in_channels, out_channels, kernel_size, stride=stride, dtype=dtype,device=device),

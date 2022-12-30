@@ -1,41 +1,59 @@
 https://dlsyscourse.org/project
 
-a recording of a slideshow with voiceover,
-a screen-capture of the system you’ve built,
-no more than 90 seconds.
+Your project will be graded primarily on __how well you are able to extend the ideas presented in class to build an interesting and useful extension of the methods we have covered__. Your project will be graded based both upon your prose and code, so the code should be written in a legible manner meant to be read, with appropriate structure and comments, etc.
 
-Your project will be graded primarily on how well you are able to extend the ideas presented in class to build an interesting and useful extension of the methods we have covered. Your project will be graded based both upon your prose and code, so the code should be written in a legible manner meant to be read, with appropriate structure and comments, etc.
 
-## Video report
-
-I did some works for A/ diff (w,h) kernel for convolution and B/ max-pooling-2x1 and here is what I want to summary:
-
-A/ https://gist.github.com/tiendung/1f8fc03707da89139ad1508f2ca262dd
-
-To support different (w, h) kernel for convolution we need to modify related ops/functions to support that difference.
-The first ops need to modify is `dilate/undilate` to support different dilation over selected axes.
-
-[[ we can show a screenshot of diff code to illustrate]]
-
-![](docs/files/prj_undilate_diff.png)
-...
-
-B/ https://gist.github.com/tiendung/79579e8b248975c59980ff001ba6c109
-
-For max-pooling, we should write a new NDArray function to do it efficiently. But since for this project we need to do 2x1 max-pooling only, we can apply some stride tricks to complete the function without writing new C++ code.
-
-![](docs/files/prj_max-pooling.png)
-
-## Final report
-
-https://ssrn.com/abstract=3756587
-
-https://www.bilibili.com/video/BV1TT4y1k7Jx
+Paper https://ssrn.com/abstract=3756587
 
 ![](docs/files/project-00.png)
 
-
 ![](docs/files/project.png)
+
+## Input data
+
+Download data
+```
+                             adjOpen    adjHigh     adjLow   adjClose  adjVolume
+date
+1977-01-03 00:00:00+00:00  10.580262  10.694948  10.580262  10.603927     160297
+1977-01-04 00:00:00+00:00  10.603927  10.649437  10.445551  10.467396     135157
+1977-01-05 00:00:00+00:00  10.467396  10.627592  10.330865  10.398220     180281
+1977-01-06 00:00:00+00:00  10.398220  10.512906  10.307199  10.376375     159223
+1977-01-07 00:00:00+00:00  10.376375  10.421885  10.148823  10.330865     135157
+...                              ...        ...        ...        ...        ...
+2022-12-15 00:00:00+00:00  15.950000  16.000000  15.460000  15.490000    1490764
+2022-12-16 00:00:00+00:00  15.410000  15.650000  15.110000  15.190000    2363635
+2022-12-19 00:00:00+00:00  15.250000  15.260000  13.980000  14.110000    2207664
+2022-12-20 00:00:00+00:00  14.110000  14.830000  13.920000  14.710000    1974800
+2022-12-21 00:00:00+00:00  14.910000  14.955000  14.730200  14.850000    1017520
+
+[11594 rows x 5 columns]
+```
+
+conv forward
+```py
+inner_dim = Kw * Kh * C_in
+A = A.reshape((-1, inner_dim))
+out = A @ weight.reshape((inner_dim, C_out))
+```
+
+- From table data, generate B&W images
+- Input: black & white images (bit: 0 vs 1), 
+- 5 x 3 conv means using 15 x bits of input each conv op
+- c_in = 1, c_out = 64
+- `inner_dim = 15` (kh = 5, kw = 3, c_in = 1)
+- ^^^^^ using 16-bit datatype (float16, uint16) is enough to store an inner_dim
+- Since the width of a matrix is 15, so the optimized techniques for general matmuls won't work well
+
+
+
+## Video report
+https://docs.google.com/presentation/d/1eldoC_dfDi1ukoNL2t4Bz31Swmwn7sv6u5lDqxseEo4/edit
+
+## Final report
+
+. . .
+
 
 ## [Conv as matmul](https://youtu.be/7kclgMIcMq0?t=1581)
 
@@ -116,6 +134,8 @@ d = c.max(axis=1).reshape(new_shape)
 # mask = (a > b)
 # a * mask
 ```
+
+- - -
 
 ### Very first max-pool trick idea
 

@@ -5,9 +5,9 @@ Your project will be graded primarily on __how well you are able to extend the i
 
 Paper https://ssrn.com/abstract=3756587
 
-![](docs/files/project-00.png)
+![](files/project-00.png)
 
-![](docs/files/project.png)
+![](files/project.png)
 
 ## Input data
 
@@ -45,7 +45,11 @@ out = A @ weight.reshape((inner_dim, C_out))
 - ^^^^^ using 16-bit datatype (float16, uint16) is enough to store an inner_dim
 - Since the width of a matrix is 15, so the optimized techniques for general matmuls won't work well
 
+=> next conv will x128 times heavier than the first conv
+=> next conv will x256 times heavier than the second conv
+=> next conv will x512 times heavier than the third conv
 
+=> Need to optimze conv in general.
 
 ## Video report
 https://docs.google.com/presentation/d/1eldoC_dfDi1ukoNL2t4Bz31Swmwn7sv6u5lDqxseEo4/edit
@@ -59,7 +63,7 @@ https://docs.google.com/presentation/d/1eldoC_dfDi1ukoNL2t4Bz31Swmwn7sv6u5lDqxse
 
 https://github.com/telexyz/kim/blob/master/notebooks/convolution_implementation.ipynb
 
-![](docs/files/conv-as-matmul.png)
+![](files/conv-as-matmul.png)
 
 Ảnh đầu vào có kích cỡ h x w, và có c_in channels (kênh màu)
 Với mỗi c_out channel `r` ta có c_in conv filters/kernels kích cỡ (k x k)
@@ -139,6 +143,6 @@ d = c.max(axis=1).reshape(new_shape)
 
 ### Very first max-pool trick idea
 
-![](docs/files/project1.jpg)
+![](files/project1.jpg)
 
-![](docs/files/project2.jpg)
+![](files/project2.jpg)

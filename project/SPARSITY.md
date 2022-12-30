@@ -11,7 +11,7 @@ Trong buổi nói chuyện này, tôi dự định đề cập đến một số
 
 ## Lottery Ticket Hypothesis https://youtu.be/E_jpEUul5W8?t=717
 
-![](docs/files/sparse-00.png)
+![](files/sparse-00.png)
 
 Thay vì đào tạo một mạng to béo ban đầu, có thể có một phiên bản thu gọn (màu đỏ), và khi nói về thu gọn, nó có thể là 90%, 95%, hoặc 97% các phần tử là 0. Và khi bạn đào tạo mạng nơ-ron cực kỳ mỏng này từ đầu sử dụng các bước huấn luyện tương tự bạn sẽ nhận được hiệu suất như mạng nơ-ron ban đầu. Nghe có vẻ may mắn :D Đúng vậy, điều đó sẽ mang lại hiệu suất tốt hơn, chạy nhanh hơn, cùng thời gian đào tạo ngắn hơn ... Nghe có vẻ tất cả đều tuyệt vời, tuy nhiên bạn THỰC SỰ phải biết mạng con nào đã trúng sổ xố. Nghĩa là bạn thực sự hiểu rõ về mạng nơ-ron thưa.
 
@@ -53,7 +53,7 @@ Vậy từ khóa đầu tiên là `sử dụng lại` và kỹ thuật đằng s
 
 - - -
 
-![](docs/files/sparse-02.png)
+![](files/sparse-02.png)
 
 Từ khóa tiếp theo `mặt nạ có tính co giãn`: chúng ta có thể chuyển hóa tấm vé trúng thưởng từ một mạng này sang một mạng khác có cùng kiến trúc, để trực tiếp tìm ra chiếc vé trúng thưởng của mạng mới mà không phải thực hiện lại quá trình tìm kiếm đắt đỏ.
 
@@ -66,7 +66,7 @@ https://youtu.be/E_jpEUul5W8?t=1747
 
 __ngạc nhiên là độ thưa thớt tốt có thể dễ dàng được tìm ra__
 
-![](docs/files/sparse-01.png)
+![](files/sparse-01.png)
 
 Khoảng 15-20% của tổng số lượng epochs, các kết nối quan trọng đã nổi lên và được giữ cho ổn định. Vì thế việc cắt tỉa có thể diễn ra từ sớm.
 
@@ -76,7 +76,7 @@ Khoảng 15-20% của tổng số lượng epochs, các kết nối quan trọng
 
 Tổng kết lại, bạn đã biết tấm vé trúng thưởng là có thật, và có thể tìm ra được, có thể được chuyển giao (pre-trainling / transfer learning), và có thể phát hiện sớm (EarlyBERT), và tôi tiếp tục gợi ý rằng thực sự tồn tại một người đặc biệt may mắn và việc trả giá để rút được tấm vé đó là hoàn toàn xứng đáng. Tôi sẽ kể cho bạn một câu truyện khác rằng bạn có thể không cần phải trả thuế để tìm ra tấm vé số đó.
 
-![](docs/files/sparse-03.png)
+![](files/sparse-03.png)
 
 Việc cắt tỉa ngẫu nhiên là rác rưởi? Không hẳn như vậy, nếu huấn luyện NN từ đầu thì cắt tỉa ngẫu nhiên có thể tốt! Thậm chí rất mạnh mẽ.
 

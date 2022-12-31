@@ -51,25 +51,27 @@ class Adam(Optimizer):
         self.beta2 = beta2
         self.eps = eps
         self.weight_decay = weight_decay
-        self.t = 0
+        self.iter = 0
 
         self.u = {}
         self.v = {}
         for w in self.params:
-            self.u[w] = kim.Tensor(device.zeros(*w.shape), device=device)
-            self.v[w] = kim.Tensor(device.zeros(*w.shape), device=device)
+            self.u[w] = device.zeros(*w.shape)
+            self.v[w] = device.zeros(*w.shape)
 
 
     def step(self):
-        self.t += 1
+        self.iter += 1
         for w in self.params:
             if w.grad is None: continue
-            grad = w.grad.data + w.data * self.weight_decay
-            self.u[w].data = self.beta1*self.u[w].data + (1-self.beta1)*grad
-            self.v[w].data = self.beta2*self.v[w].data + (1-self.beta2)*(grad**2)
+            # weight_decay = 0 thì grad = w.grad
+            grad = w.grad.cached_data + w.cached_data * self.weight_decay
 
-            u_hat = self.u[w].data / (1 - (self.beta1 ** self.t))
-            v_hat = self.v[w].data / (1 - (self.beta2 ** self.t))
+            self.u[w] = self.beta1*self.u[w] + (1-self.beta1)*grad
+            self.v[w] = self.beta2*self.v[w] + (1-self.beta2)*(grad**2)
+
+            u_hat = self.u[w] / (1 - (self.beta1 ** self.iter))
+            v_hat = self.v[w] / (1 - (self.beta2 ** self.iter))
 
             update = u_hat / ((v_hat ** 0.5) + self.eps)
-            w.data = w.data - self.lr * update.data
+            w.cached_data -= self.lr * update

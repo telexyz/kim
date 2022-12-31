@@ -8,6 +8,7 @@ Paper https://ssrn.com/abstract=3756587
 ![](files/project-00.png)
 
 ![](files/project.png)
+46080/256=180 pixels per channel
 
 ## Input data
 

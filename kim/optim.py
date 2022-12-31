@@ -24,13 +24,13 @@ class SGD(Optimizer):
         self.weight_decay = weight_decay
         self.u = {}
         for w in self.params:
-            self.u[w] = kim.Tensor(device.zeros(*w.shape), device=device)
+            self.u[w] = device.zeros(*w.shape)
 
     def step(self):
         for w in self.params:
-            grad = (w.grad + w * self.weight_decay).detach()
-            self.u[w].data = (self.momentum*self.u[w] + (1 - self.momentum)*grad).detach()
-            w.data = (w - self.lr * self.u[w]).detach()
+            grad = w.grad.cached_data + w.cached_data * self.weight_decay
+            self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*grad
+            w.cached_data -= self.lr * self.u[w]
 
 
 class Adam(Optimizer):

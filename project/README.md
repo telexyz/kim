@@ -52,6 +52,8 @@ out = A @ weight.reshape((inner_dim, C_out))
 
 => Need to optimze conv in general.
 
+
+
 ## Video report
 https://docs.google.com/presentation/d/1eldoC_dfDi1ukoNL2t4Bz31Swmwn7sv6u5lDqxseEo4/edit
 

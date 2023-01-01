@@ -17,7 +17,7 @@ def test_max_pooling(N,H,W,C):
     # Forward
     res_ = torch.nn.MaxPool2d((2, 1))(X_)
     X = X.transpose(axes=(1, 2)).transpose(axes=(2, 3)) # N,C,H,W => N,H,W,C
-    res = kim.nn.MaxPool2d()(X)  # N,H,W,C => N,C,H,W
+    res = kim.nn.MaxPool2x1()(X)  # N,H,W,C => N,C,H,W
     np.testing.assert_allclose(res_.detach().numpy(), res.transpose(
         axes=(2, 3)).transpose(axes=(1, 2)).numpy(), rtol=1e-04, atol=1e-04)
 

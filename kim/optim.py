@@ -46,7 +46,7 @@ class Adam(Optimizer):
     ):
         super().__init__(params)
         if device is None: device = kim.default_device()
-        self.lr = lr
+        self.lr = float(lr)
         self.beta1 = beta1
         self.beta2 = beta2
         self.eps = eps

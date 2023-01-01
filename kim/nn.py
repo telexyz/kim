@@ -83,6 +83,20 @@ class Module:
 # - - - short modules - - -
 
 class MaxPool2d(Module):
+    def __init__(self, kernel_size=2, stride=1, padding=0):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+    def forward(self, X):
+        X = X.transpose((1, 2)).transpose((2, 3))
+        out = ops.max_pool2d(X, self.kernel_size, self.stride, self.padding)
+        out = out.transpose((2, 3)).transpose((1, 2))
+        return out
+
+
+class MaxPool2x1(Module):
     def forward(self, x):
         # X is (N,H,W,C) and we do 2x1 pooling on (H,W)
         x = x.transpose(axes=(1,3))  # x now (N,C,W,H)

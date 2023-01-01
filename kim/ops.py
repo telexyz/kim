@@ -614,7 +614,7 @@ class Conv(TensorOp):
         # weight là conv kernel kích cỡ (Kh, Kw, C_in, C_out)
         # Với (Kh, Kw) là kích thước kernel, và biến ảnh C_in channels thành ảnh C_out channels
         Kh, Kw, C_in_, C_out = weight.shape
-        assert(C_in == C_in_)
+        assert(C_in == C_in_), "%s != %s | %s %s" % (C_in, C_in_, Z.shape, weight.shape)
 
         # `im2col` là kỹ thuật biến đổi N ảnh đầu vào thành dữ liệu sẵn sàng cho conv chỉ bằng 1 matmul
         # làm được điều này bằng cách chuẩn bị sẵn đối ứng (Kh, Kw) để nhân với kernels bằng a neat strides trick!
@@ -759,10 +759,65 @@ class LeakyReLU(TensorOp):
         device = out_grad.device
         out_pos = out_grad * Tensor(Xd > 0, device=device)
         out_neg = out_grad * Tensor(Xd < 0, device=device)
-        return out_pos + self.slope * out_neg
+        return out_pos + self.slope * out_neg,
 
 def leaky_relu(a, slope):
     return LeakyReLU(slope)(a)
+
+
+class MaxPool2d(TensorOp):
+    def __init__(self, kernel_size, stride=1, padding=0, device=None, dtype="float32"):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.device = device
+        self.dtype = dtype
+
+    def compute(self, X):
+        N, H, W, C = X.shape
+        out = np.zeros((N, H // 2, W, C))
+        # out = array_api.NDArray(out, device=X.device)
+        # 0/a
+        for i in range(H // 2):
+
+            # why this does not work?
+            # res = array_api.maximum(X[:, i*2, :, :].compact(), X[:, i*2 + 1, :, :].compact())
+            # out[:, i, :, :] = res
+
+            # numpy version
+            res = np.maximum(X.numpy()[:, i*2, :, :],
+                             X.numpy()[:, i*2+1, :, :])
+            out[:, i, :, :] = res
+        out = array_api.NDArray(out, device=X.device)
+        return out
+
+    def gradient(self, out_grad, node):
+        X = node.inputs[0]
+        N, H, W, C = X.shape
+        device = X.device
+        # out_grad = np.random.randn(N, H // 2, W, C)
+        out = np.zeros((N, H, W, C)) * 999
+        # out = array_api.NDArray(out, device=X.device)
+        X = X.numpy()
+        out_grad = out_grad.numpy()
+        for i in range(H // 2):
+
+            # use numpy version
+            idx = X[:, i*2, :, :] >= X[:, i*2+1, :, :]
+            out[:, i*2, :, :] = idx * out_grad[:, i, :, :]
+            out[:, i*2+1, :, :] = (1-idx) * out_grad[:, i, :, :]
+
+            # # tensor version
+            # idx = X[:, i*2, :, :] >= X[:, i*2+1, :, :]
+            # out[:, i*2, :, :] = idx * out_grad[:, i, :, :]
+            # out[:, i*2+1, :, :] = (1-idx) * out_grad[:, i, :, :]
+        return Tensor(out, device=device),
+
+
+def max_pool2d(X, kernel_size, stride, padding):
+    return MaxPool2d(kernel_size, stride, padding)(X)
+
 
 # # # # # # # # # # # # # # # # # # # # #
 # Fused Ops to apply what learned from  #

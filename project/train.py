@@ -16,10 +16,12 @@ DATA_DIR = Path("data/stocks").expanduser()
 import logging
 logger = logging.getLogger(__name__)
 
+
 class LogLoss(Module):
     """Documentation for LogLoss
 
     """
+
     def __init__(self, input_is_probability=False):
         self.input_is_probability = input_is_probability
 
@@ -28,14 +30,13 @@ class LogLoss(Module):
         :param yhat: the probabality of being positive
         :param y: true label
         :returns: log loss
-        """        
+        """
         if not self.input_is_probability:
             yhat = ops.sigmoid(yhat)
 
         logloss = - y * ops.log(yhat) - (1-y) * ops.log(1 - yhat)
         return logloss
 
-        
 
 def get_train_val_dataset(freq, img_resolution, price_prop, train_size, val_size_fast, val_size, batch_size):
     # img_resolution = 32
@@ -50,11 +51,11 @@ def get_train_val_dataset(freq, img_resolution, price_prop, train_size, val_size
                max_date='2000-12-31')
 
     ds_val_fast = OHLCV(DATA_DIR, size=val_size_fast, frequency=freq,
-                   imager=imager,
-                   seed=5 + 19,
-                   min_date='2001-01-01',
-                   max_date='2019-12-31')
-    
+                        imager=imager,
+                        seed=5 + 19,
+                        min_date='2001-01-01',
+                        max_date='2019-12-31')
+
     ds_val = OHLCV(DATA_DIR, size=val_size, frequency=freq,
                    imager=imager,
                    seed=5 + 19,
@@ -68,6 +69,21 @@ def get_train_val_dataset(freq, img_resolution, price_prop, train_size, val_size
     return dl, dl_val_fast, dl_val
 
 
+def conv_block(cin, cout, device):
+    m = [Conv(cin, cout, (5, 3), device=device),
+         BatchNorm2d(cout, device=device),
+         LeakyReLU(),
+         MaxPool2d()]
+    return m
+
+
+def output_layer(hidden_size, num_classes, device, p=0.5):
+    m = [Flatten(),
+         Dropout(p),
+         Linear(hidden_size, num_classes, device=device)]
+    return m
+
+
 def get_model(name: str, device='cuda') -> nn.Module:
     if device == 'cuda':
         device = ndl.cuda()
@@ -75,22 +91,14 @@ def get_model(name: str, device='cuda') -> nn.Module:
         device = ndl.cpu()
 
     if name == '32x15':
-        model = Sequential(Conv(1, 64, 3, device=device),
-                           BatchNorm2d(64, device=device),
-                           LeakyReLU(),
-                           MaxPool2d(),
-                           Conv(64, 128, 3, device=device),
-                           BatchNorm2d(128, device=device),
-                           LeakyReLU(),                           
-                           MaxPool2d(),
-                           Flatten(),
-                           Dropout(0.5),
-                           Linear(15360, 2, device=device)
-                           )
+        m = []
+        m += conv_block(1, 64, device=device)
+        m += conv_block(64, 128, device=device)
+        m += output_layer(15360, 2, device=device)
+        model = Sequential(*m)
     else:
-        model = Sequential(Flatten(), Dropout(), Linear(32*15, 2, device=device))
+        raise NotImplementedError("...")
     return model
-
 
 
 def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
@@ -103,15 +111,15 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
     device = model.parameters()[0].device
     pbar = tqdm(total=len(dl.dataset) // dl.batch_size)
     losses = []
-    
+
     cnt = 0
-    pred = [ ]   # probabality of being positive return.
-    for X, y, meta in dl:
+    pred = []   # probabality of being positive return.
+    for X, y in dl:
         # (N, W, H) -> (N, H, W) -> (N, 1, H, W). the input to nn.Conv
         # if any of the X is not finite number, stop.
         if not np.isfinite(X.numpy()).all():
-            save_pickle([X.numpy(), y.numpy(), meta], 'tmp.pkl')
-            # 0/a
+            save_pickle([X.numpy(), y.numpy()], 'tmp.pkl')
+            0/a
 
         n, w, h = X.shape
         X = X.transpose((1, 2)).reshape((n, 1, h, w))
@@ -121,17 +129,18 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
         yhat = model(X)
 
         loss = loss_fn(yhat, y01)
-        losses.append(loss.numpy()[0])
+        losses.append(loss.numpy())
         pred.append(yhat.numpy()[:, 1])
 
-        pbar.set_description_str(msg_header + f"Batch: {cnt} Loss: {np.mean(losses)}")
+        pbar.set_description_str(
+            msg_header + f"Batch: {cnt} Loss: {np.mean(losses):.6f}")
         pbar.update()
         cnt += 1
 
         if model.training:
+            opt.reset_grad()
             loss.backward()
             opt.step()
-            opt.reset_grad()
 
         # to save memory.
         del loss, yhat, X, y01
@@ -139,6 +148,7 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
     out = {'loss': float(np.mean(losses)),
            'prediction': np.concatenate(pred)}
     return out
+
 
 def save_model(model, filename):
     param_np = [x.numpy() for x in model.parameters()]
@@ -169,8 +179,10 @@ def train(model, dl_set, output_folder, lr, weight_decay, checkpoint):
 
     for i in checkpoint.epoches_:
         logger.info(f"Train and eval for epoch {epoch}")
-        train_res = epoch(dl, model, loss_fn, opt, msg_header=f"Train - Epoch: {i} ")
-        val_res = epoch(dl_val, model, loss_fn, opt=None, msg_header=f"valid - Epoch: {i} ")
+        train_res = epoch(dl, model, loss_fn, opt,
+                          msg_header=f"Train - Epoch: {i} ")
+        val_res = epoch(dl_val, model, loss_fn, opt=None,
+                        msg_header=f"valid - Epoch: {i} ")
         train_loss = train_res['loss']
         val_loss = val_res['loss']
         losses['train_loss'].append(train_loss)
@@ -178,7 +190,8 @@ def train(model, dl_set, output_folder, lr, weight_decay, checkpoint):
 
         # note prediction for the trainign dataset is discarded.
         # val prediction is also not saved. because it is a small dataset here.
-        checkpoint.save(i, {'model': model, 'losses': {'train_loss': train_loss, 'train_val_loss': val_loss}})
+        checkpoint.save(i, {'model': model, 'losses': {
+                        'train_loss': train_loss, 'train_val_loss': val_loss}})
 
 
 def predict(model, dl_val, checkpoint, predict_step):
@@ -190,7 +203,8 @@ def predict(model, dl_val, checkpoint, predict_step):
         if not chkpt_file.exists():
             logger.info("run prediction for epoch %s", epoch)
             model = checkpoint.load_model_param_from_checkpoint(model, i)
-            val_res = epoch(dl_val, model, loss_fn, opt=None, msg_header=f"valid - Epoch: {i} ")
+            val_res = epoch(dl_val, model, loss_fn, opt=None,
+                            msg_header=f"valid - Epoch: {i} ")
             checkpoint.save(i, {'val_predict': val_res['prediction'],
                                 'losses': {'val_loss': val_res['loss']}})
         # auxlirary
@@ -201,6 +215,7 @@ class Checkpoint(object):
     """Documentation for Checkpoint
 
     """
+
     def __init__(self, checkpoint_dir, training, max_epoch):
         """FIXME: briefly describe function
 
@@ -210,7 +225,8 @@ class Checkpoint(object):
         :returns: 
 
         """
-        self.checkpoint_dir = Path(checkpoint_dir) / 'chkpt'  # to avoid clutter model directory.
+        self.checkpoint_dir = Path(checkpoint_dir) / \
+            'chkpt'  # to avoid clutter model directory.
         self.max_epoch = max_epoch + 1
         self.training = training
 
@@ -225,7 +241,8 @@ class Checkpoint(object):
         self.checkpoint_dir.mkdir(exist_ok=True, parents=True)
         for data_name, data_val in data.items():
             if data_name == 'model':
-                save_model(data_val, self.checkpoint_dir / f'{data_name}_{epoch}.pkl')
+                save_model(data_val, self.checkpoint_dir /
+                           f'{data_name}_{epoch}.pkl')
             elif data_name == 'losses':
                 # note, losses.csv are used in the root folder, not
                 # the sub 'chkpt' folder, because there's one
@@ -236,12 +253,15 @@ class Checkpoint(object):
                     for loss_name, loss in data_val.items():
                         losses.loc[epoch, loss_name] = loss
                 else:
-                    losses = pd.DataFrame(data_val, index=pd.Index([epoch], name='epoch'))
+                    losses = pd.DataFrame(
+                        data_val, index=pd.Index([epoch], name='epoch'))
                 losses.to_csv(losses_file)
             elif isinstance(data_val, (np.ndarray, )):
-                save_pickle(data_val, self.checkpoint_dir / f'{data_name}_{epoch}.pkl')
+                save_pickle(data_val, self.checkpoint_dir /
+                            f'{data_name}_{epoch}.pkl')
             else:
-                save_yaml(data_val, self.checkpoint_dir / f'{data_name}_{epoch}.yaml')
+                save_yaml(data_val, self.checkpoint_dir /
+                          f'{data_name}_{epoch}.yaml')
 
     def load_model_param_from_checkpoint(self, model, epoch=None):
         if epoch is None:
@@ -251,7 +271,6 @@ class Checkpoint(object):
 
     def __iter__(self):
         return list(range(self.last_checkpoint, self.max_epoch))
-    
 
     @property
     def last_checkpoint(self):
@@ -272,7 +291,7 @@ def main(config_id, task, device, max_epoch, predict_step=1, output_folder=None)
         output_folder = Path(output_folder)
     setup_simple_logging(output_folder/'train.log')
     logger.info("output folder is set to %s", output_folder)
-    chkpt = Checkpoint(output_folder, task=='train', max_epoch)
+    chkpt = Checkpoint(output_folder, task == 'train', max_epoch)
     model = get_model(config['model']['name'], device)
     if chkpt.last_checkpoint != 0:
         logger.info("Load model parameters")
@@ -292,11 +311,13 @@ def main(config_id, task, device, max_epoch, predict_step=1, output_folder=None)
     lr, wd = config['optimiser']['lr'], config['optimiser']['wd']
 
     if task == 'train':
-        train(model, [dl, dl_val_fast], output_folder=output_folder, lr=lr, weight_decay=wd, checkpoint=chkpt)
-    elif task =='predict_full_val':
+        train(model, [dl, dl_val_fast], output_folder=output_folder,
+              lr=lr, weight_decay=wd, checkpoint=chkpt)
+    elif task == 'predict_full_val':
         predict(model, dl_val, checkpoint=chkpt, predict_step=predict_step)
     else:
         raise ValueError(f"unknown action {task}")
+
 
 if __name__ == "__main__":
     from yp import setup_simple_logging

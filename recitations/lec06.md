@@ -106,6 +106,3 @@ w.cached_data -= self.lr * update
 ![](files/lec06-10.png)
 
 ![](files/lec06-11.png)
-
-## Khởi tạo trọng số https://youtu.be/CukpVt-1PA4?t=4194
-...

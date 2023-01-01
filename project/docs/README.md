@@ -2,14 +2,6 @@ https://dlsyscourse.org/project
 
 Your project will be graded primarily on __how well you are able to extend the ideas presented in class to build an interesting and useful extension of the methods we have covered__. Your project will be graded based both upon your prose and code, so the code should be written in a legible manner meant to be read, with appropriate structure and comments, etc.
 
-
-Paper https://ssrn.com/abstract=3756587
-
-![](files/project-00.png)
-
-![](files/project.png)
-46080/256=180 pixels per channel
-
 ## Input data
 
 Download data
@@ -51,7 +43,6 @@ out = A @ weight.reshape((inner_dim, C_out))
 => next conv will x512 times heavier than the third conv
 
 => Need to optimze conv in general.
-
 
 
 ## Video report

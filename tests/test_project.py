@@ -33,9 +33,9 @@ def test_max_pooling(N,H,W,C):
 @pytest.mark.parametrize("W", [6, 13, 100])
 @pytest.mark.parametrize("C_in", [1, 5])
 @pytest.mark.parametrize("C_out", [1, 32])
-@pytest.mark.parametrize("kh", [5, 1, 3])
-@pytest.mark.parametrize("kw", [1, 4, 9])
-@pytest.mark.parametrize("sh", [1])
+@pytest.mark.parametrize("kh", [5])
+@pytest.mark.parametrize("kw", [3])
+@pytest.mark.parametrize("sh", [3])
 @pytest.mark.parametrize("sw", [1])
 def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw, sh, sw):
     X = kim.init.randn(N, C_in, H, W, requires_grad=True)

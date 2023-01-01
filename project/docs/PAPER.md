@@ -55,7 +55,7 @@ Our workflow from training, to model tuning, and finally to prediction follows t
 procedure outlined by Gu et al. (2020). First, we divide the entire sample into training,
 validation, and testing samples. In our main US data sample, we estimate and validate the
 model using a single eight-year sample (1993-2000) at the start of our sample. In this eight-
-year sample, we randomly select 70% images for training and 30% for validation. Randomly
+year sample, we randomly select __70% images for training and 30% for validation__. Randomly
 selecting the training and validation sample helps balance positive and negative labels in
 our classification problem, which attenuates a potential bias in classification due to extended
 periods of bullish or bearish market swings. The resulting training and validation images
@@ -78,7 +78,7 @@ Bengio, 2010). This promotes faster convergence by generating starting values fo
 to ensure that prediction variance begins on a comparable scale to that of the labels. 
 
 - Loss function optimization uses stochastic gradient descent and the Adam algorithm (Kinga and
-Adam, 2015) with initial learning rate of 1 × 10^−5 and batch size of 128. 
+Adam, 2015) with initial __learning rate of 1 × 10^−5__ and __batch size of 128__. 
 
 - We use a batch normalization (Ioffe and Szegedy, 2015) layer between the convolution and 
 non-linear activation within each building block to reduce covariate shift.
@@ -141,7 +141,7 @@ size of the input image. We use 2 blocks to model 5-day images, 3 blocks for 20-
 and 4 blocks for 60-day images.
 
 The number of filters for the first building block is 64 for all
-three models.21 As pointed out by Zeiler and Fergus (2014), learned features become more
+three models. As pointed out by Zeiler and Fergus (2014), learned features become more
 complex in deeper layers, so we follow the literature and increase the number of filters after
 each convolutional layer by a factor of two (e.g., 64, 128, 256, and 512 filters, respectively, in
 the four layers of the 60-day model). In turn, the fully connected layers have 15, 360, 46, 080,
@@ -150,4 +150,14 @@ by the outputs of the convolutional blocks. The total number of parameters are 1
 the 5-day model, 708, 866 for 20-day, and 2, 952, 962 for 60-day models, respectively.22 Of
 course, the effective parameterization of these models is much smaller than this parameter
 count due to heavy regularization that shrinks most parameters close to zero.
+
+## CNN Prediction for US Stock Returns
+
+We use daily stock data from CRSP for all firms listed on NYSE, AMEX, and NASDAQ. Our
+sample runs from 1993–2019 based on the fact that daily opening, high, and low prices first
+become available in June 1992.
+
+In each image, we normalize the first day closing price to one, and
+construct each subsequent daily close from returns (RET_t) according to
+p_t+1 = (1 + RET_t+1)p_t.
 

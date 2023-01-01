@@ -766,57 +766,38 @@ def leaky_relu(a, slope):
 
 
 class MaxPool2d(TensorOp):
-    def __init__(self, kernel_size, stride=1, padding=0, device=None, dtype="float32"):
-        super().__init__()
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.padding = padding
-        self.device = device
-        self.dtype = dtype
+    def __init__(self, axis=1) -> None:
+        self.axis = axis
 
     def compute(self, X):
-        N, H, W, C = X.shape
-        out = np.zeros((N, H // 2, W, C))
-        # out = array_api.NDArray(out, device=X.device)
-        # 0/a
-        for i in range(H // 2):
-
-            # why this does not work?
-            # res = array_api.maximum(X[:, i*2, :, :].compact(), X[:, i*2 + 1, :, :].compact())
-            # out[:, i, :, :] = res
-
-            # numpy version
-            res = np.maximum(X.numpy()[:, i*2, :, :],
-                             X.numpy()[:, i*2+1, :, :])
-            out[:, i, :, :] = res
-        out = array_api.NDArray(out, device=X.device)
-        return out
+        slices = tuple(slice(0, n, 1) for n in X.shape)
+        odd_idxs, even_idxs = list(slices), list(slices)
+        n = X.shape[self.axis]
+        odd_idxs[self.axis] = slice(0, n-1, 2)
+        even_idxs[self.axis] = slice(1, n, 2)
+        return array_api.maximum(X.__getitem__(tuple(odd_idxs)).compact(),
+                                 X.__getitem__(tuple(even_idxs)).compact())
 
     def gradient(self, out_grad, node):
-        X = node.inputs[0]
-        N, H, W, C = X.shape
-        device = X.device
-        # out_grad = np.random.randn(N, H // 2, W, C)
-        out = np.zeros((N, H, W, C)) * 999
-        # out = array_api.NDArray(out, device=X.device)
-        X = X.numpy()
-        out_grad = out_grad.numpy()
-        for i in range(H // 2):
+        X = node.inputs[0].realize_cached_data()
+        out_grad = out_grad.realize_cached_data()
 
-            # use numpy version
-            idx = X[:, i*2, :, :] >= X[:, i*2+1, :, :]
-            out[:, i*2, :, :] = idx * out_grad[:, i, :, :]
-            out[:, i*2+1, :, :] = (1-idx) * out_grad[:, i, :, :]
+        out = NDArray.make(X.shape, device=X.device)
 
-            # # tensor version
-            # idx = X[:, i*2, :, :] >= X[:, i*2+1, :, :]
-            # out[:, i*2, :, :] = idx * out_grad[:, i, :, :]
-            # out[:, i*2+1, :, :] = (1-idx) * out_grad[:, i, :, :]
-        return Tensor(out, device=device),
+        slices = tuple(slice(0, n, 1) for n in X.shape)
+        odd_idxs, even_idxs = list(slices), list(slices)
+        n = X.shape[self.axis]
+        odd_idxs[self.axis] = slice(0, n-1, 2)
+        even_idxs[self.axis] = slice(1, n, 2)
 
+        idx = X.__getitem__(tuple(odd_idxs)).compact() >= X.__getitem__(tuple(even_idxs)).compact()
+        out.__setitem__(tuple(odd_idxs), idx * out_grad)
+        out.__setitem__(tuple(even_idxs), (1-idx) * out_grad)
 
-def max_pool2d(X, kernel_size, stride, padding):
-    return MaxPool2d(kernel_size, stride, padding)(X)
+        return Tensor(out, device=X.device),
+
+def max_pool2d(X, axis=1):
+    return MaxPool2d(axis=axis)(X)
 
 
 # # # # # # # # # # # # # # # # # # # # #

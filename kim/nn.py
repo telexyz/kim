@@ -276,16 +276,17 @@ class Conv(Module):
         super().__init__() # normalize kernel_size and stride so that:
 
         kh, kw = k
+        sh, sw = stride
         self.in_channels = i
         self.out_channels = o
         self.kernel_size_w = kw
         self.kernel_size_h = kh
-        self.stride_w = stride[1]
-        self.stride_h = stride[0]
+        self.stride_w = sw
+        self.stride_h = sh
 
         # Initialize the (kw, kh, i, o) weight tensor using Kaiming uniform initialization 
         # with default settings.
-        k = (kw + kh) // 2;
+        k = (kw + kh) // 2
         # Previously, we have implemented Kaiming uniform/normal initializations, where we essentially 
         # assigned fan_in = input_size and fan_out = output_size.
         # For convolution, this becomes somewhat more detailed, in that you should multiply both of these 

@@ -602,7 +602,7 @@ class Conv(TensorOp):
     def compute(self, Z, weight):
         assert len(Z.shape) == 4 and len(weight.shape) == 4, "ops.Conv only accept 4D, 4D args"
 
-        # Tự động tính toán padding để ảnh đầu ra có kích cỡ bằng ảnh đầu vào ((W, H) ko đổi)
+        # nn.Conv đã tự động tính toán padding để ảnh đầu ra có kích cỡ bằng ảnh đầu vào ((W, H) ko đổi)
         pw, ph = self.padding_w, self.padding_h
         if pw != 0 or ph != 0:
             Z = array_api.pad(Z, ( (0, 0), (ph, ph), (pw, pw), (0, 0) ))
@@ -677,9 +677,12 @@ class Conv(TensorOp):
         if self.stride_w > 1 or self.stride_h > 1:
             out_grad = dilate(out_grad, (1, 2), (self.stride_h-1, self.stride_w-1)) # NHWC => (1,2)==(H,W)
 
+        kh, kw, _, _ = W.shape
         # This padding depends on both the kernel size and the padding argument to the convolution
         ph = X.shape[1] - out_grad.shape[1] + self.padding_h
         pw = X.shape[2] - out_grad.shape[2] + self.padding_w
+        # ph = kh // 2# + self.padding_h
+        # pw = kw // 2# + self.padding_w
 
         # W should be flipped over both the kernel dimensions then transpose
         X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=(ph, pw))

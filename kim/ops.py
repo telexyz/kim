@@ -746,6 +746,24 @@ def relu(a):
     return ReLU()(a)
 
 
+class LeakyReLU(TensorOp):
+    def __init__(self, slope: float = 0.01):
+        self.slope = slope
+
+    def compute(self, a: NDArray) -> NDArray:
+        return array_api.maximum(a, 0) + \
+            self.slope * (-1) * array_api.maximum(-a, 0)
+
+    def gradient(self, out_grad: Tensor, node: Tensor):
+        Xd = node.inputs[0].realize_cached_data()
+        device = out_grad.device
+        out_pos = out_grad * Tensor(Xd > 0, device=device)
+        out_neg = out_grad * Tensor(Xd < 0, device=device)
+        return out_pos + self.slope * out_neg
+
+def leaky_relu(a, slope):
+    return LeakyReLU(slope)(a)
+
 # # # # # # # # # # # # # # # # # # # # #
 # Fused Ops to apply what learned from  #
 # how to calculate gradient in in       #

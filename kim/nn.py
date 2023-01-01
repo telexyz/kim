@@ -82,7 +82,7 @@ class Module:
 
 # - - - short modules - - -
 
-class MaxPooling2x1(Module):
+class MaxPool2d(Module):
     def forward(self, x):
         # X is (N,H,W,C) and we do 2x1 pooling on (H,W)
         x = x.transpose(axes=(1,3))  # x now (N,C,W,H)
@@ -106,6 +106,14 @@ class Flatten(Module):
 class ReLU(Module):
     def forward(self, x: Tensor) -> Tensor:
         return ops.relu(x)
+
+
+class LeakyReLU(Module):
+    def __init__(self, slope=0.01):
+        self.slope = slope
+
+    def forward(self, x: Tensor) -> Tensor:
+        return ops.LeakyReLU(self.slope)(x)
 
 
 class Tanh(Module):

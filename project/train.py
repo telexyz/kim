@@ -38,42 +38,37 @@ class LogLoss(Module):
         return logloss
 
 
-def get_train_val_dataset(freq, img_resolution, price_prop, train_size, val_size_fast, val_size, batch_size):
+def get_train_val_test_dataset(freq, img_resolution, price_prop, train_size, val_size, test_size, batch_size):
     # img_resolution = 32
     # price_prop = 0.75
     # freq = 5
 
     imager = ImagingOHLCV(img_resolution, price_prop=price_prop)
-    ds = OHLCV(DATA_DIR, size=train_size, frequency=freq,
+    ds = OHLCV(DATA_DIR, size=train_size + val_size, frequency=freq,
                imager=imager,
                seed=5,
                min_date='1993-01-01',
                max_date='2000-12-31')
+    ds_train, ds_val = ds.train_val_split(train_prop=0.7, seed=27)
 
-    ds_val_fast = OHLCV(DATA_DIR, size=val_size_fast, frequency=freq,
-                        imager=imager,
-                        seed=5 + 19,
-                        min_date='2001-01-01',
-                        max_date='2019-12-31')
+    ds_test = OHLCV(DATA_DIR, size=test_size, frequency=freq,
+                    imager=imager,
+                    seed=5 + 19,
+                    min_date='2001-01-01',
+                    max_date='2019-12-31')
 
-    ds_val = OHLCV(DATA_DIR, size=val_size, frequency=freq,
-                   imager=imager,
-                   seed=5 + 19,
-                   min_date='2001-01-01',
-                   max_date='2019-12-31')
-
-    dl = DataLoader(ds, batch_size, True)
-    dl_val_fast = DataLoader(ds_val_fast, batch_size, False)
+    dl_train = DataLoader(ds_train, batch_size, True)
     dl_val = DataLoader(ds_val, batch_size, False)
+    dl_test = DataLoader(ds_test, batch_size, False)
 
-    return dl, dl_val_fast, dl_val
+    return dl_train, dl_val, dl_test
 
 
 def conv_block(cin, cout, device):
     m = [Conv(cin, cout, (5, 3), device=device),
          BatchNorm2d(cout, device=device),
          LeakyReLU(),
-         MaxPool2d()]
+         MaxPool2d(2)]
     return m
 
 
@@ -114,7 +109,6 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
 
     cnt = 0
     pred = []   # probabality of being positive return.
-
     for X, y in dl:
         # (N, W, H) -> (N, H, W) -> (N, 1, H, W). the input to nn.Conv
         # if any of the X is not finite number, stop.
@@ -126,7 +120,7 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
         X = X.transpose((1, 2)).reshape((n, 1, h, w))
 
         X = ndl.Tensor(X, device=device)
-        y01 = ndl.Tensor(y.numpy() > 1, device=device)
+        y01 = ndl.Tensor(y.numpy() > 0, device=device)
         yhat = model(X)
 
         loss = loss_fn(yhat, y01)
@@ -139,9 +133,9 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
         cnt += 1
 
         if model.training:
-            opt.reset_grad()
             loss.backward()
             opt.step()
+            opt.reset_grad()
 
         # to save memory.
         del loss, yhat, X, y01
@@ -152,14 +146,14 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
 
 
 def save_model(model, filename):
-    print(">>> save model params", len(model.parameters()))
     param_np = [x.numpy() for x in model.parameters()]
     save_pickle(param_np, filename)
 
 
 def load_model(model, filename):
     param_np = load_pickle(filename)
-    assert len(param_np) == len(model.parameters()), "%s != %s" % (len(param_np), len(model.parameters()))
+    n = len(param_np)
+    assert n == len(model.parameters())
     for i, param in enumerate(model.parameters()):
         param.data = ndl.Tensor(param_np[i], device=param.device)
     return model
@@ -171,14 +165,15 @@ def train(model, dl_set, output_folder, lr, weight_decay, checkpoint):
     dl, dl_val = dl_set
     output_folder = Path(output_folder)
 
-    losses = {'train_loss': [], 'val_loss': []}
-
-    print(">>> init model params", len(model.parameters()))
+    losses = {'train_loss': [],
+              'val_loss': []}
 
     for i in checkpoint.epoches_:
         logger.info(f"Train and eval for epoch {epoch}")
-        train_res = epoch(dl, model, loss_fn, opt, msg_header=f"Train - Epoch: {i} ")
-        val_res = epoch(dl_val, model, loss_fn, opt=None, msg_header=f"valid - Epoch: {i} ")
+        train_res = epoch(dl, model, loss_fn, opt,
+                          msg_header=f"Train - Epoch: {i} ")
+        val_res = epoch(dl_val, model, loss_fn, opt=None,
+                        msg_header=f"valid - Epoch: {i} ")
         train_loss = train_res['loss']
         val_loss = val_res['loss']
         losses['train_loss'].append(train_loss)
@@ -199,15 +194,19 @@ def predict(model, dl_val, checkpoint, predict_step):
         if not chkpt_file.exists():
             logger.info("run prediction for epoch %s", epoch)
             model = checkpoint.load_model_param_from_checkpoint(model, i)
-            val_res = epoch(dl_val, model, loss_fn, opt=None, msg_header=f"valid - Epoch: {i} ")
-            checkpoint.save(i, {'val_predict': val_res['prediction'], 'losses': {'val_loss': val_res['loss']}})
+            val_res = epoch(dl_val, model, loss_fn, opt=None,
+                            msg_header=f"valid - Epoch: {i} ")
+            checkpoint.save(i, {'val_predict': val_res['prediction'],
+                                'losses': {'val_loss': val_res['loss']}})
         # auxlirary
         # save_yaml(losses, output_folder / 'losses.yaml')
+
 
 class Checkpoint(object):
     """Documentation for Checkpoint
 
     """
+
     def __init__(self, checkpoint_dir, training, max_epoch):
         """FIXME: briefly describe function
 
@@ -274,13 +273,13 @@ class Checkpoint(object):
         return max(epoch)
 
 
-def main(config_id, task, device, max_epoch, predict_step=1, output_folder=None):
+def main(config_id, task, device, max_epoch, predict_step=1, run_id='', output_folder=None):
     config = load_yaml(Path("configs") / f'{config_id}.yaml')
     if output_folder is None:
-        output_folder = Path("models") / config_id
-        output_folder.mkdir(exist_ok=True, parents=True)
+        output_folder = Path("models") / (config_id + run_id)
     else:
         output_folder = Path(output_folder)
+    output_folder.mkdir(exist_ok=True, parents=True)
     setup_simple_logging(output_folder/'train.log')
     logger.info("output folder is set to %s", output_folder)
     chkpt = Checkpoint(output_folder, task == 'train', max_epoch)
@@ -290,23 +289,23 @@ def main(config_id, task, device, max_epoch, predict_step=1, output_folder=None)
         model = chkpt.load_model_param_from_checkpoint(model)
 
     dp = config['data']
-    dl, dl_val_fast, dl_val = get_train_val_dataset(freq=dp['trading_days'],
-                                                    img_resolution=dp['image_resolution'],
-                                                    price_prop=dp['price_proportion'],
-                                                    train_size=dp['num_images_train'],
-                                                    val_size_fast=dp['num_images_valid_fast'],
-                                                    val_size=dp['num_images_valid'],
-                                                    batch_size=dp['batch_size'])
+    dl_train, dl_val, dl_test = get_train_val_test_dataset(freq=dp['trading_days'],
+                                                           img_resolution=dp['image_resolution'],
+                                                           price_prop=dp['price_proportion'],
+                                                           train_size=dp['num_images_train'],
+                                                           val_size=dp['num_images_valid'],
+                                                           test_size=dp['num_images_test'],
+                                                           batch_size=dp['batch_size'])
 
     # if use_checkpoint:
     #     load_model(output_folder / 'model.chkpt'
     lr, wd = config['optimiser']['lr'], config['optimiser']['wd']
 
     if task == 'train':
-        train(model, [dl, dl_val_fast], output_folder=output_folder,
+        train(model, [dl_train, dl_val], output_folder=output_folder,
               lr=lr, weight_decay=wd, checkpoint=chkpt)
-    elif task == 'predict_full_val':
-        predict(model, dl_val, checkpoint=chkpt, predict_step=predict_step)
+    elif task == 'test':
+        predict(model, dl_test, checkpoint=chkpt, predict_step=predict_step)
     else:
         raise ValueError(f"unknown action {task}")
 

@@ -1,20 +1,23 @@
-import sys; sys.path.append('..')
-
 import logging
+from copy import deepcopy
+from pathlib import Path
+from kim.data import Dataset, DataLoader
+import pandas as pd
+from PIL import Image
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+sys.path.append('..')
+
+
 logger = logging.getLogger(__name__)
 
-import numpy as np
-
-import matplotlib.pyplot as plt
-from PIL import Image
-import pandas as pd
-from kim.data import Dataset, DataLoader
-from pathlib import Path
 
 class MarketData(Dataset):
     """Documentation for  MarketDataMarketData
 
     """
+
     def __init__(self, data_dir):
         self.data_dir = Path(data_dir)
 
@@ -40,7 +43,7 @@ class OHLCV(Dataset):
 
     """
     all_market_data: pd.DataFrame
-    
+
     def __init__(self, data_dir, size, frequency, imager, seed, min_date, max_date):
         """
 
@@ -84,7 +87,8 @@ class OHLCV(Dataset):
         # process market data.
         all_ds = all_ds[all_ds['adjVolume'] != 0]
         all_ds = all_ds[all_ds.index >= '1993-01-01']
-        all_ds = all_ds[(all_ds.index >= self.min_date) & (all_ds.index < self.max_date)]
+        all_ds = all_ds[(all_ds.index >= self.min_date) &
+                        (all_ds.index < self.max_date)]
 
         self.all_market_data = all_ds
 
@@ -94,7 +98,8 @@ class OHLCV(Dataset):
         while data is None:
             data = self._try_load(idx)
             if cnt > 10000:
-                raise ValueError("tried to load data 100 times, not enough market data found. is this a bug?")
+                raise ValueError(
+                    "tried to load data 100 times, not enough market data found. is this a bug?")
             cnt += 1
             self.failed_img += 1
         return data
@@ -108,7 +113,8 @@ class OHLCV(Dataset):
 
         s = rng.choice(self.all_market_data.shape[0] - self.frequency)
 
-        md_roi = self.all_market_data.iloc[s - self.frequency:s + 2 * self.frequency]
+        md_roi = self.all_market_data.iloc[s -
+                                           self.frequency:s + 2 * self.frequency]
         if len(md_roi) != 3 * self.frequency:
             # not enough data.
             return None
@@ -123,27 +129,54 @@ class OHLCV(Dataset):
         price_ohlc = md_roi.iloc[self.frequency:2*self.frequency, :4].values
         volume = md_roi.iloc[self.frequency:2*self.frequency, 4].values
         # past and current
-        ma_close = md_roi[:2*self.frequency]['adjClose'].rolling(self.frequency).mean()
+        ma_close = md_roi[:2 *
+                          self.frequency]['adjClose'].rolling(self.frequency).mean()
         ma_close = ma_close.tail(self.frequency).values  # reformat
 
-        img = self.imager(price_data=price_ohlc, volumn_data=volume, ma_close=ma_close)
+        img = self.imager(price_data=price_ohlc,
+                          volumn_data=volume, ma_close=ma_close)
 
         if img is None:
             return None
 
         # future (label)
         X2 = md_roi.iloc[2*self.frequency:3*self.frequency, :5].values
-        y = X2[-1, 3] - X2[0, 0]   # diff between close price of last day and open price of the first day.
+        # diff between close price of last day and open price of the first day.
+        y = X2[-1, 3] - X2[0, 0]
 
         return img, y, meta
 
     def __len__(self):
         return self.size
 
+    def train_val_split(self, train_prop=0.7, seed=None):
+        """split randomly to have train and val datasets.
+
+        :param train_prop: proportion of the training dataset.
+
+        when calling, there are 2-3 copies of all_market_data. might give OOM.
+        """
+        train_ds = deepcopy(self)
+        val_ds = deepcopy(self)
+
+        rng = np.random.default_rng(seed=seed)
+        tr_idx = rng.uniform(size=len(self.all_market_data)) < train_prop
+
+        # train
+        train_ds.all_market_data = self.all_market_data[tr_idx]
+        train_ds.size = int(self.size * train_prop)
+
+        # val
+        val_ds.all_market_data = self.all_market_data[~tr_idx]
+        val_ds.size = self.size - train_ds.size
+
+        return train_ds, val_ds
+
 
 class ImagingOHLCV(object):
     """turn OHLC price and volume data into image.
     """
+
     def __init__(self, resolution=32, price_prop=0.75):
         super(ImagingOHLCV, self).__init__()
         self.resolution = resolution
@@ -202,7 +235,8 @@ class ImagingOHLCV(object):
 
         # add volume
         X = volumn_data
-        vol_per_pixel = X.max() / (vol_pixesl - 1)  # index start from 0, so -1.
+        # index start from 0, so -1.
+        vol_per_pixel = X.max() / (vol_pixesl - 1)
         X2 = (X / vol_per_pixel).astype(int)
         for i in range(n):
             loc_x = (i * 3) + 1
@@ -211,8 +245,10 @@ class ImagingOHLCV(object):
 
         return X_img
 
+
 def view_chart(X_img, **kwargs):
-    img = np.flip(X_img.T, 0)   # this to make it looks right... still don't understand why.
+    # this to make it looks right... still don't understand why.
+    img = np.flip(X_img.T, 0)
     img = (img * 255).astype(np.uint8)
     ax = plt.imshow(img, cmap='Greys_r')
     return ax

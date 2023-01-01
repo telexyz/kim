@@ -6,7 +6,6 @@ from kim import ops
 import kim.init as init
 import numpy as np
 import kim
-import pickle
 
 class Parameter(Tensor):
     """A special kind of tensor that represents parameters."""
@@ -47,17 +46,6 @@ def _child_modules(value: object) -> List["Module"]:
 class Module:
     def __init__(self):
         self.training = True
-
-    def save(self, filename):
-        params_np = [x.numpy() for x in self.parameters()]
-        with open(filename, 'wb') as handle:
-            pickle.dump(params_np, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    def load(self, filename):
-        with open(filename, 'rb') as handle:
-            params_np = pickle.load(handle)
-            for i, x in enumerate(self.parameters()):
-                x.data = Tensor(params_np[i], device=x.device)
 
     def parameters(self) -> List[Tensor]:
         """Return the list of parameters in the module."""
@@ -205,8 +193,11 @@ class BatchNorm1d(Module):
         self.momentum = momentum
         self.weight = Parameter(init.ones(1, self.dim, dtype=dtype, device=device))
         self.bias = Parameter(init.zeros(1, self.dim, dtype=dtype, device=device))
-        self.running_mean = init.zeros(self.dim, dtype=dtype, device=device)
-        self.running_var = init.ones(self.dim, dtype=dtype, device=device)
+        # 
+        self.running_mean = Parameter(init.zeros(dim, device=device, dtype=dtype), update_params=False)
+        self.running_var = Parameter(init.ones(dim, device=device, dtype=dtype), update_params=False)
+        # self.running_mean = init.zeros(self.dim, dtype=dtype, device=device)
+        # self.running_var = init.ones(self.dim, dtype=dtype, device=device)
 
     def forward(self, x: Tensor) -> Tensor:
         batch, dim = x.shape
@@ -218,8 +209,8 @@ class BatchNorm1d(Module):
             mean_full = mean.reshape((1, dim)).broadcast_to(x.shape)
             var = ops.summation((x - mean_full) ** 2, axes=0) / batch
 
-            self.running_mean = ((1-self.momentum)*self.running_mean + self.momentum*mean).detach()
-            self.running_var  = ((1-self.momentum)*self.running_var  + self.momentum*var).detach()
+            self.running_mean.data = ((1-self.momentum)*self.running_mean + self.momentum*mean).detach()
+            self.running_var.data  = ((1-self.momentum)*self.running_var  + self.momentum*var).detach()
         else:
             # inference use running_mean and running_var estimated in training
             mean_full = self.running_mean.reshape((1, dim)).broadcast_to(x.shape)

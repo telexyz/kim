@@ -6,6 +6,7 @@ import numpy as np
 class Optimizer:
     def __init__(self, params):
         self.params = [x for x in params if x.update_params]
+        print(">>> optim params", len(self.params))
 
     def step(self):
         raise NotImplementedError()

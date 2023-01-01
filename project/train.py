@@ -114,6 +114,7 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
 
     cnt = 0
     pred = []   # probabality of being positive return.
+
     for X, y in dl:
         # (N, W, H) -> (N, H, W) -> (N, 1, H, W). the input to nn.Conv
         # if any of the X is not finite number, stop.
@@ -151,14 +152,14 @@ def epoch(dl, model, loss_fn, opt=None, device=None, msg_header=''):
 
 
 def save_model(model, filename):
+    print(">>> save model params", len(model.parameters()))
     param_np = [x.numpy() for x in model.parameters()]
     save_pickle(param_np, filename)
 
 
 def load_model(model, filename):
     param_np = load_pickle(filename)
-    n = len(param_np)
-    assert n == len(model.parameters())
+    assert len(param_np) == len(model.parameters()), "%s != %s" % (len(param_np), len(model.parameters()))
     for i, param in enumerate(model.parameters()):
         param.data = ndl.Tensor(param_np[i], device=param.device)
     return model
@@ -166,23 +167,18 @@ def load_model(model, filename):
 
 def train(model, dl_set, output_folder, lr, weight_decay, checkpoint):
     loss_fn = SoftmaxLoss()
-    params = []
-    for p in model.parameters():
-        if p.requires_grad:
-            params.append(p)
-    opt = Adam(params, lr=lr, weight_decay=weight_decay)
+    opt = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     dl, dl_val = dl_set
     output_folder = Path(output_folder)
 
-    losses = {'train_loss': [],
-              'val_loss': []}
+    losses = {'train_loss': [], 'val_loss': []}
+
+    print(">>> init model params", len(model.parameters()))
 
     for i in checkpoint.epoches_:
         logger.info(f"Train and eval for epoch {epoch}")
-        train_res = epoch(dl, model, loss_fn, opt,
-                          msg_header=f"Train - Epoch: {i} ")
-        val_res = epoch(dl_val, model, loss_fn, opt=None,
-                        msg_header=f"valid - Epoch: {i} ")
+        train_res = epoch(dl, model, loss_fn, opt, msg_header=f"Train - Epoch: {i} ")
+        val_res = epoch(dl_val, model, loss_fn, opt=None, msg_header=f"valid - Epoch: {i} ")
         train_loss = train_res['loss']
         val_loss = val_res['loss']
         losses['train_loss'].append(train_loss)
@@ -203,19 +199,15 @@ def predict(model, dl_val, checkpoint, predict_step):
         if not chkpt_file.exists():
             logger.info("run prediction for epoch %s", epoch)
             model = checkpoint.load_model_param_from_checkpoint(model, i)
-            val_res = epoch(dl_val, model, loss_fn, opt=None,
-                            msg_header=f"valid - Epoch: {i} ")
-            checkpoint.save(i, {'val_predict': val_res['prediction'],
-                                'losses': {'val_loss': val_res['loss']}})
+            val_res = epoch(dl_val, model, loss_fn, opt=None, msg_header=f"valid - Epoch: {i} ")
+            checkpoint.save(i, {'val_predict': val_res['prediction'], 'losses': {'val_loss': val_res['loss']}})
         # auxlirary
         # save_yaml(losses, output_folder / 'losses.yaml')
-
 
 class Checkpoint(object):
     """Documentation for Checkpoint
 
     """
-
     def __init__(self, checkpoint_dir, training, max_epoch):
         """FIXME: briefly describe function
 

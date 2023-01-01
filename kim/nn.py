@@ -71,31 +71,26 @@ class Module:
 # - - - short modules - - -
 
 class MaxPool2d(Module):
+    def __init__(a, b): return
+
     def forward(self, X):
-        return ops.max_pool2d(X, axis=2)
-        # ^^ pooling at H since X is (N,C,H,W)
+        return ops.max_pool2d(X, axis=2) # pooling at H of (N,C,H,W)
 
 class MaxPool2x1(Module):
     def forward(self, x):
-        # X is (N,H,W,C) and we do 2x1 pooling on H
-        return ops.max_pool2d(x, axis=1)
+        return ops.max_pool2d(x, axis=1)  # pooling at H of (N,H,W,C)
 
 # class MaxPool2d(Module):
 #     def forward(self, x):
-#         # X is (N,C,H,W) => (N,C,W,H)
-#         x = x.transpose(axes=(2, 3))
+#         x = x.transpose(axes=(2, 3)) # x now (N,C,W,H)
 #         y = ops.max_pooling_1x2(x)
-#         # then transpose back the result
-#         return y.transpose(axes=(2, 3))
+#         return y.transpose(axes=(2, 3)) # y now (N,C,H,W)
 # 
 # class MaxPool2x1(Module):
 #     def forward(self, x):
-#         # X is (N,H,W,C) and we do 2x1 pooling on (H,W)
-#         x = x.transpose(axes=(1, 3))  # x now (N,C,W,H)
-#         # 1x2 pooling on (W,H) equivelant to 2x1 pooling on (H,W)
+#         x = x.transpose(axes=(1, 3)) # x now (N,C,W,H)
 #         y = ops.max_pooling_1x2(x)
-#         # then transpose back the result
-#         return y.transpose(axes=(1, 3))
+#         return y.transpose(axes=(1, 3)) # y now (N,H,W,C)
 
 class Identity(Module):
     def forward(self, x):

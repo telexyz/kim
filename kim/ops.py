@@ -666,21 +666,21 @@ class Conv(TensorOp):
     '''
     def gradient(self, out_grad, node):
         # If the convolution is strided, increase the size of out_grad with a corresponding dilation
-        # print(">>>", out_grad.shape, "original")
+        print(">>>", out_grad.shape, "original")
         if self.stride_w > 1 or self.stride_h > 1:
             out_grad = dilate(out_grad, (1, 2), (self.stride_h-1, self.stride_w-1)) # NHWC => (1,2)==(H,W)
-            # print(">>>", out_grad.shape, "dialated")
+            print(">>>", out_grad.shape, "dialated")
             if (self.origin_out_shape != out_grad.shape):
                 out = out_grad.realize_cached_data()
                 _, H_, W_, _ = self.origin_out_shape
                 out_grad.cached_data = out[:,slice(0,H_,1),slice(0,W_,1),:].compact()
-                # print(">>>", out_grad.shape, "stripped")
+                print(">>>", out_grad.shape, "stripped")
 
         X, W = node.inputs
         # This padding depends on both the kernel size and the padding argument to the convolution
-        ph = (X.shape[1] - out_grad.shape[1]) // 2 + self.padding_h
-        pw = (X.shape[2] - out_grad.shape[2]) // 2 + self.padding_w
-        # print(">>>", X.shape, self.padding_h, self.padding_w, W.shape, ph, pw)
+        ph = (X.shape[1] - out_grad.shape[1]) + self.padding_h
+        pw = (X.shape[2] - out_grad.shape[2]) + self.padding_w
+        print(">>>", X.shape, self.padding_h, self.padding_w, W.shape, ph, pw)
 
         # W should be flipped over both the kernel dimensions then transpose
         X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=(ph, pw))

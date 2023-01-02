@@ -161,7 +161,7 @@ def test_init_kaiming_uniform(device):
 @pytest.mark.parametrize("device", _DEVICES)
 def test_resnet9(device):
     def num_params(model):
-        return np.sum([np.prod(x.shape) for x in model.parameters()])
+        return np.sum([np.prod(x.shape) for x in model.parameters() if x.update_params])
 
     from apps.models import ResNet9
     np.random.seed(0)
@@ -653,7 +653,7 @@ def submit_new_ops():
 
 def submit_resnet9():
     def num_params(model):
-        return np.sum([np.prod(x.shape) for x in model.parameters()])
+        return np.sum([np.prod(x.shape) for x in model.parameters() if x.update_params])
 
     device = kim.cuda()
     import sys

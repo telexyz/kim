@@ -631,6 +631,9 @@ class Conv(TensorOp):
         # stride will skip conv result on specific coordinates (use undilate) 
         # print(">>>", out.shape, "forward original")
         if self.stride_w > 1 or self.stride_h > 1:
+            # Vì tại mỗi node của đồ thị tính toán, ta ghi lại node.op riêng và node.inputs riêng
+            # Nên không sợ một op dùng chung cho nhiều inputs vậy it's safe to assign
+            # to op (self) specific data of the inputs. 
             self.origin_out_shape = out.shape
             out = out.undilate((1, 2), (self.stride_h - 1, self.stride_w - 1))
             # print(">>>", out.shape, "forward undilate")
@@ -666,21 +669,17 @@ class Conv(TensorOp):
     '''
     def gradient(self, out_grad, node):
         # If the convolution is strided, increase the size of out_grad with a corresponding dilation
-        print(">>>", out_grad.shape, "original")
+        # print(">>>", out_grad.shape, "original")
         if self.stride_w > 1 or self.stride_h > 1:
-            out_grad = dilate(out_grad, (1, 2), (self.stride_h-1, self.stride_w-1)) # NHWC => (1,2)==(H,W)
-            print(">>>", out_grad.shape, "dialated")
-            if (self.origin_out_shape != out_grad.shape):
-                out = out_grad.realize_cached_data()
-                _, H_, W_, _ = self.origin_out_shape
-                out_grad.cached_data = out[:,slice(0,H_,1),slice(0,W_,1),:].compact()
-                print(">>>", out_grad.shape, "stripped")
+            out = out_grad.realize_cached_data()  # NHWC => (1,2)==(H,W)
+            out_grad.cached_data = out.dilate((1, 2), (self.stride_h-1, self.stride_w-1), shape=self.origin_out_shape)
+            # print(">>>", out_grad.shape, "dialated")
 
         X, W = node.inputs
         # This padding depends on both the kernel size and the padding argument to the convolution
         ph = (X.shape[1] - out_grad.shape[1]) + self.padding_h
         pw = (X.shape[2] - out_grad.shape[2]) + self.padding_w
-        print(">>>", X.shape, self.padding_h, self.padding_w, W.shape, ph, pw)
+        # print(">>>", X.shape, self.padding_h, self.padding_w, W.shape, ph, pw)
 
         # W should be flipped over both the kernel dimensions then transpose
         X_grad = conv(out_grad, flip(W, axes=(0,1)).transpose(), padding=(ph, pw))

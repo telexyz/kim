@@ -28,16 +28,16 @@ def test_max_pooling(N,H,W,C):
         axes=(2, 3)).transpose(axes=(1, 2)).numpy(), rtol=1e-04, atol=1e-04)
 
 
-@pytest.mark.parametrize("N", [1, 2])
-@pytest.mark.parametrize("H", [8, 16, 66])
-@pytest.mark.parametrize("W", [6, 13, 100])
-@pytest.mark.parametrize("C_in", [1, 5])
+@pytest.mark.parametrize("N", [2])
+@pytest.mark.parametrize("H", [4, 6, 16])
+@pytest.mark.parametrize("W", [1, 3, 100])
+@pytest.mark.parametrize("C_in", [5])
 @pytest.mark.parametrize("C_out", [1, 32])
-@pytest.mark.parametrize("kh", [5])
-@pytest.mark.parametrize("kw", [3])
-@pytest.mark.parametrize("sh", [3])
-@pytest.mark.parametrize("sw", [1])
-def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw, sh, sw):
+@pytest.mark.parametrize("kh", [5, 1, 3])
+@pytest.mark.parametrize("kw", [1, 4, 9])
+@pytest.mark.parametrize("sw", [1, 2, 5])
+@pytest.mark.parametrize("sh", [1, 3])
+def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw, sw, sh):
     X = kim.init.randn(N, C_in, H, W, requires_grad=True)
     X_ = torch.Tensor(X.numpy())
     X_.requires_grad = True

@@ -677,16 +677,30 @@ class NDArray:
         )
         return out.compact()
 
-
-    def undilate(a, axes, dilation):
+    def dilate(self, axes, dilation, shape=None):
         if isinstance(dilation, int): dilation = [dilation] * len(axes)
-        new_shape = list(a.shape)
-        idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
+        new_shape = list(self.shape)
+        idxs = [slice(0, self.shape[i], 1) for i in range(len(self.shape))]
         for i, axis in enumerate(axes):
-            if axis >= a.ndim: return a # !!! Add this to pass mugrade !!!
+            # if axis >= self.ndim: return self  # !!! Add this to pass mugrade !!!
+            assert(axis < self.ndim), "dilating axis exceed ndim: %s > len(shape%s)" % (axis, self.shape)
+            new_shape[axis] *= (dilation[i] + 1) # 1 ô cho phần tử gốc và self.dilation ô cho 0 padding
+            idxs[axis] = slice(0, new_shape[axis], 1 + dilation[i])
+        if shape is None: shape = new_shape
+        out = self.device.zeros(*shape)
+        out.__setitem__(tuple(idxs), self)
+        return out
+
+    def undilate(self, axes, dilation):
+        if isinstance(dilation, int): dilation = [dilation] * len(axes)
+        new_shape = list(self.shape)
+        idxs = [slice(0, self.shape[i], 1) for i in range(len(self.shape))]
+        for i, axis in enumerate(axes):
+            # if axis >= self.ndim: return self # !!! Add this to pass mugrade !!!
+            assert(axis < self.ndim), "dilating axis exceed ndim: %s > len(shape%s)" % (axis, self.shape)
             new_shape[axis] //= (dilation[i] + 1)
-            idxs[axis] = slice(0, a.shape[axis], dilation[i] + 1)
-        return a.__getitem__(tuple(idxs))
+            idxs[axis] = slice(0, self.shape[axis], dilation[i] + 1)
+        return self.__getitem__(tuple(idxs))
 
 
     def pad(self, axes):

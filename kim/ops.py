@@ -551,24 +551,13 @@ def flip(a, axes):
 class Dilate(TensorOp):
     def __init__(self, axes: tuple, dilation: Union[int, tuple, list]):
         self.axes = axes
-        if isinstance(dilation, int): dilation = [dilation] * len(axes)
         self.dilation = dilation
 
     def compute(self, a):
-        new_shape = list(a.shape)
-        idxs = [slice(0, a.shape[i], 1) for i in range(len(a.shape))]
-        for i, axis in enumerate(self.axes):
-            if axis >= a.ndim: return a # !!! Add this to pass mugrade !!!
-            assert(axis < a.ndim), "dilating axis exceed ndim: %s > len(shape%s)" % (axis, a.shape)
-            new_shape[axis] *= (self.dilation[i] + 1) # 1 ô cho phần tử gốc và self.dilation ô cho 0 padding
-            idxs[axis] = slice(0, new_shape[axis], 1 + self.dilation[i])
-        out = a.device.zeros(*new_shape)
-        out.__setitem__(tuple(idxs), a)
-        return out
+        return a.dilate(self.axes, self.dilation)
 
     def gradient(self, out_grad, node):
         return undilate(out_grad, self.axes, self.dilation),
-
 
 def dilate(a, axes, dilation):
     return Dilate(axes, dilation)(a)
@@ -577,26 +566,26 @@ def dilate(a, axes, dilation):
 class UnDilate(TensorOp):
     def __init__(self, axes: tuple, dilation:  Union[int, tuple, list]):
         self.axes = axes
-        if isinstance(dilation, int): dilation = [dilation] * len(axes)
         self.dilation = dilation
 
     def compute(self, a):
         return a.undilate(self.axes, self.dilation)
 
     def gradient(self, out_grad, node):
-        raise NotImplementedError()
-
+        return out_grad.dilate(self.axes, self.dilation, shape=node.inputs[0].shape)
 
 def undilate(a, axes, dilation):
     return UnDilate(axes, dilation)(a)
 
 
 class Conv(TensorOp):
-    def __init__(self, stride_w=1, stride_h=1, padding_w=0, padding_h=0):
+    def __init__(self, stride_w=1, stride_h=1, padding_w=0, padding_h=0, dilation_w=0, dilation_h=0):
         self.stride_w = stride_w
         self.stride_h = stride_h
         self.padding_w = padding_w
         self.padding_h = padding_h
+        self.dilation_w = dilation_w
+        self.dilation_h = dilation_h
 
     def compute(self, Z, weight):
         assert len(Z.shape) == 4 and len(weight.shape) == 4, "ops.Conv only accept 4D, 4D args"
@@ -614,6 +603,11 @@ class Conv(TensorOp):
         # Với (Kh, Kw) là kích thước kernel, và biến ảnh C_in channels thành ảnh C_out channels
         Kh, Kw, C_in_, C_out = weight.shape
         assert(C_in == C_in_), "%s != %s | %s %s" % (C_in, C_in_, Z.shape, weight.shape)
+
+        ''' Conv with dilation
+        https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md#dilated-convolution-animations
+        '''
+        # weight.
 
         # `im2col` là kỹ thuật biến đổi N ảnh đầu vào thành dữ liệu sẵn sàng cho conv chỉ bằng 1 matmul
         # làm được điều này bằng cách chuẩn bị sẵn đối ứng (Kh, Kw) để nhân với kernels bằng a neat strides trick!
@@ -641,8 +635,6 @@ class Conv(TensorOp):
             out = out.undilate((1, 2), (self.stride_h - 1, self.stride_w - 1))
             # print(">>>", out.shape, "forward undilate")
         return out
-
-
     '''
     matmul(a, b).backward() =>
     a_grad = matmul(out_grad, transpose(b))

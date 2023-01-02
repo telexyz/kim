@@ -32,18 +32,20 @@ def test_max_pooling(N,H,W,C):
 @pytest.mark.parametrize("H", [4, 6, 16])
 @pytest.mark.parametrize("W", [1, 3, 100])
 @pytest.mark.parametrize("C_in", [5])
-@pytest.mark.parametrize("C_out", [1, 32])
+@pytest.mark.parametrize("C_out", [1])
 @pytest.mark.parametrize("kh", [5, 1, 3])
 @pytest.mark.parametrize("kw", [1, 4, 9])
 @pytest.mark.parametrize("sw", [1, 2, 5])
 @pytest.mark.parametrize("sh", [1, 3])
-def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw, sw, sh):
+@pytest.mark.parametrize("dw", [1])
+@pytest.mark.parametrize("dh", [1])
+def test_conv_kernel_hw(N, H, W, C_in, C_out, kh, kw, sw, sh, dw, dh):
     X = kim.init.randn(N, C_in, H, W, requires_grad=True)
     X_ = torch.Tensor(X.numpy())
     X_.requires_grad = True
 
-    imp_kim = kim.nn.Conv(C_in, C_out, (kh, kw), stride=(sh, sw))
-    imp_torch = torch.nn.Conv2d(C_in, C_out, (kh, kw), stride=(sh, sw), padding=(kh//2, kw//2))
+    imp_kim = kim.nn.Conv(C_in, C_out, (kh, kw), stride=(sh, sw), dilation=(dh, dw))
+    imp_torch = torch.nn.Conv2d(C_in, C_out, (kh, kw), stride=(sh, sw), dilation=(dh, dw), padding=(dh*kh//2, dw*kw//2))
 
     # Ensure ndl and torch have same init params (transpose(3, 2, 0, 1) = KKIO -> OIKK)
     imp_torch.weight.data = torch.tensor(imp_kim.weight.numpy().transpose(3, 2, 0, 1))

@@ -270,22 +270,18 @@ class Conv(Module):
     Multi-channel 2D convolutional layer
     IMPORTANT: Accepts inputs in NCHW format, outputs also in NCHW format
     """
-    def __init__(self, i, o, k, stride=1, bias=True, device=None, dtype="float32"):
+    def __init__(self, i, o, k, stride=1, dilation=1, bias=True, device=None, dtype="float32"):
+        super().__init__()
+        if isinstance(dilation, int): dilation = (dilation, dilation)
         if isinstance(k, int): k = (k, k)
-        if isinstance(stride, int): stride = (stride, stride)
-        super().__init__() # normalize kernel_size and stride so that:
-
         kh, kw = k
-        sh, sw = stride
-        self.in_channels = i
-        self.out_channels = o
-        self.kernel_size_w = kw
-        self.kernel_size_h = kh
-        self.stride_w = sw
-        self.stride_h = sh
 
-        # Initialize the (kw, kh, i, o) weight tensor using Kaiming uniform initialization 
-        # with default settings.
+        self.padding = ((dilation[0] * kh) // 2, (dilation[1] * kw) // 2)
+        self.stride = stride
+        self.dilation = dilation
+        self.out_channels = o
+
+        # Initialize the (kw, kh, i, o) weight tensor using Kaiming uniform initialization with default settings.
         k = (kw + kh) // 2
         # Previously, we have implemented Kaiming uniform/normal initializations, where we essentially 
         # assigned fan_in = input_size and fan_out = output_size.
@@ -314,8 +310,7 @@ class Conv(Module):
         else: xt = x.transpose(axes=(1,2)).transpose(axes=(2,3)) # 0,1,2,3 => 0,2,3,1
 
         # Calculate the appropriate padding to ensure input and output dimensions are the same
-        pw, ph = self.kernel_size_w // 2, self.kernel_size_h // 2
-        out = ops.conv(xt, self.weight, padding=(ph, pw), stride=(self.stride_h, self.stride_w))
+        out = ops.conv(xt, self.weight, padding=self.padding, stride=self.stride, dilation=self.dilation)
 
         if kim.KIM_FUSE: out = out.permute((0,3,1,2))
         else: out = out.transpose(axes=(2,3)).transpose(axes=(1,2)) # 0,1,2,3 => 0,3,1,2

@@ -579,7 +579,7 @@ def undilate(a, axes, dilation):
 
 
 class Conv(TensorOp):
-    def __init__(self, stride_w=1, stride_h=1, padding_w=0, padding_h=0, dilation_w=0, dilation_h=0):
+    def __init__(self, stride_w=1, stride_h=1, padding_w=0, padding_h=0, dilation_w=1, dilation_h=1):
         self.stride_w = stride_w
         self.stride_h = stride_h
         self.padding_w = padding_w
@@ -607,7 +607,8 @@ class Conv(TensorOp):
         ''' Conv with dilation
         https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md#dilated-convolution-animations
         '''
-        # weight.
+        if self.dilation_h > 1 or self.dilation_h > 1:
+            weight = weight.dilate(axes=(1,2), dilation=(self.dilation_h-1, self.dilation_w-1))
 
         # `im2col` là kỹ thuật biến đổi N ảnh đầu vào thành dữ liệu sẵn sàng cho conv chỉ bằng 1 matmul
         # làm được điều này bằng cách chuẩn bị sẵn đối ứng (Kh, Kw) để nhân với kernels bằng a neat strides trick!
@@ -676,6 +677,9 @@ class Conv(TensorOp):
             # print(">>>", out_grad.shape, "dialated")
 
         X, W = node.inputs
+        if self.dilation_h > 1 or self.dilation_h > 1:
+            W = W.dilate(axes=(1,2), dilation=(self.dilation_h-1, self.dilation_w-1))
+
         # This padding depends on both the kernel size and the padding argument to the convolution
         ph = (X.shape[1] - out_grad.shape[1]) + self.padding_h
         pw = (X.shape[2] - out_grad.shape[2]) + self.padding_w
@@ -700,10 +704,12 @@ class Conv(TensorOp):
         return X_grad, W_grad
 
 
-def conv(a, b, stride=1, padding=1):
+def conv(a, b, stride=1, padding=0, dilation=1):
     if isinstance(stride, int): stride = (stride, stride)
     if isinstance(padding, int): padding = (padding, padding)
-    return Conv(stride_h=stride[0], stride_w=stride[1], padding_h=padding[0], padding_w=padding[1])(a, b)
+    if isinstance(dilation, int): dilation = (dilation, dilation)
+    return Conv(stride_h=stride[0], stride_w=stride[1], padding_h=padding[0], padding_w=padding[1], 
+        dilation_h=dilation[0], dilation_w=dilation[1])(a, b)
 
 
 class MaxPooling1x2(TensorOp):

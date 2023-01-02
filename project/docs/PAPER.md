@@ -89,3 +89,38 @@ We use daily stock data from CRSP for all firms listed on NYSE, AMEX, and NASDAQ
 
 In each image, we normalize the first day closing price to one, and construct each subsequent daily close from returns (RET_t) according to p_t+1 = (1 + RET_t+1) p_t.
 ...
+
+## 6 Transfer Learning
+
+> try to support dilation in ops.conv but did not success; can skip it for now since we don't need it in 5-day model; since we can transfer learning from 5 days to 20/60 days. according to the paper, the results are good, it is even better to transfer 5 day into 60 days than 60 days model itself
+...
+
+## 6.2 Time Scale Transfer
+
+The most constraining aspect of empirical asset pricing data is in the time series dimension. The finance literature focuses most often on monthly or annual data because many economically important patterns in asset markets unfold over such frequencies. Yet we experience only one history of financial market prices, meaning that we have at most several hundred monthly time series observations and several dozen annual observations.
+
+Given the scarcity of low frequency data, it would be greatly beneficial to know if patterns that unfold at high frequencies (which we can potentially measure well thanks to the availability of large high frequency data sets) are similar to patterns that unfold at low frequencies.
+
+While it is difficult to effectively train a CNN using monthly or annual observations, we can apply our CNNs trained on daily data to data sampled at lower frequencies. We first consider __transferring the I5/R5 CNN to the problem of using 20-day price histories__ to forecast future 20-day returns. To do so, we __draw the 20-day price history using a 5-period OHLC chart by re-defining a “period” to be a 4-day interval__. Each tick mark in an image now corresponds to four days of market data collapsed into a single observation,
+and a given OHLC bar show open, high, low, close over the 4-day interval. By down-sampling market data from once per day to once every four days, we can apply I5/R5 estimates to a 20-day image.
+
+## 7 Conclusion
+
+A fascinating research agenda is to develop models capable of translating visual data into an optimal portfolio. In this paper, we take a modest step in this direction by extracting trading signals from price chart images. We analyze these images with a return prediction
+CNN and find that our image-based forecasts in general __outperform (and are in large part distinct from) traditional price trend signals in the asset pricing literature__.
+
+We show that the predictive patterns isolated by the __CNN are highly robust__ to variations in model specification and controlling for a wide range of alternative predictor variables. One of the most compelling aspects of CNN robustness is its __transferability to international markets and other time scales__.
+
+Models trained on daily data are similarly powerful when transferred to data sets sampled at lower frequencies, and __models trained on US data but applied to international stock markets outperform models trained on data from local markets.__
+
+- - -
+
+In a sprawling survey of 692 asset managers in five countries, Menkhoff (2010) finds that 87% of those surveyed rely on some form of technical analysis in their decision process, and 18% of respondents indicate it is a major part of their investment process. As the Lo et al. (2000) at the start of this article notes, technical analysis is a primarily visual mode of analysis.
+
+In light of this, our CNN model has potentially intriguing implications for economic modeling. __If trading decisions implied by a statistical representation benefit from being more closely aligned with the formats in which investors intake their market perceptions for eventual trading decisions, the CNN becomes more than a pure statistical tool and moves closer to a model of investor perception__.
+
+Our ideal research agenda is to develop a model that can translate visual data into an optimal portfolio in a way that mimics the human perceptions and decision processes. In this paper, we take a first modest step in this direction by extracting trading signals from price images using a CNN model.
+
+Market data images, when combined with a CNN, constitute a new and powerful tool for understanding market dynamics and forming efficient portfolios. Yet our analysis of images connects existing time series analysis with ad hoc chart studies primarily for the purpose of technical trading. In light of this, __our findings highlight image analysis as a future research direction with great potential to improve our understanding of financial market phenomena__.
+
+> the transfer learning signal is in fact more powerful than the re-trained CNN. At 0.7, the H-L transfer strategy more than doubles the Sharpe ratios from re-training (0.3) and is around 50% larger than the baseline Sharpe ratio from daily data (0.5).

@@ -80,9 +80,9 @@ class OHLCV:
 
     def _try_load(self, idx):
         # three consecutive chunks of data - past, current, and future - are extracted from market data.
-        # - past, current are used to calculate moving avearge price.
+        # - past, current are used to calculate moving average price.
         # - current is used to get OHLC and volumn bar
-        # - future is used to calcualte label/profitability
+        # - future is used to calculate label / profitability
         rng = np.random.default_rng(seed=idx + self.failed_img)
         s = rng.choice(self.all_market_data.shape[0] - self.frequency)
         md_roi = self.all_market_data.iloc[s - self.frequency:s + 2 * self.frequency]
@@ -104,7 +104,7 @@ class OHLCV:
         if img is None: return None
 
         # future (label)
-        X2 = md_roi.iloc[2*self.frequency:3*self.frequency, :5].values
+        X2 = md_roi.iloc[2*self.frequency : 3*self.frequency, :5].values
         # diff between close price of last day and open price of the first day.
         y = X2[-1, 3] - X2[0, 0]
 
@@ -203,9 +203,8 @@ class ImagingOHLCV(object):
         return X_img
 
 
-
 def test(ticker):
-    print(f"loading google stock to `data/%s.png`" % (ticker))
+    print(f"loading stock to `data/%s.png`" % (ticker))
     ds = pd.read_parquet(f"data/stocks/%s.parquet" % (ticker))
     imager = ImagingOHLCV(resolution=64)
     X_img = imager.transform(ds.tail(60))
@@ -213,13 +212,15 @@ def test(ticker):
     return X_img
 
 def show_img(X_img, ticker):
-    # this to make it looks right... still don't understand why.
-    img = np.flip(X_img.T, 0)
-    img = (img * 255).astype(np.uint8)
+    img = (X_img * 255).astype(np.uint8)
     from PIL import Image
     Image.fromarray(img).save(f"data/%s.png" % (ticker))
+    import matplotlib.pyplot as plt
+    plt.imshow(img, cmap='Greys_r')
+    plt.show()
 
 DATA_DIR = Path("data/stocks").expanduser()
+
 ''' configs/SOO.yaml
 trading_days: 5
 image_resolution: 32
@@ -230,51 +231,41 @@ num_images_valid_fast: 1_000
 num_images_valid: 5_000
 num_images_test: 1_000
 
-
-from mydat import *
-test("GOOGL")
-test("SONY")
-
+from mydat import *; import random
+# test("GOOGL") # work # test("SONY") # wont work
 imager = ImagingOHLCV(32, price_prop=0.75)
-
-ds = OHLCV(DATA_DIR, size=6000, frequency=5,
-            imager=imager,
-            seed=5,
-            min_date='1993-01-01',
-            max_date='2000-12-31')
-
+ds = OHLCV(DATA_DIR, size=6000, frequency=5, imager=imager, seed=5, min_date='1993-01-01', max_date='2000-12-31')
 ds_train, ds_val = ds.train_val_split(train_prop=0.7, seed=27)
+X_img, y, meta = ds[1]; print(meta)
+show_img(X_img, meta["ticker"])
 
->>> ds[1]
-(array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 1., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
-       [1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 0., 1., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0.,
-        0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0.,
-        0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-       [1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
-        1., 1., 1., 1., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.,
-        0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-       [1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1.,
-        1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-       [1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
-       [1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 0., 0.],
-       [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-        0., 0., 0., 1., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0.]]), 
-    0.17513274929999945, {'ticker': 'AXP', 'index': 89791, 'date': Timestamp('1995-06-08 00:00:00+0000', tz='UTC')})
+X_img, y, meta = random.choice(ds); print(meta)
+show_img(X_img, meta["ticker"])
+
+>>> ds[1] -> (X, y, meta)
+# Ảnh thực tế sẽ quay 90 độ ngược chiều kim đồng hồ
+# Rows are values, Cols are Time (one day = 3 cols)
+array([[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0],
+day-1  [1 1 1 1 1 1 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 0 1 0 0 0 0 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0],
+day-2  [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 1 0 0 0 0 0 0 0 0 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0],
+day-3  [1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0],
+day-4  [1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0],
+day-5  [1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 0 0],
+       [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0]]), 
+    0.17513274929999945, # <= label / profitability
+    {'ticker': 'AXP', 'index': 89791, 'date': Timestamp('1995-06-08 00:00:00+0000', tz='UTC')}
+
+img = X_img.T # cần transpose để chuyển hàng thành cột và ngược lại
+img.shape (H, W) = (32, 15) # 15 vì 3 cột tương ứng với 1 ngày, nên 5 ngày = 15 cột
+(32, 15,  1) => Conv(5, 3,  1,  64) => MaxPool(2, 1) => (16, 15,  64)
+(16, 15, 64) => Conv(5, 3, 64, 128) => MaxPool(2, 1) => ( 8, 15, 128)
+(8 * 15) * 128 channels = 15360 weights
 '''

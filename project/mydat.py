@@ -106,7 +106,7 @@ class OHLCV:
         # diff between close price of last day and open price of the first day.
         y = X2[-1, 3] - X2[0, 0]
 
-        return img, y, meta
+        return img, (y > 0).astype("int"), meta
 
     def train_val_split(self, train_prop=0.7, seed=None):
         """split randomly to have train and val datasets.

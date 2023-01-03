@@ -7,10 +7,8 @@ import numpy as np
 
 def get_ticker_data(data_dir, ticker):
     dfile = data_dir / f'{ticker}.parquet'
-    try:
-        ds = pd.read_pickle(dfile)
-    except:
-        ds = pd.read_parquet(dfile)
+    try: ds = pd.read_pickle(dfile)
+    except: ds = pd.read_parquet(dfile)
     ds["ticker"] = ticker
     return ds
 
@@ -205,7 +203,10 @@ class ImagingOHLCV(object):
 
 def test(ticker):
     print(f"loading stock to `data/%s.png`" % (ticker))
-    ds = pd.read_pickle(f"data/stocks/%s.parquet" % (ticker))
+    dfile = f"data/stocks/%s.parquet" % (ticker)
+    try: ds = pd.read_pickle(dfile)
+    except: ds = pd.read_parquet(dfile)
+
     imager = ImagingOHLCV(resolution=64)
     X_img = imager.transform(ds.tail(60))
     show_img(X_img, ticker)
@@ -232,8 +233,7 @@ num_images_valid: 5_000
 num_images_test: 1_000
 
 from mydat import *; import random
-# test("GOOGL")
-# test("SONY")
+test("GOOGL"); test("SONY")
 imager = ImagingOHLCV(32, price_prop=0.75)
 ds = OHLCV(DATA_DIR, size=6000, frequency=5, imager=imager, seed=5, min_date='1993-01-01', max_date='2000-12-31')
 ds_train, ds_val = ds.train_val_split(train_prop=0.7, seed=27)

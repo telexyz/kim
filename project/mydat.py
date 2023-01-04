@@ -231,15 +231,11 @@ num_images_test: 1_000
 
 from mydat import *; import random
 test("GOOGL"); test("SONY")
-imager = ImagingOHLCV(32, price_prop=0.75)
-ds = OHLCV(DATA_DIR, size=6000, frequency=5, imager=imager, seed=5, min_date='1993-01-01', max_date='2000-12-31')
-ds_train, ds_val = ds.train_val_split(train_prop=0.7, seed=27)
-X_img, y, meta = ds[1]; print(meta)
-show_img(X_img, meta["ticker"])
+imager = ImagingOHLCV(64, price_prop=0.75)
+ds = OHLCV(DATA_DIR, size=6000, frequency=60, imager=imager, seed=5, min_date='1993-01-01', max_date='2000-12-31')
+X_img, y, meta = random.choice(ds); print(meta); show_img(X_img, meta["ticker"])
 
-X_img, y, meta = random.choice(ds); print(meta)
-show_img(X_img, meta["ticker"])
-
+X_img, y, meta = ds[1]; print(meta); show_img(X_img, meta["ticker"])
 >>> ds[1] -> (X, y, meta)
 # Ảnh thực tế sẽ quay 90 độ ngược chiều kim đồng hồ
 # Rows are values, Cols are Time (one day = 3 cols)

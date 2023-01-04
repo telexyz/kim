@@ -146,8 +146,8 @@ def train(dl_train, dl_valid, lib=kim):
 
 
 if __name__ == "__main__":
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 90_000, 10_000, 1000, 160)
-    train(dl_train, dl_valid, lib=kim)
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1_024_000, 10_000, 1000, 512)
+    train(dl_train, dl_valid, lib=torch)
 
 ''' configs/SO5.yaml
 data:

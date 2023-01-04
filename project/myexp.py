@@ -1,3 +1,4 @@
+from os.path import exists
 import sys; sys.path.insert(0, '..')
 from mydat import ImagingOHLCV, OHLCV, DATA_DIR, DataLoader
 from tqdm import tqdm
@@ -82,20 +83,27 @@ def epoch(dl, model, loss_fn, optimizer, n):
 
 
 def train(dl_train, dl_valid, lib=kim):
+    done = 0
     if lib == torch:
         model = mymodel(torch.nn).cuda()
+        if exists("models/torch.chkpt"):
+            data = torch.load("models/torch.chkpt")
+            done = data['epoch'] + 1
+            model.load_state_dict(data['model'])
         loss_fn = torch.nn.CrossEntropyLoss()
     else:
         model = mymodel(kim.nn)
         loss_fn = kim.nn.SoftmaxLoss()
     optimizer = lib.optim.Adam(model.parameters(), lr=1e-5)
-    for i in range(0, 22):
+    for i in range(done, 50):
         train_loss = epoch(dl_train, model, loss_fn, optimizer, i)
-        if i % 2 == 1: valid_loss = epoch(dl_valid, model, loss_fn, None, i)
+        if i % 2 == 1:
+            valid_loss = epoch(dl_valid, model, loss_fn, None, i)
+            torch.save({'epoch': i, 'model': model.state_dict()}, "models/torch.chkpt")
 
 if __name__ == "__main__":
     dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 95_000, 5_000, 1000, 160)
-    train(dl_train, dl_valid, lib=kim)
+    train(dl_train, dl_valid, lib=torch)
 
 ''' 
 >>> KIM_DEVICE=cpu python3 myexp.py

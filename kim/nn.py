@@ -276,7 +276,7 @@ class Conv(Module):
     Multi-channel 2D convolutional layer
     IMPORTANT: Accepts inputs in NCHW format, outputs also in NCHW format
     """
-    def __init__(self, i, o, k, stride=1, dilation=1, padding=None, bias=True, device=None, dtype="float32"):
+    def __init__(self, i, o, k, stride=1, dilation=1, bias=True, device=None, dtype="float32"):
         super().__init__()
         if isinstance(dilation, int): dilation = (dilation, dilation)
         if isinstance(k, int): k = (k, k)

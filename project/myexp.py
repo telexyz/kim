@@ -62,7 +62,12 @@ def get_train_val_test_dataset(freq, img_resolution, price_prop, train_size, val
     return dl_train, dl_val, dl_test
 
 
-kim.nn.Conv2d = kim.nn.Conv
+class Conv2d(kim.nn.Conv):
+    def __init__(self, i, o, k, padding=None, bias=True, device=None, dtype="float32"):
+        super().__init__(i, o, k, bias=bias, device=device, dtype=dtype)
+
+kim.nn.Conv2d = Conv2d
+
 def mymodel(nn, dropout=True):
     def conv_block(cin, cout):
         return [nn.Conv2d(cin, cout, (5, 3), padding=(2, 1)),
@@ -134,8 +139,8 @@ def train(dl_train, dl_valid, lib=kim):
 
     optimizer = lib.optim.Adam(model.parameters(), lr=1e-5)
     for i in range(done, 50):
-        train_loss = epoch(dl_train, model, loss_fn, optimizer, i)
-        valid_loss = epoch(dl_valid, model, loss_fn, None, i)
+        acc, loss = epoch(dl_train, model, loss_fn, optimizer, i)
+        acc, loss = epoch(dl_valid, model, loss_fn, None, i)
         if lib == torch:
             torch.save({'epoch': i, 'model': model.state_dict()}, "models/torch.chkpt")
         else:

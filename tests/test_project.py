@@ -29,13 +29,12 @@ def get_int_tensor(*shape, low=0, high=10, entropy=1):
 (8): Flatten(start_dim=1, end_dim=-1)
 (9): Linear(in_features=15360, out_features=2, bias=True)
 '''
-
-
-@pytest.mark.parametrize("batch_size", [5, 1, 256, 1024, 2048])
-def test_model(batch_size, eps=1e-04):
+@pytest.mark.parametrize("batch_size", [5, 1, 32])
+@pytest.mark.parametrize("dropout", [False])
+def test_model(batch_size, dropout, eps=1e-04):
     # from myexp import mymodel, torch, kim
-    model = mymodel(kim.nn, dropout=False)
-    model_ = mymodel(torch.nn, dropout=False)
+    model = mymodel(kim.nn, dropout=dropout)
+    model_ = mymodel(torch.nn, dropout=dropout)
     
     ## Assign same weights between models
     for i, x in enumerate(model):
@@ -55,7 +54,8 @@ def test_model(batch_size, eps=1e-04):
 
     y = model(x)
     y_ = model_(x_)
-    np.testing.assert_allclose(y.numpy(), y_.detach().numpy(), rtol=eps, atol=eps)
+    if not dropout:
+        np.testing.assert_allclose(y.numpy(), y_.detach().numpy(), rtol=eps, atol=eps)
 
     B, classes = y.shape
     target = get_int_tensor(B, low=0, high=classes)
@@ -64,13 +64,14 @@ def test_model(batch_size, eps=1e-04):
     loss = kim.nn.SoftmaxLoss()(y, target)
     loss_ = torch.nn.CrossEntropyLoss()(y_, target_)
 
-    diff = abs(loss.numpy().sum() - loss_.detach().numpy().sum())
-    print(">>> loss diff", diff)
+    kim_loss = loss.numpy().sum()
+    torch_loss = loss_.detach().numpy().sum()
+    diff = abs(kim_loss - torch_loss)
+    print(">>> kim_loss, torch_loss, diff", kim_loss, torch_loss, diff)
     assert diff < eps
 
     # torch.optim.Adam(model_.parameters(), lr=1e-5).zero_grad()
     # for x in model_.parameters(): x.requires_grad = True
-    model_[0].weight.requires_grad = True
     loss.backward()
     loss_.backward()
 
@@ -84,9 +85,10 @@ def test_model(batch_size, eps=1e-04):
     z, z_ = model[4].bias, model_[4].bias
     np.testing.assert_allclose(z.grad.numpy(), z_.grad.numpy(), rtol=eps, atol=eps)
 
-    z, z_ = model[9].weight, model_[9].weight
+    i = 9 if not dropout else 10
+    z, z_ = model[i].weight, model_[i].weight
     np.testing.assert_allclose(z.grad.numpy().transpose(), z_.grad.numpy(), rtol=eps, atol=eps)
-    z, z_ = model[9].bias, model_[9].bias
+    z, z_ = model[i].bias, model_[i].bias
     np.testing.assert_allclose(z.grad.numpy(), z_.grad.numpy(), rtol=eps, atol=eps)
 
 

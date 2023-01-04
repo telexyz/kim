@@ -63,20 +63,17 @@ def get_train_val_test_dataset(freq, img_resolution, price_prop, train_size, val
 
 
 kim.nn.Conv2d = kim.nn.Conv
-def mymodel(nn):
+def mymodel(nn, dropout=True):
     def conv_block(cin, cout):
         return [nn.Conv2d(cin, cout, (5, 3), padding=(2, 1)),
                 nn.BatchNorm2d(cout),
                 nn.LeakyReLU(),
                 nn.MaxPool2d((2, 1))]
 
-    def output_layer(hidden_size, num_classes, p=0.5):
-        return [nn.Flatten(),
-                nn.Dropout(p),
-                nn.Linear(hidden_size, num_classes)]
-
     m = conv_block(1, 64) + conv_block(64, 128)
-    m += output_layer(15360, 2)
+    m.append(nn.Flatten())
+    if dropout: m.append(nn.Dropout(0.5))
+    m.append(nn.Linear(15360, 2))
     return nn.Sequential(*m)
 
 
@@ -146,8 +143,8 @@ def train(dl_train, dl_valid, lib=kim):
 
 
 if __name__ == "__main__":
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1_024_000, 10_000, 1000, 512)
-    train(dl_train, dl_valid, lib=torch)
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1_024_000, 10_000, 1000, 160)
+    train(dl_train, dl_valid, lib=kim)
 
 ''' configs/SO5.yaml
 data:

@@ -5,6 +5,39 @@ import kim
 import torch
 import pytest
 
+
+def get_tensor(*shape, entropy=1):
+    np.random.seed(np.prod(shape) * len(shape) * entropy)
+    return kim.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
+
+
+def get_int_tensor(*shape, low=0, high=10, entropy=1):
+    np.random.seed(np.prod(shape) * len(shape) * entropy)
+    return kim.Tensor(np.random.randint(low, high, size=shape))
+
+
+@pytest.mark.parametrize("rows", [5, 1, 200, 1000, 2827])
+@pytest.mark.parametrize("classes", [10, 2, 30, 99])
+def test_softmax_loss(rows, classes, eps=1e-05):
+    x = get_tensor(rows, classes)
+    y = get_int_tensor(rows, low=0, high=classes)
+    f = kim.nn.SoftmaxLoss()
+    loss = f(x, y) # to compare to torch
+
+    f_ = torch.nn.CrossEntropyLoss()
+    x_ = torch.Tensor(x.numpy())
+    x_.requires_grad = True
+    y_ = torch.Tensor(y.numpy()).long()
+    loss_ = f_(x_, y_)
+
+    np.testing.assert_allclose(loss.numpy(), loss_.detach().numpy(), rtol=eps, atol=eps)
+
+    # Backward
+    loss.backward()
+    loss_.backward()
+    np.testing.assert_allclose(x.grad.numpy(),  x_.grad.numpy(), rtol=eps, atol=eps)
+
+
 @pytest.mark.parametrize("N", [1, 2])
 @pytest.mark.parametrize("C", [1, 3])
 @pytest.mark.parametrize("H", [2, 6, 16])

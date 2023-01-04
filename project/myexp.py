@@ -1,10 +1,43 @@
 from os.path import exists
 import sys; sys.path.insert(0, '..')
-from mydat import ImagingOHLCV, OHLCV, DATA_DIR, DataLoader
+from mydat import ImagingOHLCV, OHLCV, DATA_DIR
 from tqdm import tqdm
 import torch
-import kim; kim.nn.Conv2d = kim.nn.Conv
+import kim
 import numpy as np
+
+class DataLoader:
+    def __init__(self, dataset, batch_size=1, shuffle=False):
+        self.dataset = dataset
+        self.shuffle = shuffle
+        self.bs = batch_size
+        if not shuffle:
+            self.ordering = np.array_split(
+                np.arange(len(dataset)), range(self.bs, len(dataset), self.bs))
+
+    @property
+    def batch_size(self): return self.bs
+
+    def __iter__(self):
+        if self.shuffle:
+            a = np.arange(len(self.dataset))
+            np.random.shuffle(a)
+            self.ordering = np.array_split(
+                a, range(self.bs, len(self.dataset), self.bs))
+        self.n = 0
+        return self
+
+    def __next__(self):
+        if self.n >= len(self.ordering):
+            raise StopIteration
+        order = self.ordering[self.n]
+        self.n += 1
+        bx, by = [], []
+        for i in order:
+            di = self.dataset[i]
+            bx.append(di[0])
+            by.append(di[1])
+        return np.array(bx), np.array(by)
 
 
 def get_train_val_test_dataset(freq, img_resolution, price_prop, train_size, val_size, test_size, batch_size):
@@ -29,6 +62,7 @@ def get_train_val_test_dataset(freq, img_resolution, price_prop, train_size, val
     return dl_train, dl_val, dl_test
 
 
+kim.nn.Conv2d = kim.nn.Conv
 def mymodel(nn):
     def conv_block(cin, cout):
         return [nn.Conv2d(cin, cout, (5, 3), padding=(2, 1)),
@@ -51,7 +85,7 @@ def epoch(dl, model, loss_fn, optimizer, n):
     accuracy, losses = 0, 0
     training = (optimizer is not None)
     msg_header = ("[ train ]" if training else "[ valid ]") + f" Epoch: {n}"
-    kimmy = isinstance(optimizer, kim.optim.Optimizer)
+    kimmy = isinstance(loss_fn, kim.nn.Module)
     if kimmy: model.train() if training else model.eval()
     for i, (input, target_) in enumerate(dl):
         B,W,H = input.shape
@@ -80,34 +114,42 @@ def epoch(dl, model, loss_fn, optimizer, n):
 
         pbar.set_description_str(f"{msg_header} Batch: {i} Acc: {accuracy/(i+1):.1f}% Loss: {losses/(i+1):.4f}")
         pbar.update()
+    return accuracy/(i+1), losses/(i+1)
 
 
 def train(dl_train, dl_valid, lib=kim):
     done = 0
     if lib == torch:
+        loss_fn = torch.nn.CrossEntropyLoss()
         model = mymodel(torch.nn).cuda()
         if exists("models/torch.chkpt"):
             data = torch.load("models/torch.chkpt")
             done = data['epoch'] + 1
             model.load_state_dict(data['model'])
-        loss_fn = torch.nn.CrossEntropyLoss()
     else:
-        model = mymodel(kim.nn)
         loss_fn = kim.nn.SoftmaxLoss()
+        model = mymodel(kim.nn)
+        if exists("models/kim.chkpt"):
+            data = torch.load("models/kim.chkpt")
+            done = data['epoch'] + 1
+            for i, param in enumerate(model.parameters()):
+                param.data = kim.Tensor(data['params'][i])
+
     optimizer = lib.optim.Adam(model.parameters(), lr=1e-5)
     for i in range(done, 50):
         train_loss = epoch(dl_train, model, loss_fn, optimizer, i)
-        if i % 2 == 1:
-            valid_loss = epoch(dl_valid, model, loss_fn, None, i)
+        valid_loss = epoch(dl_valid, model, loss_fn, None, i)
+        if lib == torch:
             torch.save({'epoch': i, 'model': model.state_dict()}, "models/torch.chkpt")
+        else:
+            torch.save({'epoch': i, 'params': [x.numpy() for x in model.parameters()]}, "models/kim.chkpt")
+
 
 if __name__ == "__main__":
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 95_000, 5_000, 1000, 160)
-    train(dl_train, dl_valid, lib=torch)
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 90_000, 10_000, 1000, 160)
+    train(dl_train, dl_valid, lib=kim)
 
-''' 
->>> KIM_DEVICE=cpu python3 myexp.py
-configs/SO5.yaml
+''' configs/SO5.yaml
 data:
   trading_days: 5
   image_resolution: 32
@@ -116,13 +158,7 @@ data:
   num_images_train: 20_000
   num_images_valid: 1_000
   num_images_test: 20_000
-model:
-  name: 32x15
 optimiser:
   lr: 1e-5
   wd: 0
-
-from myexp import *
-mymodel()
-dl_train, dl_val, dl_test = get_train_val_test_dataset(5, 32, 0.75, 5000, 1000, 1000, 64)
 '''

@@ -2,37 +2,6 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-
-class DataLoader:
-    def __init__(self, dataset, batch_size=1, shuffle=False):
-        self.dataset = dataset
-        self.shuffle = shuffle
-        self.bs = batch_size
-        if not shuffle:
-            self.ordering = np.array_split(np.arange(len(dataset)), range(self.bs, len(dataset), self.bs))
-
-    @property
-    def batch_size(self): return self.bs
-
-    def __iter__(self):
-        if self.shuffle:
-            a = np.arange(len(self.dataset))
-            np.random.shuffle(a)
-            self.ordering = np.array_split(a, range(self.bs, len(self.dataset), self.bs))
-        self.n = 0
-        return self
-
-    def __next__(self):
-        if self.n >= len(self.ordering): raise StopIteration
-        order = self.ordering[self.n]
-        self.n += 1
-        bx, by = [], []
-        for i in order:
-            di = self.dataset[i]
-            bx.append(di[0]); by.append(di[1])
-        return np.array(bx), np.array(by)
-
-
 def get_ticker_data(data_dir, ticker):
     dfile = data_dir / f'{ticker}.parquet'
     try: ds = pd.read_pickle(dfile)

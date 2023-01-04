@@ -1,6 +1,5 @@
 import sys; sys.path.insert(0, '..')
-from kim.data import DataLoader
-from mydat import ImagingOHLCV, OHLCV, DATA_DIR
+from mydat import ImagingOHLCV, OHLCV, DATA_DIR, DataLoader
 from tqdm import tqdm
 import torch
 import kim; kim.nn.Conv2d = kim.nn.Conv
@@ -54,17 +53,17 @@ def epoch(dl, model, loss_fn, optimizer, n):
     kimmy = isinstance(optimizer, kim.optim.Optimizer)
     if kimmy: model.train() if training else model.eval()
     for i, (input, target_) in enumerate(dl):
-        n, w, h = input.shape
-        input = input.transpose((1, 2)).reshape((n, 1, h, w))
-        target_ = target_.numpy()
-        # print(input.shape) # (64, 15, 32)
+        B,W,H = input.shape
+        input = input.swapaxes(1, 2).reshape((B,1,H,W))
+        # print(input.shape) # (B, 1, 32, 15), 1-channel, 32x15 image
         if kimmy:
+            input = kim.Tensor(input)
             target = kim.Tensor(target_)
             output = model(input)
             loss = loss_fn(output, target)
             ouput_, loss_ = output, loss
         else:
-            input = torch.Tensor(input.numpy()).cuda()
+            input = torch.Tensor(input).cuda()
             target = torch.Tensor(target_).long().cuda()
             output = model(input)
             loss = loss_fn(output, target)
@@ -95,8 +94,8 @@ def train(dl_train, dl_valid, lib=kim):
         if i % 2 == 1: valid_loss = epoch(dl_valid, model, loss_fn, None, i)
 
 if __name__ == "__main__":
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 20_000, 1_000, 1000, 128)
-    train(dl_train, dl_valid, lib=torch)
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 95_000, 5_000, 1000, 160)
+    train(dl_train, dl_valid, lib=kim)
 
 ''' 
 >>> KIM_DEVICE=cpu python3 myexp.py

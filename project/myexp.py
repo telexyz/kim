@@ -61,16 +61,52 @@ def get_train_val_test_dataset(freq, img_resolution, price_prop, train_size, val
 
     return dl_train, dl_val, dl_test
 
+# Pseudo dropout to copy torch dropout
+class PseudoDropout(kim.nn.Module):
+    def __init__(self, mask, p=0.5):
+        super().__init__()
+        self.p = p
+        self.mask = mask
+        self.mask.requires_grad = False
 
-class Conv2d(kim.nn.Conv):
-    def __init__(self, i, o, k, padding=None, bias=True, device=None, dtype="float32"):
-        super().__init__(i, o, k, bias=bias, device=device, dtype=dtype)
+    def forward(self, x: kim.Tensor) -> kim.Tensor:
+        if not self.training: return x
+        return (x * self.mask) / self.p
 
-kim.nn.Conv2d = Conv2d
+class Sequential(kim.nn.Module):
+    def __init__(self, *modules):
+        super().__init__()
+        self.modules = list(modules)
+
+    def __getitem__(self, i):
+        return self.modules[i]
+
+    def __len__(self):
+        return len(self.modules)
+
+    def forward(self, x: kim.Tensor) -> kim.Tensor:
+        for m in self.modules: x = m(x)
+        return x
+
+    def replace_dropout(self, mask):
+        for i, x in enumerate(self.modules):
+            if isinstance(x, kim.nn.Dropout) or isinstance(x, PseudoDropout):
+                self.modules[i] = PseudoDropout(kim.Tensor(mask, requires_grad=False))
+                return
+
+kim.nn.Sequential = Sequential
+
+def get_torch_dropout_mask(model, x):
+    for layer in model:
+        x = layer(x)
+        if isinstance(layer, torch.nn.Dropout):
+            return x, kim.NDArray(x.detach().numpy()) != 0
 
 def mymodel(nn, dropout=True):
     def conv_block(cin, cout):
-        return [nn.Conv2d(cin, cout, (5, 3), padding=(2, 1)),
+        if nn == kim.nn: conv = nn.Conv(cin, cout, (5, 3))
+        else: conv = nn.Conv2d(cin, cout, (5, 3), padding=(2, 1))
+        return [conv,
                 nn.BatchNorm2d(cout),
                 nn.LeakyReLU(),
                 nn.MaxPool2d((2, 1))]

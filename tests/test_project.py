@@ -6,7 +6,7 @@ import torch
 import pytest
 
 import sys; sys.path.append('project')
-from project.myexp import mymodel
+from project.myexp import mymodel, get_torch_dropout_mask
 
 def get_tensor(*shape, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)
@@ -27,10 +27,13 @@ def get_int_tensor(*shape, low=0, high=10, entropy=1):
 (6): LeakyReLU(negative_slope=0.01)
 (7): MaxPool2d(kernel_size=(2, 1), stride=(2, 1), padding=0, dilation=1, ceil_mode=False)
 (8): Flatten(start_dim=1, end_dim=-1)
-(9): Linear(in_features=15360, out_features=2, bias=True)
+(9): Dropout(p=0.5, inplace=False)
+(10): Linear(in_features=15360, out_features=2, bias=True)
 '''
-@pytest.mark.parametrize("batch_size", [5, 1, 32])
-@pytest.mark.parametrize("dropout", [False])
+
+
+@pytest.mark.parametrize("batch_size", [128, 32, 64])
+@pytest.mark.parametrize("dropout", [True])
 def test_model(batch_size, dropout, eps=1e-04):
     # from myexp import mymodel, torch, kim
     model = mymodel(kim.nn, dropout=dropout)
@@ -52,10 +55,14 @@ def test_model(batch_size, dropout, eps=1e-04):
     x = kim.init.randn(batch_size, 1, 32, 15, requires_grad=True)
     x_ = torch.Tensor(x.numpy())
 
+    if dropout:
+        x_, mask = get_torch_dropout_mask(model_, x_)
+        model.replace_dropout(mask)
+        y_ = model_[-1](x_)
+    else:
+        y_ = model_(x_)
     y = model(x)
-    y_ = model_(x_)
-    if not dropout:
-        np.testing.assert_allclose(y.numpy(), y_.detach().numpy(), rtol=eps, atol=eps)
+    np.testing.assert_allclose(y.numpy(), y_.detach().numpy(), rtol=eps, atol=eps)
 
     B, classes = y.shape
     target = get_int_tensor(B, low=0, high=classes)
@@ -70,8 +77,6 @@ def test_model(batch_size, dropout, eps=1e-04):
     print(">>> kim_loss, torch_loss, diff", kim_loss, torch_loss, diff)
     assert diff < eps
 
-    # torch.optim.Adam(model_.parameters(), lr=1e-5).zero_grad()
-    # for x in model_.parameters(): x.requires_grad = True
     loss.backward()
     loss_.backward()
 

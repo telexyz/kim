@@ -142,12 +142,6 @@ class Sequential(Module):
         super().__init__()
         self.modules = modules
 
-    def __getitem__(self, i):
-        return self.modules[i]
-
-    def __len__(self):
-        return len(self.modules)
-
     def forward(self, x: Tensor) -> Tensor:
         for m in self.modules: x = m(x)
         return x

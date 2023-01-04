@@ -124,3 +124,15 @@ Our ideal research agenda is to develop a model that can translate visual data i
 Market data images, when combined with a CNN, constitute a new and powerful tool for understanding market dynamics and forming efficient portfolios. Yet our analysis of images connects existing time series analysis with ad hoc chart studies primarily for the purpose of technical trading. In light of this, __our findings highlight image analysis as a future research direction with great potential to improve our understanding of financial market phenomena__.
 
 > the transfer learning signal is in fact more powerful than the re-trained CNN. At 0.7, the H-L transfer strategy more than doubles the Sharpe ratios from re-training (0.3) and is around 50% larger than the baseline Sharpe ratio from daily data (0.5).
+
+- - -
+
+## A msbd5013 course project report
+
+Video https://www.bilibili.com/video/BV1TT4y1k7Jx
+
+Slides https://yao-lab.github.io/course/msbd5013/2022/slides/Xiu_Papers.pdf
+
+![](files/paper-06.png)
+
+![](files/paper-07.png)

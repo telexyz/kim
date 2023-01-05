@@ -100,7 +100,21 @@ def get_torch_dropout_mask(model, x):
     for layer in model:
         x = layer(x)
         if isinstance(layer, torch.nn.Dropout):
-            return x, kim.NDArray(x.detach().numpy()) != 0
+            return x, kim.NDArray(x.detach().cpu().numpy()) != 0
+
+def copy_init_weights_to_torch(model: kim.nn.Sequential, model_: torch.nn.Sequential):
+    for i, x in enumerate(model):
+        if isinstance(x, kim.nn.Conv):  # i=0; model[i]
+            model_[i].weight.data = torch.tensor(
+                x.weight.numpy().transpose(3, 2, 0, 1))
+            model_[i].bias.data = torch.tensor(x.bias.numpy())
+        if isinstance(x, kim.nn.BatchNorm2d):  # i=1; model[i]
+            model_[i].weight.data = torch.tensor(x.weight.numpy().reshape((kim.prod(x.weight.shape),)))
+            model_[i].bias.data = torch.tensor(x.bias.numpy().reshape((kim.prod(x.bias.shape),)))
+        if isinstance(x, kim.nn.Linear):  # i=9; model[i]
+            model_[i].weight.data = torch.tensor(x.weight.numpy().transpose())
+            model_[i].bias.data = torch.tensor(x.bias.numpy())
+
 
 def mymodel(nn, dropout=True):
     def conv_block(cin, cout):
@@ -155,6 +169,41 @@ def epoch(dl, model, loss_fn, optimizer, n):
     return accuracy/(i+1), losses/(i+1)
 
 
+def compare_losses():
+    dl_train, _, _ = get_train_val_test_dataset(5, 32, 0.75, 1600, 0, 0, 160)
+    loss_fn_ = torch.nn.CrossEntropyLoss()
+    model_ = mymodel(torch.nn)
+    optimizer_ = torch.optim.Adam(model_.parameters(), lr=1e-5)
+    loss_fn = kim.nn.SoftmaxLoss()
+    model = mymodel(kim.nn); model.train()
+    optimizer = kim.optim.Adam(model.parameters(), lr=1e-5)
+
+    # Assign same weights between models
+    # copy_init_weights_to_torch(model, model_)
+
+    for e in range(0, 5):
+        print("epoch:", e)
+        for i, (input, target) in enumerate(dl_train):
+            B, W, H = input.shape
+            input = input.swapaxes(1, 2).reshape((B, 1, H, W))
+
+            # Torch first to copy dropout behavior to kim
+            input_ = torch.Tensor(input)
+            target_ = torch.Tensor(target).long()
+            input_, mask = get_torch_dropout_mask(model_, input_)
+            model.replace_dropout(mask)
+            output_ = model_[-1](input_)  # equivelant to output_ = model_(input_)
+            loss_ = loss_fn_(output_, target_)
+            loss = loss_fn(model(kim.Tensor(input)), kim.Tensor(target)) # kimmy
+
+            optimizer_.zero_grad(); loss_.backward(); optimizer_.step()
+            optimizer.reset_grad(); loss.backward(); optimizer.step()
+
+            loss = loss.numpy()
+            loss_ = loss_.detach().cpu().numpy()
+            diff = abs(loss - loss_)
+            print(f" - iter {i}: ", loss, loss_, diff)
+
 def train(dl_train, dl_valid, lib=kim):
     done = 0
     if lib == torch:
@@ -184,8 +233,9 @@ def train(dl_train, dl_valid, lib=kim):
 
 
 if __name__ == "__main__":
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1_024_000, 10_000, 1000, 160)
-    train(dl_train, dl_valid, lib=kim)
+    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1_024_000, 10_000, 1000, 160)
+    # train(dl_train, dl_valid, lib=kim)
+    compare_losses()
 
 ''' configs/SO5.yaml
 data:

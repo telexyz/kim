@@ -6,7 +6,7 @@ import torch
 import pytest
 
 import sys; sys.path.append('project')
-from project.myexp import mymodel, get_torch_dropout_mask
+from project.myexp import mymodel, get_torch_dropout_mask, copy_init_weights_to_torch
 
 def get_tensor(*shape, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)
@@ -39,17 +39,8 @@ def test_model(batch_size, dropout, eps=1e-04):
     model = mymodel(kim.nn, dropout=dropout)
     model_ = mymodel(torch.nn, dropout=dropout)
     
-    ## Assign same weights between models
-    for i, x in enumerate(model):
-        if isinstance(x, kim.nn.Conv): # i=0; model[i]
-            model_[i].weight.data = torch.tensor(x.weight.numpy().transpose(3, 2, 0, 1))
-            model_[i].bias.data = torch.tensor(x.bias.numpy())
-        if isinstance(x, kim.nn.BatchNorm2d): # i=1; model[i]
-            model_[i].weight.data = torch.tensor(x.weight.numpy().reshape((kim.prod(x.weight.shape),)))
-            model_[i].bias.data = torch.tensor(x.bias.numpy().reshape((kim.prod(x.bias.shape),)))
-        if isinstance(x, kim.nn.Linear): # i=9; model[i]
-            model_[i].weight.data = torch.tensor(x.weight.numpy().transpose())
-            model_[i].bias.data = torch.tensor(x.bias.numpy())
+    # Assign same weights between models
+    copy_init_weights_to_torch(model, model_)
 
     # (B, 1, 32, 15), 1-channel, 32x15 image
     x = kim.init.randn(batch_size, 1, 32, 15, requires_grad=True)

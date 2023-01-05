@@ -152,4 +152,35 @@ Giờ chúng ta sẽ tập trung vào explicit regularization, tức là những
 ## l_2 regularization a.k.a weight decay https://youtu.be/ky7qiKyZmnE?t=2428
 (bình thường hóa l2 hay còn gọi là phân rã trọng số trong DL)
 
-Với bài toán học máy cổ điển, độ lớn tham số của một mô hình thường là trung gian cho độ phức tạp, vì thế chúng ta có thể vừa tối thiểu mất mát trong khi vừa giữ cho các tham số có độ lớn nhỏ.
+Với bài toán học máy cổ điển, độ lớn tham số của một mô hình thường là trung gian cho độ phức tạp, vì thế chúng ta có thể vừa tối thiểu mất mát trong khi vừa giữ cho các tham số có độ lớn nhỏ. Explicite regularization form phổ biến nhất mà bạn thấy áp dụng cho trọng số của mạng, là L2 regularization, hay trong DL nó thường được gọi là weight decay. Vậy để định nghĩa bình thường hóa L2, chúng ta sẽ xem xét các bài toán tối ưu trong ML cổ điển.
+
+Ý tưởng đằng sau L2 reg là, nói một cách cổ điển, một cách quan trọng để giải quyết vấn vấn đề độ phức tạp của lớp giả thiết là thông qua kích cỡ của các tham số, có thể chỉ cần xem xét kích cỡ norm của các tham số như là một đại diện (say just the norm, of these paramaters). Tôi sẽ không đi sâu vào chi tiết vì trực giác này đã bị phá vỡ một chút khi nói đến các mạng sâu. Nhưng một cách nghĩ về vấn dề này là, hãy tưởng tượng rằng tất cả các trọng số của bạn đều bằng 0, như thế về cơ bản sẽ không còn sai lệch vì mọi dự đoán của bạn đều bằng 0, ở tất cả mọi nơi. Nếu trọng số nhỏ, các hàm của bạn hoạt động rất trơn tru. Chúng không thay đổi nhiều vì bạn không áp dụng các yếu tố rất lớn cho đầu vào của mình. Vì vậy, hàm của bạn sẽ thay đổi rất chậm đối với các đầu vào khác nhau, đó là tác dụng của trọng số nhỏ. Và do đó, trọng số càng nhỏ, theo một nghĩa nào đó rất thực tế, hàm của bạn càng mượt mà. Chính thức hơn một chút, kích thước của trọng số, áp đặt các hạn mức đối với độ mịn hoặc hằng số Lipschitz của hàm mà bạn đang thực sự sử dụng để biểu diễn dữ liệu của mình (hàm ở đây ám chỉ toàn bộ mạng). Và điều này có nghĩa là vì các hàm mượt mà hơn, theo một nghĩa nào đó là ít phức tạp hơn. Chúng không thể thay đổi nhanh vì chúng ít biến đổi hơn. Một cách để kiểm soát độ phức tạp của hàm là đảm bảo bản thân giá trị của các trọng số là nhỏ. Vì vậy chúng ta muốn làm cho các tham số nhỏ. Và đó là một cách để tiếp tục kiểm soát độ phức tạp của lớp hàm của chúng ta. Và ta làm điều đó bằng cách thêm vào hàm mất mát của chúng ta, bằng cách bổ sung bài toán tối ưu hóa của chúng để thêm cái được gọi là số hạng chuẩn hóa. Dạng của thuật ngữ này trong trường hợp chính quy hóa là L2, là chúng ta sẽ thêm một thuật ngữ lambda/2 lần tổng từ i bằng một đến L là tổng số layers trong mạng, norm của trọng số của layer đó. Và đây thực sự là một ma trận. Vì vậy, về mặt kỹ thuật tôi nên sử dụng cái được gọi là bình phương chuẩn Frobenius - là tổng bình phương các phần tử của ma trận này.
+
+![](files/lec09-09.png)
+
+Như vậy ý tưởng của L2 là ngoài việc điều chỉnh bộ tham số theta để tối thiểu hóa hàm mất mát, ta cũng đồng thời có thể giới hạn độ lớn của các tham số. Làm được điều này bằng cách kết hợp độ lớn các tham số vào hàm mất mát như hình trên. Và công thức đạo hàm trở và cập nhật tham số trở nên đơn giản như công thức dưới ở hình trên.
+
+L2 reg là dạng bình thường hóa phổ biến nhất trong mạng sâu, nhưng nó cũng có vấn đề của nó. Nó không rõ ràng how much it really make sense. Bởi vì trong thực tế, nó không rõ ràng how much the norm of the weights thực sự ảnh hưởng tới độ phức tạp của resulting underlying function. Trong ví dụ minh họa phần trên tôi sử dụng trường hợp mọi trọng số đều bằng 0 và hàm cũng không quá phức tạp. But in terms of the variances you get when it comes to real networks, it's much less clear.
+
+![](files/lec09-10.png)
+
+Quay trở lại minh họa ở trước với việc khởi tạo phương sai 2.3/n, 2/n, và 1.7/n. Như vậy các bộ trọng số thực sự có sự khác biệt, nhưng các mạng này đều có loss giống nhau, and the same actually generalization loss on MNIST. Như vậy có thực sự quan trọng when shink weights? It's sort of unclear, right? And personally, weight decay is very common, when people run gradient descent, you will often see some amount of weight decay. People have just tuned it over time, and found that a small value of 1e-4 is maybe a good, works slightly better than no weight decay at all.
+
+__Nhưng tôi thường bỏ qua nó khi train DL__. I often don't bother with weight decay, because parameter magnitude, sort of the absolute magnitude of the paramaters, especially when you include normalization layers and kind of stuff like that, it's often a very bad proxy for complexity in deep network !!! Và vì thế L2 rất phổ biến và bạn nên biết về nó, và nó cũng được sử dụng rộng rãi, tôi thường thấy mình không dùng nó trong mạng sâu.
+
+## Dropout https://youtu.be/ky7qiKyZmnE?t=3339
+
+![](files/lec09-11.png)
+
+![](files/lec09-12.png)
+
+Cách tốt nhất để nghĩ về dropout là thực sự nghĩ về nó như là một phép tính gần đúng ngẫu nhiên (as a stochastic approximation). Và cũng giống như chúng ta đã làm cho SGD để ước tính gradient descent (SGD = Stochastic Gradient Descent), dropout có thể được nghĩ nghĩ như là một thứ tương tự khi áp dụng trên activations of a network.
+...
+
+## Kết luận
+
+__BatchNorm + Dropout là 2 kỹ thuật hiệu quả trong huấn luyện__. Weight decay mặc dù được dùng phổ biến nhưng có thể bỏ qua.
+
+BatchNorm có rất nhiều bài báo / quan điểm về cách nó làm cho việc huấn luyện trở nên tốt hơn. Thậm chí áp dụng BatchNorm trong testing còn giúp tăng độ chính xác trong một số trường hợp.
+
+![](files/lec09-13.png)

@@ -219,16 +219,7 @@ def show_img(X_img, ticker):
 
 DATA_DIR = Path("data/data_yfinance").expanduser()
 
-''' configs/SOO.yaml
-trading_days: 5
-image_resolution: 32
-price_proportion: 0.75
-batch_size: 160
-num_images_train: 5_000
-num_images_valid_fast: 1_000
-num_images_valid: 5_000
-num_images_test: 1_000
-
+'''
 from mydat import *; import random
 test("GOOGL"); test("SONY")
 imager = ImagingOHLCV(64, price_prop=0.75)

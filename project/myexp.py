@@ -180,10 +180,9 @@ def compare_losses():
     optimizer = kim.optim.Adam(model.parameters(), lr=1e-5)
 
     # Assign same weights between models
-    # copy_init_weights_to_torch(model, model_)
+    copy_init_weights_to_torch(model, model_)
 
     for e in range(0, 5):
-        print("epoch:", e)
         for i, (input, target) in enumerate(dl_train):
             B, W, H = input.shape
             input = input.swapaxes(1, 2).reshape((B, 1, H, W))
@@ -192,7 +191,7 @@ def compare_losses():
             input_ = torch.Tensor(input)
             target_ = torch.Tensor(target).long()
             input_, mask = get_torch_dropout_mask(model_, input_)
-            model.replace_dropout(mask)
+            # model.replace_dropout(mask)
             output_ = model_[-1](input_)  # equivelant to output_ = model_(input_)
             loss_ = loss_fn_(output_, target_)
             loss = loss_fn(model(kim.Tensor(input)), kim.Tensor(target)) # kimmy
@@ -203,10 +202,10 @@ def compare_losses():
             loss = loss.numpy()
             loss_ = loss_.detach().cpu().numpy()
             diff = abs(loss - loss_)
-            print(f" - iter {i}: ", loss, loss_, diff)
+        print(f"epoch {e}:", loss, loss_, diff)
 
-def train(dl_train, dl_valid, lib=kim):
-    done = 0
+
+def load_model(lib=kim):
     if lib == torch:
         loss_fn = torch.nn.CrossEntropyLoss()
         model = mymodel(torch.nn).cuda()
@@ -222,32 +221,26 @@ def train(dl_train, dl_valid, lib=kim):
             done = data['epoch'] + 1
             for i, param in enumerate(model.parameters()):
                 param.data = kim.Tensor(data['params'][i])
+    return model, loss_fn, done
 
+
+def test(dl_test, lib=kim):
+    model, loss_fn, _ = load_model(lib=lib)
+    epoch(dl_test, model, loss_fn, None, 0)
+
+def train(dl_train, dl_valid, lib=kim):
+    model, loss_fn, done = load_model(lib=lib)
     optimizer = lib.optim.Adam(model.parameters(), lr=1e-5)
     for i in range(done, 50):
-        acc, loss = epoch(dl_train, model, loss_fn, optimizer, i)
-        acc, loss = epoch(dl_valid, model, loss_fn, None, i)
+        epoch(dl_train, model, loss_fn, optimizer, i)
+        epoch(dl_valid, model, loss_fn, None, i)
         if lib == torch:
             torch.save({'epoch': i, 'model': model.state_dict()}, "models/torch.chkpt")
         else:
             torch.save({'epoch': i, 'params': [x.numpy() for x in model.parameters()]}, "models/kim.chkpt")
 
-
 if __name__ == "__main__":
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 0, 160)
-    train(dl_train, dl_valid, lib=kim)
     # compare_losses()
-
-''' configs/SO5.yaml
-data:
-  trading_days: 5
-  image_resolution: 32
-  price_proportion: 0.75
-  batch_size: 160
-  num_images_train: 20_000
-  num_images_valid: 1_000
-  num_images_test: 20_000
-optimiser:
-  lr: 1e-5
-  wd: 0
-'''
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 160)
+    # train(dl_train, dl_valid, lib=torch)
+    test(dl_test, lib=kim)

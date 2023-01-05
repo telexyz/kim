@@ -177,6 +177,10 @@ __Nhưng tôi thường bỏ qua nó khi train DL__. I often don't bother with w
 Cách tốt nhất để nghĩ về dropout là thực sự nghĩ về nó như là một phép tính gần đúng ngẫu nhiên (as a stochastic approximation). Và cũng giống như chúng ta đã làm cho SGD để ước tính gradient descent (SGD = Stochastic Gradient Descent), dropout có thể được nghĩ nghĩ như là một thứ tương tự khi áp dụng trên activations of a network.
 ...
 
+## Interaction of optimization, initialization, normalization, regularization
+
+![](files/lec09-14.png)
+
 ## Kết luận
 
 __BatchNorm + Dropout là 2 kỹ thuật hiệu quả trong huấn luyện__. Weight decay mặc dù được dùng phổ biến nhưng có thể bỏ qua.

@@ -116,6 +116,7 @@ def copy_init_weights_to_torch(model: kim.nn.Sequential, model_: torch.nn.Sequen
             model_[i].bias.data = torch.tensor(x.bias.numpy())
 
 
+kim.nn.NONLINEARITY = "leaky_relu"
 def mymodel(nn, dropout=True):
     def conv_block(cin, cout):
         if nn == kim.nn: conv = nn.Conv(cin, cout, (5, 3))
@@ -233,9 +234,9 @@ def train(dl_train, dl_valid, lib=kim):
 
 
 if __name__ == "__main__":
-    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1_024_000, 10_000, 1000, 160)
-    # train(dl_train, dl_valid, lib=kim)
-    compare_losses()
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 0, 160)
+    train(dl_train, dl_valid, lib=kim)
+    # compare_losses()
 
 ''' configs/SO5.yaml
 data:

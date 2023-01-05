@@ -6,6 +6,10 @@ from kim import ops
 import kim.init as init
 import numpy as np
 import kim
+import math
+
+NONLINEARITY = "relu"
+# NONLINEARITY = "leaky_relu"
 
 class Parameter(Tensor):
     """A special kind of tensor that represents parameters."""
@@ -171,11 +175,17 @@ class Linear(Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype, device=device, requires_grad=True)
+        # weight_init = init.kaiming_uniform(in_features, out_features, dtype=dtype, device=device) # original
+        weight_init = init.kaiming_uniform(in_features, out_features, nonlinearity=NONLINEARITY, device=device, requires_grad=True)
         self.weight = Parameter(weight_init)
         if bias is True:
-            bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype, device=device)
-            self.bias = Parameter(ops.transpose(bias_init))
+            if NONLINEARITY == "leaky_relu":
+                fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight.shape)
+                bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0.0
+                self.bias = Parameter(init.rand(1, out_features, low=-bound, high=bound, device=device, requires_grad=True))
+            else:
+                bias_init = init.kaiming_uniform(out_features, 1, dtype=dtype, device=device) # original
+                self.bias = Parameter(ops.transpose(bias_init))
         else: self.bias = None
 
     def forward(self, X: Tensor) -> Tensor:
@@ -270,6 +280,7 @@ class Conv(Module):
     Multi-channel 2D convolutional layer
     IMPORTANT: Accepts inputs in NCHW format, outputs also in NCHW format
     """
+
     def __init__(self, i, o, k, stride=1, dilation=1, bias=True, device=None, dtype="float32"):
         super().__init__()
         if isinstance(dilation, int): dilation = (dilation, dilation)
@@ -289,15 +300,30 @@ class Conv(Module):
         # by the "receptive field size", which is in this case just the product of the kernel sizes 
         # -- which in our case are always going to be the same, i.e., `kh x kw` kernels.
         weight_init = init.kaiming_uniform(i* k**2, o* k**2, shape=(kh, kw, i, o), 
-            dtype=dtype, device=device, requires_grad=True)
+            dtype=dtype, device=device, requires_grad=True, nonlinearity=NONLINEARITY)
         self.weight = Parameter(weight_init)
-
+        """
+        pytorch conv2d init
+        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
+        # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            if fan_in != 0:
+                bound = 1 / math.sqrt(fan_in)
+                init.uniform_(self.bias, -bound, bound)
+        """
         if bias:
-            # Initialize the (o,) bias tensor using uniform initialization on the interval 
-            # +/- 1.0/(in_channels * kernel_size**2)**0.5
-            x = 1.0/((i* k**2)**0.5)
-            self.bias = Parameter(init.rand(o, low=-x, high=x, 
-                dtype= dtype, device=device, requires_grad=True))
+            if NONLINEARITY == "leaky_relu":
+                fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight.shape)
+                x = 1 / math.sqrt(fan_in)
+                self.bias = Parameter(init.rand(o, low=-x, high=x, dtype= dtype, device=device, requires_grad=True))
+            else:
+                # Initialize the (o,) bias tensor using uniform initialization on the interval
+                # +/- 1.0/(in_channels * kernel_size**2)**0.5
+                x = 1.0/((i* k**2)**0.5)
+                self.bias = Parameter(init.rand(o, low=-x, high=x, dtype= dtype, device=device, requires_grad=True))
         else:
             self.bias = None
 

@@ -1,6 +1,5 @@
 import math
 import kim
-import numpy as np
 
 def rand(*shape, low=0.0, high=1.0, device=None, dtype="float32", requires_grad=False):
     """ Generate random numbers uniform between low and high """
@@ -73,15 +72,38 @@ def xavier_normal(fan_in, fan_out, gain=1.0, **kwargs):
     return randn(fan_in, fan_out, mean=0, std=std, **kwargs)
 
 
-def kaiming_uniform(fan_in, fan_out, nonlinearity="relu", shape=None, **kwargs):
-    assert nonlinearity == "relu", "Only relu supported currently"
-    bound = (6 / fan_in) ** 0.5
-    if shape is None:
-        return rand(fan_in, fan_out, low=-bound, high=bound, **kwargs)
+def kaiming_uniform(fan_in, fan_out, nonlinearity="relu", shape=None, a=math.sqrt(5), **kwargs):
+    if shape is None: shape = (fan_in, fan_out)
+
+    # Calculate gain, and fan for diff nonlinearity
+    if nonlinearity == "relu":
+        gain = math.sqrt(2)
+        fan = fan_in
     else:
-        return rand(*shape, low=-bound, high=bound, **kwargs)
+        assert nonlinearity == "leaky_relu", "Only relu & leaky_relu supported currently"
+        fan, _ = _calculate_fan_in_and_fan_out(shape)
+        gain = math.sqrt(2.0 / (1 + a ** 2))
+
+    # Calculate uniform bounds from standard deviation
+    std = gain / math.sqrt(fan)
+    bound = math.sqrt(3.0) * std
+    return rand(*shape, low=-bound, high=bound, **kwargs)
 
 
 def kaiming_normal(fan_in, fan_out, nonlinearity="relu", **kwargs):
     assert nonlinearity == "relu", "Only relu supported currently"
     return randn(fan_in, fan_out, mean=0, std=(2 / fan_in)**0.5, **kwargs)
+
+
+# Copy from https://github.com/pytorch/pytorch/blob/master/torch/nn/init.py
+def _calculate_fan_in_and_fan_out(shape):
+    dimensions = len(shape)
+    if dimensions < 2: raise ValueError("Fan in and fan out can not be computed for tensor with fewer than 2 dimensions")
+    num_input_fmaps = shape[0]
+    num_output_fmaps = shape[1]
+    receptive_field_size = 1
+    if dimensions > 2:
+        for s in shape[2:]: receptive_field_size *= s
+    fan_in = num_input_fmaps * receptive_field_size
+    fan_out = num_output_fmaps * receptive_field_size
+    return fan_in, fan_out

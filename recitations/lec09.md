@@ -188,3 +188,74 @@ __BatchNorm + Dropout là 2 kỹ thuật hiệu quả trong huấn luyện__. We
 BatchNorm có rất nhiều bài báo / quan điểm về cách nó làm cho việc huấn luyện trở nên tốt hơn. Thậm chí áp dụng BatchNorm trong testing còn giúp tăng độ chính xác trong một số trường hợp.
 
 ![](files/lec09-13.png)
+
+- - -
+
+# Tìm hiểu thêm
+
+## Group Normalization (GN) https://youtu.be/l_3zj6HeWUE | https://arxiv.org/pdf/1803.08494.pdf
+
+Khá nhiều DL sử dụng BatchNorm (BN), BN là điều hợp lý và nó hoạt động rất tốt. Ý tưởng đằng sau BN là gì?
+
+![](files/lec09-15.png)
+Giả sử bài toán ML của bạn là cần phân biết tập các đường gạch ngắn vs tập vòng tròn như hình trên. Sẽ có nhiều lợp ích nếu bạn chuyển phân phối đó trước khi làm bất cứ điều gì. Bạn sẽ muốn chuyển nó về gôc tọa độ (căn giữa), sao cho điểm gốc tọa độ (0, 0) nằm ở giữa phân phối.
+
+![](files/lec09-16.png)
+ Và đôi khi bạn cũng muốn chuẩn hóa nó, nghĩa là bạn muốn thay đổi tỉ lệ của trục tọa độ sao cho mọi thứ ít hay nhiều giống như một phân bố Gaussian.
+
+ Như vậy bạn vừa thực hiện 2 bước:
+ - Centering
+ - Normalization
+
+Bạn biết đấy, hầu hết các phương pháp học máy đều hoạt động tốt hơn nếu bạn làm 2 điều trên, và đó là với các phương pháp học máy cổ điển với số lượng dữ liệu điều chỉnh tốt hơn. Với ví dụ trên giả sử bạn muốn xây dựng 1 bộ phân lớp thì bạn chỉ cần 1 tham số bởi vì bạn chỉ cần kẻ 1 đường thẳng đi qua gốc tọa độ (đường màu đen ở hình trên).
+
+![](files/lec09-17.png)
+
+Khi biểu diễn phân bố dữ liệu ở không gian 1 chiều thì bước 1 bạn đưa phân bố về trục tọa độ, va sau đó bạn chia nó cho độ lệch tiêu chuẩn. Dường như là dữ liệu của bạn càng gần phân bố chuẩn bao nhiều thì các phương pháp học máy lại càng hoạt động tốt hơn bấy nhiêu. Đặc biệt nếu bạn nhìn vào cách các tín hiệu được truyền giữa các tầng trong một mạng sâu. Ý tưởng ở đây là nếu nó tốt cho học máy nói chung, thì có thể nó cũng tốt nếu mỗi đầu vào của từng lớp trong mạng sâu đều được chuẩn hóa.
+
+![](files/lec09-18.png)
+
+![](files/lec09-19.png)
+
+Hình trên là feature distribution của một layer trong mạng sâu, thay đổi qua từng epochs. Như bạn thấy, khi không được chuẩn hóa, chúng sẽ biến thiên rất nhanh (tăng hoặc giảm đột biến), khi áp dụng chuẩn hóa thì chúng hội tụ về một chỗ.
+
+![](files/lec09-20.png)
+Sẽ tốt hơn nếu bạn chuẩn hóa dữ liệu đầu vào trước khi cho vào một layer, đầu ra bạn được một feature distibution khác, và bạn lại chuẩn hóa nó trước khi đưa vào layer tiếp theo.
+
+![](files/lec09-21.png)
+Vấn đề ở đây là để chuẩn hóa tốt bạn cần phải làm nó cho cả tập dữ liệu, nếu bạn chỉ có mini-batch (giả sử là 4 điểm khoang đỏ trong hình trên) là một tập con của tập dữ liệu, tôi không thể xác định giá trị trung bình cho cả tập, nhưng điều có thể làm là đoán giá trị trung bình từ 4 điểm đó (điểm x màu xanh lá) và nó cũng gần sát với điểm x màu đỏ là center của cả tập dữ liệu. Như vậy lô dữ liệu của bạn càng lớn và bạn lấy mẫu dữ liệu ngẫu nhiên thì, ước tính trung bình của bạn càng chính xác. Chúng ta đang train với batch ngày càng lớn hơn nên đây không phải là vấn đề.
+
+![](files/lec09-22.png)
+Vấn đề thực sự xảy ra khi distributed training, từ 1 kho dữ liệu lớn, ta lấy ra khoảng 4k samples, và phân bố số samples này cho các tác vụ training nhỏ hơn, chẳng hạn 8 samples cho mỗi tác vụ chẳng hạn. Khi huấn luyện mô hình ngôn ngữ dạng chuỗi, số phân bổ samples này có thể giảm xuống thấp nữa, 2 samples cho mỗi tác vụ training chẳng hạn. Thì đây thực sự là một vấn đề vì bạn không thể chuẩn hóa hàng loạt. Bạn có 2 lựa chọn:
+bạn chấp nhận chuẩn hóa trên số mẫu nhỏ, hoặc sau mỗi bước tính toán bạn phải thực hiện đồng bộ hóa giữa các đơn vị tính toán để chuẩn hóa trên tập mẫu lớn hơn (đường minh họa màu đỏ hình trên). Thông thường bước đồng bộ hóa sẽ không được thực hiện vì nó sẽ làm chậm toàn bộ quá trình huấn luyện.
+
+![](files/lec09-23.png)
+Hình trên minh họa tính không ổn định của BatchNorm khi số lượng mẫu huấn luyện giảm đi. Và GN sinh ra để giải quyết vấn đề đó vì nó chuẩn hóa within the sample nên không phụ thuộc vào số lượng mẫu. GN thường không hoạt động tốt bằng BN (khi có đủ mẫu), nhưng tác giả bài báo claim rằng nó hoạt động tương đương với BN.
+
+![](files/lec09-18.png)
+Quay trở lại hình minh họa các phương pháp chuẩn hóa. BN thực hiện chuẩn qua trên tập mẫu con (tại layer đang xét), LN thực hiện chuẩn hóa trên activation (của từng layer), Instance Norm không tốt, LN có cái dở là giả sử các mean và variant thực sự là một feature tốt để phân biệt mẫu thuộc lớp này với mẫu thuộc lớp khác thì việc LN sẽ làm mất đi feature đó. 
+
+![](files/lec09-24.png)
+
+GN giống LN nhưng thực hiện trên con của activation có cùng một kiểu phân bố. Nó hoạt động dựa trên giả thiết là có thể có một số features mà về bản chất chúng đã có cùng scale và phương sai. Ví dụ nếu bạn có một bộ lọc khi thực hiện conv, và bộ lọc đó giả sử là 1 horizontal edge filter, chúng sẽ có giá trị thấp ở ô màu đen và giá trị cao ở ô màu xanh. Vì cạnh sẽ có mẫu hình cao thấp cao hoặc thấp cao thấp nên khi chạy qua bộ lọc này nó sẽ có giá trị dương rất cao hoặc âm rất thấp, chúng ta có thể mong đợi rằng trong một mạng sâu sẽ có các bộ lọc có cùng scale và phương sai, vì thế chúng ta có thể chuẩn hóa chúng với nhau như trong LN. Và vì thế càng nhiều lần GN, thì better statistics we can gather. Đó là lí do tại sao Instant Norm không hoạt động vì nó chỉ norm ở trong 1 thứ rất nhỏ, mức độ thống kê rất nhỏ. Nhưng khi chúng ta đã có những thống kê tốt thì chúng ta nên chuẩn hóa features khác nhau theo các cách khác nhau. 
+
+![](files/lec09-25.png)
+
+Tuy nhiên bạn không biết những features đó nằm ở đâu, nhưng bạn hy vọng rằng khi thực hiện GN trước khi đưa vào huấn luyện, bạn cho rằng các features đó có thể là bất cứ thứ gì đứng cạnh nhau, và bạn hy vọng rằng trong quá trình huấn luyện các nhóm đó sẽ học được các features có kích thước bằng nhau (quá nhiều hopes, no proofs). Vậy bạn kiểu như đang bắt buộc kiến trúc mạng phải làm điều đó. Đó là idea behind GN.
+
+!! Nó xây dựng các group of channels, và sau đó sẽ chuẩn hóa trong các nhóm đó trong toàn bộ H,W __chỉ với một mẫu dữ liệu__ !!
+Vì thế bạn có được lợi thế của LayerNorm là chỉ làm nó trong 1 mẫu dữ liệu mà vẫn có được lợi thế của BatchNorm là chuẩn hóa chỉ trên một feature (điều mà InstantNorm muốn làm). So you get the best of both worlds.
+
+![](files/lec09-26.png)
+
+![](files/lec09-27.png)
+Thử nghiệm trong bài báo cho thấy rằng độ ổn định của GN rất gần BN, nhất là trong training.
+
+![](files/lec09-28.png)
+Tuy nhiên khi thích thước mẫu giảm đi, thì GN tỏ ra ổn định hơn nhiều so với BN.
+
+## Comments
+
+__Note__: normalizing isn't making the data more Gaussian, it's just transforming it to have mean of 0 and SD of 1. Gaussian data is often normalized and represented in this way too, but the normalization doesn't make your data any more Gaussian. Normalization does not change the inherent distributional shape of the data, just the mean and SD. For example, if your data was right-tailed in one dimension, it would remain right-tailed (and non-gaussian looking), it would just have a mean and SD of 0 and 1, respectively.
+
+- yeah it's really called standardization which comes from the equation to convert a normal distribution to a standard normal distribution

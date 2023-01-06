@@ -83,6 +83,67 @@ _needle training GPU utilization_
 ![](files/needle_vs_torch-02.png)
 _torch training GPU utilization_
 
+## Benchmark needle
+
+In-order to see which parts of needle take times, we measure timespents on each TensorOp compute() and gradient() separately while training the model:
+```
+[ train ] Epoch: 0 Batch: 40 Acc: 48.3% Loss: 0.7801: 41it [00:41,  1.02s/it]
+
+FORWARD       CALL  x   AVG  = TIME   %
+- - - - - - - - - - - - - - - - - - - -
+Summation      246  0.01111  2.7331   7
+LeakyReLU       82  0.02960  2.4269   6
+Conv            82  0.02788  2.2863   5
+EWiseAdd       861  0.00111  0.9556   2
+MaxPool2d       82  0.00558  0.4576   1
+BroadcastTo    451  0.00043  0.1936   0
+Negate         205  0.00041  0.0833   0
+PowerScalar    164  0.00037  0.0610   0
+Reshape        451  0.00010  0.0444   0
+EWiseMul       164  0.00023  0.0377   0
+AddScalar       82  0.00037  0.0303   0
+EWiseDiv        82  0.00035  0.0285   0
+DivScalar      246  0.00010  0.0248   0
+LogSumExp       41  0.00027  0.0109   0
+MulScalar      328  0.00002  0.0055   0
+Transpose      656  0.00001  0.0036   0
+MatMul          41  0.00005  0.0019   0
+
+BACKWARD      CALL  x   AVG  = TIME   %
+- - - - - - - - - - - - - - - - - - - -
+Conv            82  0.12947  10.612  25
+BroadcastTo    451  0.01271  5.7338  14
+LeakyReLU       82  0.03149  2.5825   6
+MaxPool2d       82  0.02270  1.8614   4
+PowerScalar    164  0.00112  0.1833   0
+MatMul          41  0.00435  0.1782   0
+EWiseDiv        82  0.00188  0.1545   0
+EWiseMul       164  0.00066  0.1088   0
+Summation      246  0.00038  0.0930   0
+Negate         205  0.00029  0.0600   0
+Reshape        451  0.00010  0.0470   0
+DivScalar      246  0.00011  0.0263   0
+LogSumExp       41  0.00030  0.0124   0
+Transpose      656  0.00001  0.0077   0
+EWiseAdd       410  0.00000  0.0013   0
+AddScalar       82  0.00000  0.0001   0
+
+Total    41.7993s 100%
+- - - - - - - - - - -
+Forward   9.3851s  22%
+Backward 21.6666s  52%
+Others   10.7476s  26%
+```
+
+As you see, 
+- `52%` timespent on backward `op.gradient()`
+- `22%` timespent on forward `op.compute()`
+- `26%` timespent on other things
+
+For ops, `Conv.gradient()` and `BroadcastTo.gradient()` took most of the timespent (25% and 14%), suggest that if we can optimize convolution and summation (BroadCastTo.gradient() use summation) we can increase needle speed a little bit.
+
+We did not investigate where remain `26%` go yet, the benchmark are just to check if we did something wrong with new ops `LeakyReLU` and `MaxPool2d` that slow the whole system. We can conclude that our new ops are all good.
+
 - - -
 
 The original paper use Xavier initialization, I missed that part when reading the paper.

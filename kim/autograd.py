@@ -34,16 +34,16 @@ class CompGraph:
 
         print(f"\nFORWARD       CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - -")
         for k, v in sorted(CompGraph.fw_ts.items(), key=lambda x: -x[1]):
-            print(f"{k:12s} {CompGraph.fw_cn[k]:5d}  {v/CompGraph.fw_cn[k]:.5f}  {v:3.4f}  {int(v*100/fwbw):2d}")
+            print(f"{k:12s} {CompGraph.fw_cn[k]:5d}  {v/CompGraph.fw_cn[k]:.5f}  {v:3.4f}  {round(v*100/total):2d}")
 
         print(f"\nBACKWARD      CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - -")
         for k, v in sorted(CompGraph.bw_ts.items(), key=lambda x: -x[1]):
-            print(f"{k:12s} {CompGraph.bw_cn[k]:5d}  {v/CompGraph.bw_cn[k]:.5f}  {v:3.4f}  {int(v*100/fwbw):2d}")
+            print(f"{k:12s} {CompGraph.bw_cn[k]:5d}  {v/CompGraph.bw_cn[k]:.5f}  {v:3.4f}  {round(v*100/total):2d}")
 
         print(f"\nTotal    {total:.4f}s 100%\n- - - - - - - - - - -")
-        print(f"Forward  {fw:.4f}s {int(fw*100/total):3d}%")
-        print(f"Backward {bw:.4f}s {int(bw*100/total):3d}%")
-        print(f"Others   {others:.4f}s {int(others*100/total):3d}%")
+        print(f"Forward  {fw:.4f}s {round(fw*100/total):3d}%")
+        print(f"Backward {bw:.4f}s {round(bw*100/total):3d}%")
+        print(f"Others   {others:.4f}s {round(others*100/total):3d}%")
 
 ####################################
 ####### Tensor và TensorOp   #######

@@ -244,7 +244,7 @@ if __name__ == "__main__":
     # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
     # train(dl_train, dl_valid, lib=kim)
     kim.autograd.CompGraph.RECORD_TIMESPENT = True
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1028, 0, 0, 256)
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
     train(dl_train, dl_valid, lib=kim, epoches=1)
     # compare_losses(5)
     # test(dl_test, lib=kim)

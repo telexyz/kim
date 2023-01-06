@@ -3,12 +3,29 @@ from typing import List, Optional, NamedTuple, Tuple, Union
 import numpy
 from .tensor_tuple import TensorTuple, TensorTupleOp
 from .backend_selection import Device, array_api, NDArray, default_device
+import time
 
 # namespace để chứa config và counters liên quan tới computational graph
 class CompGraph:
     LAZY_MODE = False
     NODE_COUNT = 0
     SAVE_MEM = True
+
+    fw_timespent = {}
+    bw_timespent = {}
+    @staticmethod
+    def record_timespent(op, timespent, forward=True):
+        d = CompGraph.fw_timespent if forward else CompGraph.bw_timespent
+        k = op.__class__.__name__
+        try: d[k] += timespent
+        except KeyError: d[k] = timespent
+    @staticmethod
+    def print_timespents():
+        print("\nFORWARD")
+        for k, v in sorted(CompGraph.fw_timespent.items(), key=lambda x: -x[1]): print(f"{k} {v}")
+        print("\nBACKWARD")
+        for k, v in sorted(CompGraph.bw_timespent.items(), key=lambda x: -x[1]): print(f"{k} {v}")
+
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -18,7 +35,6 @@ class CompGraph:
 class TensorOp:
     def __call__(self, *args):
         return Tensor.make_from_op(self, args)
-
 
 class Tensor:
     def __repr__(self):
@@ -41,9 +57,11 @@ class Tensor:
 
     def realize_cached_data(self) -> NDArray:
         if self.cached_data is None:
+            start = time.time()
             self.cached_data = self.op.compute(
                 *[x.realize_cached_data() for x in self.inputs]
             )
+            CompGraph.record_timespent(self.op, time.time() - start)
         return self.cached_data
     
     def numpy(self):
@@ -223,7 +241,9 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
             node.grad = node.grad.detach() # will save a lot of (GPU) memory
 
         if node.op is not None:
+            start = time.time()
             grads = node.op.gradient(node.grad, node)
+            CompGraph.record_timespent(node.op, time.time() - start, forward=False)
             for k, inp in enumerate(node.inputs):
                 grad = grads[k]
                 try: output_grads[inp].append(grad)

@@ -134,6 +134,7 @@ def mymodel(nn, dropout=True):
 
 
 def epoch(dl, model, loss_fn, optimizer, n):
+    if len(dl.dataset) == 0: return
     pbar = tqdm(total=len(dl.dataset) // dl.batch_size)
     accuracy, losses = 0, 0
     training = (optimizer is not None)
@@ -170,8 +171,7 @@ def epoch(dl, model, loss_fn, optimizer, n):
     return accuracy/(i+1), losses/(i+1)
 
 
-def compare_losses():
-    kim.autograd.CompGraph.RECORD_TIMESPENT = True
+def compare_losses(epochs):
     dl_train, _, _ = get_train_val_test_dataset(5, 32, 0.75, 1600, 0, 0, 160)
     loss_fn_ = torch.nn.CrossEntropyLoss()
     model_ = mymodel(torch.nn)
@@ -183,7 +183,7 @@ def compare_losses():
     # Assign same weights between models
     copy_init_weights_to_torch(model, model_)
 
-    for e in range(0, 5):
+    for e in range(0, epochs):
         for i, (input, target) in enumerate(dl_train):
             B, W, H = input.shape
             input = input.swapaxes(1, 2).reshape((B, 1, H, W))
@@ -204,9 +204,9 @@ def compare_losses():
             loss_ = loss_.detach().cpu().numpy()
             diff = abs(loss - loss_)
         print(f"epoch {e}:", loss, loss_, diff)
-    kim.autograd.CompGraph.print_timespents()
 
 def load_model(lib=kim):
+    done = 0
     if lib == torch:
         loss_fn = torch.nn.CrossEntropyLoss()
         model = mymodel(torch.nn).cuda()
@@ -229,10 +229,10 @@ def test(dl_test, lib=kim):
     model, loss_fn, _ = load_model(lib=lib)
     epoch(dl_test, model, loss_fn, None, 0)
 
-def train(dl_train, dl_valid, lib=kim):
+def train(dl_train, dl_valid, epoches=50, lib=kim):
     model, loss_fn, done = load_model(lib=lib)
     optimizer = lib.optim.Adam(model.parameters(), lr=1e-5)
-    for i in range(done, 50):
+    for i in range(done, epoches):
         epoch(dl_train, model, loss_fn, optimizer, i)
         epoch(dl_valid, model, loss_fn, None, i)
         if lib == torch:
@@ -241,7 +241,11 @@ def train(dl_train, dl_valid, lib=kim):
             torch.save({'epoch': i, 'params': [x.numpy() for x in model.parameters()]}, "models/kim.chkpt")
 
 if __name__ == "__main__":
-    compare_losses()
     # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
     # train(dl_train, dl_valid, lib=kim)
+    kim.autograd.CompGraph.RECORD_TIMESPENT = True
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1028, 0, 0, 256)
+    train(dl_train, dl_valid, lib=kim, epoches=1)
+    # compare_losses(5)
     # test(dl_test, lib=kim)
+    kim.autograd.CompGraph.print_timespents()

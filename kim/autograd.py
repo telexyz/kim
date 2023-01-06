@@ -12,20 +12,32 @@ class CompGraph:
     SAVE_MEM = True
 
     RECORD_TIMESPENT = False
-    fw_timespent = {}
-    bw_timespent = {}
+    started_at = None
+    fw_ts, fw_cn = {}, {}
+    bw_ts, bw_cn = {}, {}
     @staticmethod
     def record_timespent(op, timespent, forward=True):
-        d = CompGraph.fw_timespent if forward else CompGraph.bw_timespent
+        if CompGraph.started_at is None: CompGraph.started_at = time.time()
+        ts, cn = (CompGraph.fw_ts, CompGraph.fw_cn) if forward else (CompGraph.bw_ts, CompGraph.bw_cn)
         k = op.__class__.__name__
-        try: d[k] += timespent
-        except KeyError: d[k] = timespent
+        try: ts[k] += timespent; cn[k] += 1;
+        except KeyError: ts[k] = timespent; cn[k] = 1;
+
     @staticmethod
     def print_timespents():
-        print("\nFORWARD")
-        for k, v in sorted(CompGraph.fw_timespent.items(), key=lambda x: -x[1]): print(f"{k} {v}")
-        print("\nBACKWARD")
-        for k, v in sorted(CompGraph.bw_timespent.items(), key=lambda x: -x[1]): print(f"{k} {v}")
+        if CompGraph.started_at is None: return
+        print(f"\nFORWARD       CALL    TIME      AVG\n- - - - - - - - - - - - - - - - - -")
+        for k, v in sorted(CompGraph.fw_ts.items(), key=lambda x: -x[1]):
+            print(f"{k:12s} {CompGraph.fw_cn[k]:5d}  {v:3.4f}  {v/CompGraph.fw_cn[k]:.5f}")
+        print(f"\nBACKWARD      CALL    TIME      AVG\n- - - - - - - - - - - - - - - - - -")
+        for k, v in sorted(CompGraph.bw_ts.items(), key=lambda x: -x[1]):
+            print(f"{k:12s} {CompGraph.bw_cn[k]:5d}  {v:3.4f}  {v/CompGraph.bw_cn[k]:.5f}")
+
+        total = time.time() - CompGraph.started_at
+        fw = sum(CompGraph.fw_ts.values())
+        bw = sum(CompGraph.bw_ts.values())
+        others = total - fw - bw
+        print(f"\nTotal {total:.4f}s\nForward {fw:.4f}s\nBackward {bw:.4f}s\nOthers {others:.4f}s")
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -241,10 +253,16 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
             node.grad = node.grad.detach() # will save a lot of (GPU) memory
 
         if node.op is not None:
-            if CompGraph.RECORD_TIMESPENT: start = time.time()
-            grads = node.op.gradient(node.grad, node)
-            if CompGraph.RECORD_TIMESPENT:
+            if CompGraph.RECORD_TIMESPENT: 
+                # Turn off to not record timespents of other ops used in backward
+                CompGraph.RECORD_TIMESPENT = False
+                start = time.time()
+                grads = node.op.gradient(node.grad, node)
                 CompGraph.record_timespent(node.op, time.time() - start, forward=False)
+                CompGraph.RECORD_TIMESPENT = True # Turn on again
+            else:
+                grads = node.op.gradient(node.grad, node)
+
             for k, inp in enumerate(node.inputs):
                 grad = grads[k]
                 try: output_grads[inp].append(grad)

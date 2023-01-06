@@ -10,6 +10,7 @@ python3 -m pytest \
 	tests/test_ops.py \
 	tests/test_conv.py \
 	tests/test_simple_nn.py \
+	tests/test_project.py \
 	# tests/test_sequence_models.py \
 	# tests/test_mlp_resnet.py \
 	# tests/test_data.py \

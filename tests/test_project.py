@@ -5,9 +5,6 @@ import kim
 import torch
 import pytest
 
-import sys; sys.path.append('project')
-from project.myexp import mymodel, get_torch_dropout_mask, copy_init_weights_to_torch
-
 def get_tensor(*shape, entropy=1):
     np.random.seed(np.prod(shape) * len(shape) * entropy)
     return kim.Tensor(np.random.randint(0, 100, size=shape) / 20, dtype="float32")
@@ -33,6 +30,8 @@ def get_int_tensor(*shape, low=0, high=10, entropy=1):
 @pytest.mark.parametrize("batch_size", [128, 32, 64])
 @pytest.mark.parametrize("dropout", [True])
 def test_model(batch_size, dropout, eps=1e-03):
+    import sys; sys.path.append('project')
+    from project.myexp import mymodel, get_torch_dropout_mask, copy_init_weights_to_torch
     kim.autograd.CompGraph.RECORD_TIMESPENT = True
     # from myexp import mymodel, torch, kim
     model = mymodel(kim.nn, dropout=dropout)

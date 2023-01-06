@@ -241,6 +241,6 @@ def train(dl_train, dl_valid, lib=kim):
 
 if __name__ == "__main__":
     # compare_losses()
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 160)
-    # train(dl_train, dl_valid, lib=torch)
-    test(dl_test, lib=kim)
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
+    train(dl_train, dl_valid, lib=torch)
+    # test(dl_test, lib=kim)

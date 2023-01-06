@@ -26,18 +26,24 @@ class CompGraph:
     @staticmethod
     def print_timespents():
         if CompGraph.started_at is None: return
-        print(f"\nFORWARD       CALL    TIME      AVG\n- - - - - - - - - - - - - - - - - -")
-        for k, v in sorted(CompGraph.fw_ts.items(), key=lambda x: -x[1]):
-            print(f"{k:12s} {CompGraph.fw_cn[k]:5d}  {v:3.4f}  {v/CompGraph.fw_cn[k]:.5f}")
-        print(f"\nBACKWARD      CALL    TIME      AVG\n- - - - - - - - - - - - - - - - - -")
-        for k, v in sorted(CompGraph.bw_ts.items(), key=lambda x: -x[1]):
-            print(f"{k:12s} {CompGraph.bw_cn[k]:5d}  {v:3.4f}  {v/CompGraph.bw_cn[k]:.5f}")
-
         total = time.time() - CompGraph.started_at
         fw = sum(CompGraph.fw_ts.values())
         bw = sum(CompGraph.bw_ts.values())
-        others = total - fw - bw
-        print(f"\nTotal {total:.4f}s\nForward {fw:.4f}s\nBackward {bw:.4f}s\nOthers {others:.4f}s")
+        fwbw = fw + bw
+        others = total - fwbw
+
+        print(f"\nFORWARD       CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - -")
+        for k, v in sorted(CompGraph.fw_ts.items(), key=lambda x: -x[1]):
+            print(f"{k:12s} {CompGraph.fw_cn[k]:5d}  {v/CompGraph.fw_cn[k]:.5f}  {v:3.4f}  {int(v*100/fwbw):2d}")
+
+        print(f"\nBACKWARD      CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - -")
+        for k, v in sorted(CompGraph.bw_ts.items(), key=lambda x: -x[1]):
+            print(f"{k:12s} {CompGraph.bw_cn[k]:5d}  {v/CompGraph.bw_cn[k]:.5f}  {v:3.4f}  {int(v*100/fwbw):2d}")
+
+        print(f"\nTotal    {total:.4f}s 100%\n- - - - - - - - - - -")
+        print(f"Forward  {fw:.4f}s {int(fw*100/total):3d}%")
+        print(f"Backward {bw:.4f}s {int(bw*100/total):3d}%")
+        print(f"Others   {others:.4f}s {int(others*100/total):3d}%")
 
 ####################################
 ####### Tensor và TensorOp   #######

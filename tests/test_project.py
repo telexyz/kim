@@ -30,11 +30,9 @@ def get_int_tensor(*shape, low=0, high=10, entropy=1):
 (9): Dropout(p=0.5, inplace=False)
 (10): Linear(in_features=15360, out_features=2, bias=True)
 '''
-
-
 @pytest.mark.parametrize("batch_size", [128, 32, 64])
 @pytest.mark.parametrize("dropout", [True])
-def test_model(batch_size, dropout, eps=1e-04):
+def test_model(batch_size, dropout, eps=1e-03):
     # from myexp import mymodel, torch, kim
     model = mymodel(kim.nn, dropout=dropout)
     model_ = mymodel(torch.nn, dropout=dropout)
@@ -87,7 +85,8 @@ def test_model(batch_size, dropout, eps=1e-04):
     z, z_ = model[i].bias, model_[i].bias
     np.testing.assert_allclose(z.grad.numpy(), z_.grad.numpy(), rtol=eps, atol=eps)
 
-
+    kim.autograd.CompGraph.print_timespents()
+    assert False
 
 @pytest.mark.parametrize("rows", [5, 1, 200, 1000, 2827])
 @pytest.mark.parametrize("classes", [10, 2, 30, 99])

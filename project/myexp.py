@@ -191,7 +191,7 @@ def compare_losses():
             input_ = torch.Tensor(input)
             target_ = torch.Tensor(target).long()
             input_, mask = get_torch_dropout_mask(model_, input_)
-            # model.replace_dropout(mask)
+            model.replace_dropout(mask)
             output_ = model_[-1](input_)  # equivelant to output_ = model_(input_)
             loss_ = loss_fn_(output_, target_)
             loss = loss_fn(model(kim.Tensor(input)), kim.Tensor(target)) # kimmy
@@ -203,7 +203,7 @@ def compare_losses():
             loss_ = loss_.detach().cpu().numpy()
             diff = abs(loss - loss_)
         print(f"epoch {e}:", loss, loss_, diff)
-
+    kim.autograd.CompGraph.print_timespents()
 
 def load_model(lib=kim):
     if lib == torch:
@@ -240,7 +240,7 @@ def train(dl_train, dl_valid, lib=kim):
             torch.save({'epoch': i, 'params': [x.numpy() for x in model.parameters()]}, "models/kim.chkpt")
 
 if __name__ == "__main__":
-    # compare_losses()
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
-    train(dl_train, dl_valid, lib=torch)
+    compare_losses()
+    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
+    # train(dl_train, dl_valid, lib=kim)
     # test(dl_test, lib=kim)

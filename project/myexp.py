@@ -171,6 +171,7 @@ def epoch(dl, model, loss_fn, optimizer, n):
 
 
 def compare_losses():
+    kim.autograd.CompGraph.RECORD_TIMESPENT = True
     dl_train, _, _ = get_train_val_test_dataset(5, 32, 0.75, 1600, 0, 0, 160)
     loss_fn_ = torch.nn.CrossEntropyLoss()
     model_ = mymodel(torch.nn)

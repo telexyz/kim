@@ -11,6 +11,7 @@ class CompGraph:
     NODE_COUNT = 0
     SAVE_MEM = True
 
+    RECORD_TIMESPENT = False
     fw_timespent = {}
     bw_timespent = {}
     @staticmethod
@@ -25,7 +26,6 @@ class CompGraph:
         for k, v in sorted(CompGraph.fw_timespent.items(), key=lambda x: -x[1]): print(f"{k} {v}")
         print("\nBACKWARD")
         for k, v in sorted(CompGraph.bw_timespent.items(), key=lambda x: -x[1]): print(f"{k} {v}")
-
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -57,11 +57,11 @@ class Tensor:
 
     def realize_cached_data(self) -> NDArray:
         if self.cached_data is None:
-            start = time.time()
+            if CompGraph.RECORD_TIMESPENT: start = time.time()
             self.cached_data = self.op.compute(
                 *[x.realize_cached_data() for x in self.inputs]
             )
-            CompGraph.record_timespent(self.op, time.time() - start)
+            if CompGraph.RECORD_TIMESPENT: CompGraph.record_timespent(self.op, time.time() - start)
         return self.cached_data
     
     def numpy(self):
@@ -241,9 +241,10 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
             node.grad = node.grad.detach() # will save a lot of (GPU) memory
 
         if node.op is not None:
-            start = time.time()
+            if CompGraph.RECORD_TIMESPENT: start = time.time()
             grads = node.op.gradient(node.grad, node)
-            CompGraph.record_timespent(node.op, time.time() - start, forward=False)
+            if CompGraph.RECORD_TIMESPENT:
+                CompGraph.record_timespent(node.op, time.time() - start, forward=False)
             for k, inp in enumerate(node.inputs):
                 grad = grads[k]
                 try: output_grads[inp].append(grad)

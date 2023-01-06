@@ -33,6 +33,7 @@ def get_int_tensor(*shape, low=0, high=10, entropy=1):
 @pytest.mark.parametrize("batch_size", [128, 32, 64])
 @pytest.mark.parametrize("dropout", [True])
 def test_model(batch_size, dropout, eps=1e-03):
+    kim.autograd.CompGraph.RECORD_TIMESPENT = True
     # from myexp import mymodel, torch, kim
     model = mymodel(kim.nn, dropout=dropout)
     model_ = mymodel(torch.nn, dropout=dropout)

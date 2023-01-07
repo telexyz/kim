@@ -41,11 +41,14 @@ class Tensor:
 
     def realize_cached_data(self) -> NDArray:
         if self.cached_data is None:
-            if timelog.RECORD_TIMESPENT: start = time.time()
-            self.cached_data = self.op.compute(
-                *[x.realize_cached_data() for x in self.inputs]
-            )
-            if timelog.RECORD_TIMESPENT: timelog.record_timespent(self.op, time.time() - start)
+            if timelog.RECORD_TIMESPENT:
+                timelog.RECORD_TIMESPENT = False
+                start = time.perf_counter() 
+                self.cached_data = self.op.compute(*[x.realize_cached_data() for x in self.inputs])
+                timelog.record_timespent(self.op, time.perf_counter()  - start)
+                timelog.RECORD_TIMESPENT = True
+            else:
+                self.cached_data = self.op.compute(*[x.realize_cached_data() for x in self.inputs])
         return self.cached_data
     
     def numpy(self):
@@ -228,9 +231,9 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
             if timelog.RECORD_TIMESPENT: 
                 # Turn off to not record timespents of other ops used in backward
                 timelog.RECORD_TIMESPENT = False
-                start = time.time()
+                start = time.perf_counter() 
                 grads = node.op.gradient(node.grad, node)
-                timelog.record_timespent(node.op, time.time() - start, forward=False)
+                timelog.record_timespent(node.op, time.perf_counter()  - start, forward=False)
                 timelog.RECORD_TIMESPENT = True  # Turn on again
             else:
                 grads = node.op.gradient(node.grad, node)

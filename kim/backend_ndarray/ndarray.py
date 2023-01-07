@@ -80,11 +80,9 @@ def cuda():
             cuda_fun = getattr(clc, "_" + fun_name)
             def inner_fun(self, *args):
                 if timelog.RECORD_TIMESPENT:
-                    start = time.time()
+                    start = time.perf_counter_ns() 
                     result = cuda_fun(self, *args)
-                    ts = time.time() - start
-                    try: timelog.ts[fun_name] += ts; timelog.call[fun_name] += 1
-                    except KeyError: timelog.ts[fun_name] = ts; timelog.call[fun_name] = 1
+                    timelog.record_cu_timespent(fun_name, time.perf_counter_ns()  - start)
                     return result
                 else:
                     return cuda_fun(self, *args)
@@ -165,6 +163,7 @@ class NDArray:
     """
 
     def __init__(self, other, device=None):
+        if timelog.RECORD_TIMESPENT: start = time.perf_counter() 
         """ Create by copying another NDArray, or from numpy """
         if isinstance(other, NDArray):
             # create a copy of existing NDArray
@@ -183,6 +182,7 @@ class NDArray:
             array = NDArray(np.array(other), device=device)
         # khởi tạo self từ NDArray mới được tạo ra
         self._init(array)
+        if timelog.RECORD_TIMESPENT: timelog.record_other_timespent("NDArray.__init__", time.perf_counter() -start)
 
     def _init(self, other):
         self._shape   = other._shape
@@ -265,7 +265,9 @@ class NDArray:
 
     def numpy(self) -> np.ndarray:
         """ convert to a numpy array """
+        if timelog.RECORD_TIMESPENT: start = time.perf_counter() 
         x = self.device.to_numpy(self._handle, self._shape, self._strides, self._offset)
+        if timelog.RECORD_TIMESPENT: timelog.record_other_timespent("NDArray.numpy", time.perf_counter() -start)
         return x
 
     def is_compact(self) -> bool:
@@ -279,9 +281,11 @@ class NDArray:
         if self.is_compact(): # or self.device == cuda_triton():
             return self
         else:
+            if timelog.RECORD_TIMESPENT: start = time.perf_counter() 
             '''Tạo một compact NDArray mới và copy dữ liệu sang'''
             out = NDArray.make(self.shape, device=self.device)
             self.device.compact(self._handle, out._handle, out._strides, self._shape, self._strides, self._offset)
+            if timelog.RECORD_TIMESPENT: timelog.record_other_timespent("NDArray.compact", time.perf_counter()-start)
             return out
 
 

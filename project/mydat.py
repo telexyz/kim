@@ -150,17 +150,18 @@ class ImagingOHLCV(object):
             return None
 
         n = price_data.shape[0]
-        X_img = np.zeros((n * 3, self.resolution))
+        X_img = np.zeros((n * 3, self.resolution)) # resolution tương ứng với số cột
+        # Mỗi day tương ứng với 3 hàng, n đây cần n * 3 hàng
 
         price_pixels = round(self.resolution * self.price_prop)
-        vol_pixesl = self.resolution - price_pixels
+        vol_pixels = self.resolution - price_pixels
 
         if ma_close is not None:
             price_data = np.hstack((price_data, ma_close.reshape((-1, 1))))
 
         price_min, price_max = price_data.min(), price_data.max()
         price_data = (price_data - price_min) / (price_max - price_min)
-        X_loc = (price_data * (price_pixels - 1)).astype(int) + vol_pixesl
+        X_loc = (price_data * (price_pixels - 1)).astype(int) + vol_pixels
 
         for i in range(n):
             # low-high bar in the middle
@@ -188,7 +189,7 @@ class ImagingOHLCV(object):
         # add volume
         X = volumn_data
         # index start from 0, so -1.
-        vol_per_pixel = X.max() / (vol_pixesl - 1)
+        vol_per_pixel = X.max() / (vol_pixels - 1)
         X2 = (X / vol_per_pixel).astype(int)
         for i in range(n):
             loc_x = (i * 3) + 1

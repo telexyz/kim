@@ -2,7 +2,7 @@ from numbers import Number
 from typing import Optional, List, Tuple, Union
 from .autograd import NDArray, array_api
 from .autograd import Tensor, TensorOp
-from .autograd import TensorTuple, TensorTupleOp
+from .tensor_tuple import TensorTuple, TensorTupleOp
 
 import numpy as np
 from kim import backend_ndarray as nd

@@ -1,8 +1,8 @@
 import kim
-from typing import List, Optional, NamedTuple, Tuple, Union
+from typing import List, Optional, Union
 import numpy
-from .tensor_tuple import TensorTuple, TensorTupleOp
 from .backend_selection import Device, array_api, NDArray, default_device
+from . import timelog
 import time
 
 # namespace để chứa config và counters liên quan tới computational graph
@@ -10,40 +10,6 @@ class CompGraph:
     LAZY_MODE = False
     NODE_COUNT = 0
     SAVE_MEM = True
-
-    RECORD_TIMESPENT = False
-    started_at = None
-    fw_ts, fw_cn = {}, {}
-    bw_ts, bw_cn = {}, {}
-    @staticmethod
-    def record_timespent(op, timespent, forward=True):
-        if CompGraph.started_at is None: CompGraph.started_at = time.time()
-        ts, cn = (CompGraph.fw_ts, CompGraph.fw_cn) if forward else (CompGraph.bw_ts, CompGraph.bw_cn)
-        k = op.__class__.__name__
-        try: ts[k] += timespent; cn[k] += 1;
-        except KeyError: ts[k] = timespent; cn[k] = 1;
-
-    @staticmethod
-    def print_timespents():
-        if CompGraph.started_at is None: return
-        total = time.time() - CompGraph.started_at
-        fw = sum(CompGraph.fw_ts.values())
-        bw = sum(CompGraph.bw_ts.values())
-        fwbw = fw + bw
-        others = total - fwbw
-
-        print(f"\nFORWARD       CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - -")
-        for k, v in sorted(CompGraph.fw_ts.items(), key=lambda x: -x[1]):
-            print(f"{k:12s} {CompGraph.fw_cn[k]:5d}  {v/CompGraph.fw_cn[k]:.5f}  {v:3.4f}  {round(v*100/total):2d}")
-
-        print(f"\nBACKWARD      CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - -")
-        for k, v in sorted(CompGraph.bw_ts.items(), key=lambda x: -x[1]):
-            print(f"{k:12s} {CompGraph.bw_cn[k]:5d}  {v/CompGraph.bw_cn[k]:.5f}  {v:3.4f}  {round(v*100/total):2d}")
-
-        print(f"\nTotal    {total:.4f}s 100%\n- - - - - - - - - - -")
-        print(f"Forward  {fw:.4f}s {round(fw*100/total):3d}%")
-        print(f"Backward {bw:.4f}s {round(bw*100/total):3d}%")
-        print(f"Others   {others:.4f}s {round(others*100/total):3d}%")
 
 ####################################
 ####### Tensor và TensorOp   #######
@@ -75,11 +41,11 @@ class Tensor:
 
     def realize_cached_data(self) -> NDArray:
         if self.cached_data is None:
-            if CompGraph.RECORD_TIMESPENT: start = time.time()
+            if timelog.RECORD_TIMESPENT: start = time.time()
             self.cached_data = self.op.compute(
                 *[x.realize_cached_data() for x in self.inputs]
             )
-            if CompGraph.RECORD_TIMESPENT: CompGraph.record_timespent(self.op, time.time() - start)
+            if timelog.RECORD_TIMESPENT: timelog.record_timespent(self.op, time.time() - start)
         return self.cached_data
     
     def numpy(self):
@@ -259,13 +225,13 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
             node.grad = node.grad.detach() # will save a lot of (GPU) memory
 
         if node.op is not None:
-            if CompGraph.RECORD_TIMESPENT: 
+            if timelog.RECORD_TIMESPENT: 
                 # Turn off to not record timespents of other ops used in backward
-                CompGraph.RECORD_TIMESPENT = False
+                timelog.RECORD_TIMESPENT = False
                 start = time.time()
                 grads = node.op.gradient(node.grad, node)
-                CompGraph.record_timespent(node.op, time.time() - start, forward=False)
-                CompGraph.RECORD_TIMESPENT = True # Turn on again
+                timelog.record_timespent(node.op, time.time() - start, forward=False)
+                timelog.RECORD_TIMESPENT = True  # Turn on again
             else:
                 grads = node.op.gradient(node.grad, node)
 

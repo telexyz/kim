@@ -133,7 +133,6 @@ AddScalar       82  0.00000  0.0001   0
 - - - - - - - - - - - - - - - - - - - -
 BACKWARD                            52%
 
-
 Total     41.7993s 100%
 - - - - - - - - - - - -
 Forward    9.3851s  22%
@@ -154,3 +153,87 @@ We did not investigate where remain `26%` go yet, the benchmark are just to chec
 
 The original paper use Xavier initialization, I missed that part when reading the paper.
 ![](files/needle_vs_torch-01.png)
+
+- - -
+
+## Benchmark using other backends
+
+```
+((( USING CPU NUMPY )))
+>>> optim params 10
+[ train ] Epoch: 0 Batch: 40 Acc: 49.5% Loss: 0.7714: 41it [02:06,  3.09s/it]
+
+FORWARD       CALL  x   AVG  = TIME   %
+- - - - - - - - - - - - - - - - - - - -
+Summation      246  0.03082  7.5805   6
+Conv            82  0.07954  6.5225   5
+EWiseAdd       861  0.00655  5.6390   4
+LeakyReLU       82  0.05804  4.7590   4
+BroadcastTo    451  0.00502  2.2622   2
+Negate         205  0.00506  1.0379   1
+MaxPool2d       82  0.01206  0.9889   1
+PowerScalar    164  0.00596  0.9771   1
+Reshape        451  0.00189  0.8543   1
+EWiseMul       164  0.00489  0.8016   1
+EWiseDiv        82  0.00820  0.6721   1
+AddScalar       82  0.00576  0.4720   0
+MatMul          41  0.01014  0.4157   0
+DivScalar      246  0.00053  0.1302   0
+LogSumExp       41  0.00018  0.0072   0
+Transpose      656  0.00001  0.0056   0
+MulScalar      328  0.00001  0.0037   0
+
+BACKWARD      CALL  x   AVG  = TIME   %
+- - - - - - - - - - - - - - - - - - - -
+Conv            82  0.43345  35.5428  28
+BroadcastTo    451  0.03822  17.2392  14
+LeakyReLU       82  0.12176  9.9843   8
+PowerScalar    164  0.03710  6.0846   5
+EWiseDiv        82  0.07097  5.8194   5
+MaxPool2d       82  0.06329  5.1897   4
+EWiseMul       164  0.00839  1.3755   1
+Negate         205  0.00455  0.9318   1
+Summation      246  0.00288  0.7086   1
+MatMul          41  0.01688  0.6920   1
+Reshape        451  0.00112  0.5034   0
+DivScalar      246  0.00083  0.2044   0
+LogSumExp       41  0.00028  0.0113   0
+Transpose      656  0.00001  0.0083   0
+EWiseAdd       410  0.00000  0.0008   0
+AddScalar       82  0.00000  0.0001   0
+
+Total    126.4189s 100%
+- - - - - - - - - - -
+Forward  33.1295s  26%
+Backward 84.2962s  67%
+Others   8.9932s   7%
+```
+
+```
+CUDA            CALL  x   AVG  = TIME   %
+- - - - - - - - - - - - - - - - - - - - -
+from_numpy       436  0.00173  0.7555  70
+to_numpy         137  0.00087  0.1189  11
+compact         3362  0.00002  0.0596   6
+scalar_mul      4516  0.00001  0.0367   3
+ewise_add       2788  0.00001  0.0206   2
+ewise_mul       1312  0.00001  0.0177   2
+scalar_add      1250  0.00001  0.0141   1
+scalar_div      1312  0.00001  0.0136   1
+scalar_power    1230  0.00001  0.0105   1
+reduce_sum       779  0.00001  0.0061   1
+ewise_setitem    410  0.00001  0.0056   1
+matmul           369  0.00001  0.0047   0
+ewise_div        615  0.00001  0.0045   0
+scalar_ge        205  0.00002  0.0037   0
+scalar_maximum   164  0.00002  0.0032   0
+scalar_eq        123  0.00002  0.0019   0
+ewise_ge          82  0.00002  0.0012   0
+ewise_maximum     82  0.00001  0.0012   0
+fill              49  0.00002  0.0008   0
+reduce_max        82  0.00001  0.0005   0
+ewise_exp         82  0.00001  0.0004   0
+ewise_log         41  0.00001  0.0002   0
+- - - - - - - - - - - - - - - - - - - - -
+TOTAL                        1.0814  100%
+```

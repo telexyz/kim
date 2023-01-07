@@ -9,6 +9,7 @@ import numpy as np
 from . import ndarray_backend_numpy
 from . import ndarray_backend_cpu
 import os
+from .. import timelog
 
 # math.prod not in Python 3.7
 def prod(x):
@@ -65,19 +66,6 @@ class BackendDevice:
         return arr
 
 import time
-class Log:
-    RECORD_TIMESPENT = False
-    ts, call = {}, {}
-    @staticmethod
-    def print_timespents():
-        if not Log.RECORD_TIMESPENT: return
-        total = sum(Log.ts.values())
-        print(f"\nCUDA            CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - - -")
-        for k, v in sorted(Log.ts.items(), key=lambda x: -x[1]):
-            if Log.call[k] == 0: continue
-            print(f"{k:14s} {Log.call[k]:5d}  {v/Log.call[k]:.5f}  {v:3.4f}  {round(v*100/total):2d}")
-        print(f"- - - - - - - - - - - - - - - - - - - - -\nTOTAL                        {total:3.4f}  100%")
-
 def cuda():
     """Return cuda device"""
     try:
@@ -91,12 +79,12 @@ def cuda():
         def add_fun(clc, fun_name):
             cuda_fun = getattr(clc, "_" + fun_name)
             def inner_fun(self, *args):
-                if Log.RECORD_TIMESPENT:
+                if timelog.RECORD_TIMESPENT:
                     start = time.time()
                     result = cuda_fun(self, *args)
                     ts = time.time() - start
-                    try: Log.ts[fun_name] += ts; Log.call[fun_name] += 1
-                    except KeyError: Log.ts[fun_name] = ts; Log.call[fun_name] = 1
+                    try: timelog.ts[fun_name] += ts; timelog.call[fun_name] += 1
+                    except KeyError: timelog.ts[fun_name] = ts; timelog.call[fun_name] = 1
                     return result
                 else:
                     return cuda_fun(self, *args)

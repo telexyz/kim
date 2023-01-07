@@ -64,11 +64,48 @@ class BackendDevice:
         arr.fill(fill_value)
         return arr
 
+import time
+class Log:
+    RECORD_TIMESPENT = False
+    ts, call = {}, {}
+    @staticmethod
+    def print_timespents():
+        if not Log.RECORD_TIMESPENT: return
+        total = sum(Log.ts.values())
+        print(f"\nCUDA            CALL  x   AVG  = TIME   %\n- - - - - - - - - - - - - - - - - - - - -")
+        for k, v in sorted(Log.ts.items(), key=lambda x: -x[1]):
+            if Log.call[k] == 0: continue
+            print(f"{k:14s} {Log.call[k]:5d}  {v/Log.call[k]:.5f}  {v:3.4f}  {round(v*100/total):2d}")
+        print(f"- - - - - - - - - - - - - - - - - - - - -\nTOTAL                        {total:3.4f}  100%")
 
 def cuda():
     """Return cuda device"""
     try:
         from . import ndarray_backend_cuda
+
+        cuda_funs = ["from_numpy", "to_numpy", "fill", "compact", "ewise_setitem", "scalar_setitem",
+                     "ewise_add", "scalar_add", "ewise_mul", "scalar_mul", "ewise_div", "scalar_div", "scalar_power",
+                    "ewise_maximum", "scalar_maximum", "ewise_eq", "scalar_eq", "ewise_ge", "scalar_ge",
+                    "ewise_log", "ewise_exp", "ewise_tanh", "matmul", "reduce_max", "reduce_sum"]
+
+        def add_fun(clc, fun_name):
+            cuda_fun = getattr(clc, "_" + fun_name)
+            def inner_fun(self, *args):
+                if Log.RECORD_TIMESPENT:
+                    start = time.time()
+                    result = cuda_fun(self, *args)
+                    ts = time.time() - start
+                    try: Log.ts[fun_name] += ts; Log.call[fun_name] += 1
+                    except KeyError: Log.ts[fun_name] = ts; Log.call[fun_name] = 1
+                    return result
+                else:
+                    return cuda_fun(self, *args)
+            inner_fun.__name__ = fun_name
+            setattr(clc, inner_fun.__name__, staticmethod(inner_fun))
+
+        for fun in cuda_funs:
+            add_fun(ndarray_backend_cuda, fun)
+
         return BackendDevice("cuda", ndarray_backend_cuda)
 
     except ImportError:

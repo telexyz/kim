@@ -33,6 +33,7 @@ def test_model(batch_size, dropout, eps=1e-03):
     import sys; sys.path.append('project')
     from project.myexp import mymodel, get_torch_dropout_mask, copy_init_weights_to_torch
     kim.autograd.CompGraph.RECORD_TIMESPENT = True
+    kim.nd.Log.RECORD_TIMESPENT = True
     # from myexp import mymodel, torch, kim
     model = mymodel(kim.nn, dropout=dropout)
     model_ = mymodel(torch.nn, dropout=dropout)
@@ -86,6 +87,7 @@ def test_model(batch_size, dropout, eps=1e-03):
     np.testing.assert_allclose(z.grad.numpy(), z_.grad.numpy(), rtol=eps, atol=eps)
 
     kim.autograd.CompGraph.print_timespents()
+    kim.nd.Log.print_timespents()
     assert False
 
 @pytest.mark.parametrize("rows", [5, 1, 200, 1000, 2827])

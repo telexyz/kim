@@ -232,6 +232,11 @@ def test(dl_test, lib=kim):
 def train(dl_train, dl_valid, epoches=50, lib=kim):
     model, loss_fn, done = load_model(lib=lib)
     optimizer = lib.optim.Adam(model.parameters(), lr=1e-5)
+
+    if lib == torch:
+        model = torch.compile(model)
+        torch.set_float32_matmul_precision('medium')
+
     for i in range(done, epoches):
         epoch(dl_train, model, loss_fn, optimizer, i)
         epoch(dl_valid, model, loss_fn, None, i)
@@ -241,11 +246,11 @@ def train(dl_train, dl_valid, epoches=50, lib=kim):
             torch.save({'epoch': i, 'params': [x.numpy() for x in model.parameters()]}, "models/kim.chkpt")
 
 if __name__ == "__main__":
-    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
-    # train(dl_train, dl_valid, lib=kim)
-    kim.autograd.CompGraph.RECORD_TIMESPENT = True
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
-    train(dl_train, dl_valid, lib=kim, epoches=1)
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
+    train(dl_train, dl_valid, lib=torch)
+    # kim.autograd.CompGraph.RECORD_TIMESPENT = True
+    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
+    # train(dl_train, dl_valid, lib=torch, epoches=1)
     # compare_losses(5)
     # test(dl_test, lib=kim)
     kim.autograd.CompGraph.print_timespents()

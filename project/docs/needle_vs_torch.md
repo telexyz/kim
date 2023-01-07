@@ -89,7 +89,7 @@ In-order to see which parts of needle take times, we measure timespents on each 
 ```
 [ train ] Epoch: 0 Batch: 40 Acc: 48.3% Loss: 0.7801: 41it [00:41,  1.02s/it]
 
-FORWARD       CALL  x   AVG  = TIME   %
+compute()     CALL  x   AVG  = TIME   %
 - - - - - - - - - - - - - - - - - - - -
 Summation      246  0.01111  2.7331   7
 LeakyReLU       82  0.02960  2.4269   6
@@ -108,8 +108,11 @@ LogSumExp       41  0.00027  0.0109   0
 MulScalar      328  0.00002  0.0055   0
 Transpose      656  0.00001  0.0036   0
 MatMul          41  0.00005  0.0019   0
+- - - - - - - - - - - - - - - - - - - -
+FORWARD                             22%
 
-BACKWARD      CALL  x   AVG  = TIME   %
+
+gradient()    CALL  x   AVG  = TIME   %
 - - - - - - - - - - - - - - - - - - - -
 Conv            82  0.12947  10.612  25
 BroadcastTo    451  0.01271  5.7338  14
@@ -127,12 +130,15 @@ LogSumExp       41  0.00030  0.0124   0
 Transpose      656  0.00001  0.0077   0
 EWiseAdd       410  0.00000  0.0013   0
 AddScalar       82  0.00000  0.0001   0
+- - - - - - - - - - - - - - - - - - - -
+BACKWARD                            52%
 
-Total    41.7993s 100%
-- - - - - - - - - - -
-Forward   9.3851s  22%
-Backward 21.6666s  52%
-Others   10.7476s  26%
+
+Total     41.7993s 100%
+- - - - - - - - - - - -
+Forward    9.3851s  22%
+Backward  21.6666s  52%
+Others    10.7476s  26%
 ```
 
 As you see, 
@@ -148,4 +154,3 @@ We did not investigate where remain `26%` go yet, the benchmark are just to chec
 
 The original paper use Xavier initialization, I missed that part when reading the paper.
 ![](files/needle_vs_torch-01.png)
-

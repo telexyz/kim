@@ -1,3 +1,4 @@
+pip install --pre torch==2.0.0.dev20230104+cu117 torchvision torchaudio --extra-index-url  https://download.pytorch.org/whl/nightly/cu117
 pip install pyarrow fastparquet fire
 
 cd data

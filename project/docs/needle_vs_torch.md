@@ -208,32 +208,3 @@ Forward  33.1295s  26%
 Backward 84.2962s  67%
 Others   8.9932s   7%
 ```
-
-```
-CUDA            CALL  x   AVG  = TIME   %
-- - - - - - - - - - - - - - - - - - - - -
-from_numpy       436  0.00173  0.7555  70
-to_numpy         137  0.00087  0.1189  11
-compact         3362  0.00002  0.0596   6
-scalar_mul      4516  0.00001  0.0367   3
-ewise_add       2788  0.00001  0.0206   2
-ewise_mul       1312  0.00001  0.0177   2
-scalar_add      1250  0.00001  0.0141   1
-scalar_div      1312  0.00001  0.0136   1
-scalar_power    1230  0.00001  0.0105   1
-reduce_sum       779  0.00001  0.0061   1
-ewise_setitem    410  0.00001  0.0056   1
-matmul           369  0.00001  0.0047   0
-ewise_div        615  0.00001  0.0045   0
-scalar_ge        205  0.00002  0.0037   0
-scalar_maximum   164  0.00002  0.0032   0
-scalar_eq        123  0.00002  0.0019   0
-ewise_ge          82  0.00002  0.0012   0
-ewise_maximum     82  0.00001  0.0012   0
-fill              49  0.00002  0.0008   0
-reduce_max        82  0.00001  0.0005   0
-ewise_exp         82  0.00001  0.0004   0
-ewise_log         41  0.00001  0.0002   0
-- - - - - - - - - - - - - - - - - - - - -
-TOTAL                        1.0814  100%
-```

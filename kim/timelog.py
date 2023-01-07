@@ -2,6 +2,7 @@
 import time
 
 RECORD_TIMESPENT = False
+RECORD_CUDA_TIMESPENT = False
 started_at = time.time()
 fw_ts, fw_cn = {}, {}
 bw_ts, bw_cn = {}, {}

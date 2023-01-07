@@ -79,7 +79,7 @@ def cuda():
         def add_fun(clc, fun_name):
             cuda_fun = getattr(clc, "_" + fun_name)
             def inner_fun(self, *args):
-                if timelog.RECORD_TIMESPENT:
+                if timelog.RECORD_CUDA_TIMESPENT:
                     start = time.perf_counter_ns() 
                     result = cuda_fun(self, *args)
                     timelog.record_cu_timespent(fun_name, time.perf_counter_ns()  - start)

@@ -33,6 +33,7 @@ def test_model(batch_size, dropout, eps=1e-03):
     import sys; sys.path.append('project')
     from project.myexp import mymodel, get_torch_dropout_mask, copy_init_weights_to_torch
     kim.timelog.RECORD_TIMESPENT = True
+    kim.timelog.RECORD_CUDA_TIMESPENT = True
     # from myexp import mymodel, torch, kim
     model = mymodel(kim.nn, dropout=dropout)
     model_ = mymodel(torch.nn, dropout=dropout)

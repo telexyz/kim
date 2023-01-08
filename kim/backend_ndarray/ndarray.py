@@ -66,6 +66,21 @@ class BackendDevice:
         return arr
 
 import time
+import inspect
+
+def get_class_from_frame(fr):
+  args, _, _, value_dict = inspect.getargvalues(fr)
+  # we check the first parameter for the frame function is
+  # named 'self'
+  if len(args) and args[0] == 'self':
+    # in that case, 'self' will be referenced in value_dict
+    instance = value_dict.get('self', None)
+    if instance is not None:
+      # return its class
+      return getattr(instance, '__class__', None)
+  # return None otherwise
+  return None
+
 def cuda():
     """Return cuda device"""
     try:
@@ -79,10 +94,16 @@ def cuda():
         def add_fun(clc, fun_name):
             cuda_fun = getattr(clc, "_" + fun_name)
             def inner_fun(self, *args):
+                s = inspect.stack(); caller = None
+                for e in s:
+                    if e.function == "compute": caller = "compute"; break 
+                    if e.function == "gradient": caller = "gradient"; break 
+                caller_class = get_class_from_frame(e[0])
+                # print(f"CALLER: {caller.__str__():16s} {caller_class}")
                 if timelog.RECORD_CUDA_TIMESPENT:
                     start = time.perf_counter_ns() 
                     result = cuda_fun(self, *args)
-                    timelog.record_cu_timespent(fun_name, time.perf_counter_ns()  - start)
+                    timelog.record_cu_timespent(fun_name, caller, caller_class, time.perf_counter_ns()  - start)
                     return result
                 else:
                     return cuda_fun(self, *args)

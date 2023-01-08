@@ -1,4 +1,3 @@
-from numbers import Number
 from typing import Optional, List, Tuple, Union
 from .autograd import NDArray, array_api
 from .autograd import Tensor, TensorOp
@@ -830,4 +829,3 @@ class Permute(TensorOp):
 
 def permute(a: Tensor, axes: tuple):
     return Permute(axes)(a)
-

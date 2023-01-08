@@ -146,9 +146,9 @@ def epoch(dl, model, loss_fn, optimizer, n):
     kimmy = isinstance(loss_fn, kim.nn.Module)
     if kimmy: 
         model.train() if training else model.eval()
-        # dl.gen_img = False
+        dl.gen_img = False
         dl.gen_img = True
-    print(">>> images gen by" + "numpy" if dl.gen_img else "cuda")
+    print(">>> images gen by" + ("numpy" if dl.gen_img else "cuda"))
     for i, (input, target_) in enumerate(dl):
         if kimmy:
             if not dl.gen_img:

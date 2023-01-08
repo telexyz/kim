@@ -756,9 +756,6 @@ class LeakyReLU(TensorOp):
         self.slope = slope
 
     def compute(self, a: NDArray) -> NDArray:
-        # compute()     CALL  x   AVG = TIME %
-        # LeakyReLU        6  0.02108  0.1265     5
-        # LeakyReLU        6  0.01655  0.0993     4
         device = a.device
         if device.name == "cuda":
             a = a.compact()
@@ -768,10 +765,19 @@ class LeakyReLU(TensorOp):
         else:
             return array_api.maximum(a, 0) - self.slope * array_api.maximum(-a, 0)
 
+    '''
+```
+compute()     CALL  x   AVG  = TIME 
+LeakyReLU        6  0.02108  0.1265
+LeakyReLU        6  0.01655  0.0993
+
+gradient()    CALL  x   AVG  = TIME
+LeakyReLU        6  0.01000  0.0600
+LeakyReLU        6  0.00246  0.0148
+```
+a simple ~4x faster leaky_relu_gradient
+    '''
     def gradient(self, out_grad: Tensor, node: Tensor):
-        # gradient()    CALL  x   AVG  = TIME     %
-        # LeakyReLU        6  0.01000  0.0600     2
-        # LeakyReLU        6  0.00246  0.0148     1
         Xd = node.inputs[0].realize_cached_data().compact()
         device = out_grad.device
         if device.name == "cuda":

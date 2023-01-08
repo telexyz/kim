@@ -221,11 +221,13 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
     for node in reverse_topo_order:
         if not node.requires_grad: continue
 
+        if timelog.RECORD_TIMESPENT: start = time.perf_counter()
         node.grad = output_grads[node].pop()
         for grad in output_grads[node]: node.grad += grad # accummulate other grads
 
         if CompGraph.SAVE_MEM:
             node.grad = node.grad.detach() # will save a lot of (GPU) memory
+        if timelog.RECORD_TIMESPENT: timelog.record_other_timespent("node.grad.accum()", time.perf_counter() - start)
 
         if node.op is not None:
             if timelog.RECORD_TIMESPENT: 
@@ -233,6 +235,10 @@ def compute_gradient_from(out_tensor: Tensor, out_grad: Tensor):
                 timelog.RECORD_TIMESPENT = False
                 start = time.perf_counter() 
                 grads = node.op.gradient(node.grad, node)
+                ## Note: vì grads là Tensors nên tính toán chưa thực sự xảy ra cho tới khi gọi realize_cached_data()
+                ## nhưng nếu gọi trước ở đây thì sẽ có những grad ko cần realize bị tính toán ko cần thiết 
+                ## vậy nên thời gian đo backward ở đây là chưa chính xác
+                # for grad in grads: grad.realize_cached_data()
                 timelog.record_timespent(node.op, time.perf_counter()  - start, forward=False)
                 timelog.RECORD_TIMESPENT = True  # Turn on again
             else:

@@ -95,74 +95,28 @@ class OHLCV:
         ma_close = md_roi[ : 2 * self.frequency]['adjClose'].rolling(self.frequency).mean()
         ma_close = ma_close.tail(self.frequency).values  # reformat
 
-        img = self.imager(price_data=price_ohlc, volumn_data=volume, ma_close=ma_close)
-        if img is None: return None
+        _, m = self.imager.transform(price_data=price_ohlc, volumn_data=volume, ma_close=ma_close, gen_img=False)
+        if m is None: return None
+
+        # img, m = self.imager.transform(price_data=price_ohlc, volumn_data=volume, ma_close=ma_close)
+        # if m is not None:
+        #     img_ = self.m_to_img(m)
+        #     np.testing.assert_allclose(img, img_, rtol=0, atol=0)
+        # if img is None: return None
 
         # future (label)
         X2 = md_roi.iloc[2*self.frequency : 3*self.frequency, :5].values
         # diff between close price of last day and open price of the first day.
         y = X2[-1, 3] - X2[0, 0]
+        profitable = (y > 0).astype("int")
+        return m, profitable, meta
 
-        return img, (y > 0).astype("int"), meta
-
-    def train_val_split(self, train_prop=0.7, seed=None):
-        """split randomly to have train and val datasets.
-        :param train_prop: proportion of the training dataset.
-        """
-        train_ds, val_ds = self.clone(), self.clone()
-
-        rng = np.random.default_rng(seed=seed)
-        tr_idx = rng.uniform(size=len(self.all_market_data)) < train_prop
-
-        # train
-        train_ds.all_market_data_ = self.all_market_data_[tr_idx]
-        train_ds.size = int(self.size * train_prop)
-
-        # val
-        val_ds.all_market_data_ = self.all_market_data_[~tr_idx] # not in tr_idx
-        val_ds.size = self.size - train_ds.size
-
-        return train_ds, val_ds
-
-
-class ImagingOHLCV(object):
-    """turn OHLC price and volume data into image.
-    """
-
-    def __init__(self, resolution=32, price_prop=0.75):
-        super(ImagingOHLCV, self).__init__()
-        self.resolution = resolution
-        self.price_prop = price_prop
-
-    def __call__(self, *args, **kwargs):
-        return self.transform(*args, **kwargs)
-
-    def transform(self, price_data, volumn_data=None, ma_close=None):
-        if isinstance(price_data, (pd.DataFrame, )):
-            price_data = price_data.values
-
-        if volumn_data is None:
-            price_data, volumn_data = price_data[:, :4], price_data[:, 4]
-
-        unique_price = np.unique(price_data)
-        if len(unique_price) == 1:
-            # same price in this window, probably data errors. not longer going further.
-            return None
-
+    def m_to_img(self, m):
+        price_data = m["prices"]
         n = price_data.shape[0]
-        X_img = np.zeros((n * 3, self.resolution)) # resolution tương ứng với số cột
-        # Mỗi day tương ứng với 3 hàng, n đây cần n * 3 hàng
+        X_img = np.zeros((n * 3, m["resolution"])) # resolution tương ứng với số cột
 
-        price_pixels = round(self.resolution * self.price_prop)
-        vol_pixels = self.resolution - price_pixels
-
-        if ma_close is not None:
-            price_data = np.hstack((price_data, ma_close.reshape((-1, 1))))
-
-        price_min, price_max = price_data.min(), price_data.max()
-        price_data = (price_data - price_min) / (price_max - price_min)
-        X_loc = (price_data * (price_pixels - 1)).astype(int) + vol_pixels
-
+        X_loc = price_data
         for i in range(n):
             # low-high bar in the middle
             loc_x = (i * 3) + 1
@@ -186,27 +140,129 @@ class ImagingOHLCV(object):
             for i in range(n):
                 X_img[i*3:(i+1)*3, X_loc_additional[i]] = 1
 
+        X2 = m["volumes"]
+        for i in range(n):
+            loc_x = (i * 3) + 1
+            loc_y = X2[i]
+            X_img[loc_x, 0:(loc_y+1)] = 1
+        return X_img
+
+    def train_val_split(self, train_prop=0.7, seed=None):
+        """split randomly to have train and val datasets.
+        :param train_prop: proportion of the training dataset.
+        """
+        train_ds, val_ds = self.clone(), self.clone()
+
+        rng = np.random.default_rng(seed=seed)
+        tr_idx = rng.uniform(size=len(self.all_market_data)) < train_prop
+
+        # train
+        train_ds.all_market_data_ = self.all_market_data_[tr_idx]
+        train_ds.size = int(self.size * train_prop)
+
+        # val
+        val_ds.all_market_data_ = self.all_market_data_[~tr_idx] # not in tr_idx
+        val_ds.size = self.size - train_ds.size
+
+        return train_ds, val_ds
+    
+
+class ImagingOHLCV(object):
+    """turn OHLC price and volume data into image.
+    """
+
+    def __init__(self, resolution=32, price_prop=0.75):
+        super(ImagingOHLCV, self).__init__()
+        self.resolution = resolution
+        self.price_prop = price_prop
+
+    def __call__(self, *args, **kwargs):
+        return self.transform(*args, **kwargs)
+
+    def transform(self, price_data, volumn_data=None, ma_close=None, gen_img=True):
+        if isinstance(price_data, (pd.DataFrame, )):
+            price_data = price_data.values
+
+        if volumn_data is None:
+            price_data, volumn_data = price_data[:, :4], price_data[:, 4]
+
+        unique_price = np.unique(price_data)
+        if len(unique_price) == 1:
+            # same price in this window, probably data errors. not longer going further.
+            return None, None
+        # print(price_data, price_data.shape); assert False
+        n = price_data.shape[0]; X_img = None
+        if gen_img: X_img = np.zeros((n * 3, self.resolution)) # resolution tương ứng với số cột
+        # Mỗi day tương ứng với 3 hàng, n đây cần n * 3 hàng
+
+        price_pixels = round(self.resolution * self.price_prop)
+        vol_pixels = self.resolution - price_pixels
+
+        if ma_close is not None:
+            price_data = np.hstack((price_data, ma_close.reshape((-1, 1))))
+
+        price_min, price_max = price_data.min(), price_data.max()
+        price_data = (price_data - price_min) / (price_max - price_min)
+        X_loc = (price_data * (price_pixels - 1)).astype(int) + vol_pixels
+
+        if gen_img:
+            for i in range(n):
+                # low-high bar in the middle
+                loc_x = (i * 3) + 1
+                loc_y_top = X_loc[i, 1]
+                loc_y_bottom = X_loc[i, 2]
+                X_img[loc_x, loc_y_bottom:loc_y_top+1] = 1
+
+                # open bar on the left
+                loc_x = (i * 3) + 0
+                loc_y = X_loc[i, 0]
+                X_img[loc_x, loc_y] = 1
+
+                # close bar on the right
+                loc_x = (i * 3) + 2
+                loc_y = X_loc[i, 3]
+                X_img[loc_x, loc_y] = 1
+
+            # for additional pricing data - flat line for each day.
+            for j in range(4, price_data.shape[1]):
+                X_loc_additional = X_loc[:, j]
+                for i in range(n):
+                    X_img[i*3:(i+1)*3, X_loc_additional[i]] = 1
+
         # add volume
         X = volumn_data
         # index start from 0, so -1.
         vol_per_pixel = X.max() / (vol_pixels - 1)
         X2 = (X / vol_per_pixel).astype(int)
-        for i in range(n):
-            loc_x = (i * 3) + 1
-            loc_y = X2[i]
-            X_img[loc_x, 0:(loc_y+1)] = 1
+        if gen_img:
+            for i in range(n):
+                loc_x = (i * 3) + 1
+                loc_y = X2[i]
+                X_img[loc_x, 0:(loc_y+1)] = 1
 
-        return X_img
+        m = {"volumes": X2, "prices": X_loc, "resolution": self.resolution}
+        # print(">>>", m, price_data.shape[1]); assert False
+        return X_img, m
 
-
-def test(ticker):
+'''
+loading stock to `data/GOOGL.png`
+>>>                        adjOpen  adjHigh   adjLow  adjClose  adjVolume
+date
+2022-12-15 00:00:00+00:00   93.130   93.640  90.0100     90.86   40107033
+2022-12-16 00:00:00+00:00   90.760   91.330  89.5200     90.26   58011847
+2022-12-19 00:00:00+00:00   90.255   90.560  88.2100     88.44   29493030
+2022-12-20 00:00:00+00:00   88.110   89.175  87.4401     89.02   23453836
+2022-12-21 00:00:00+00:00   89.080   90.220  88.3200     89.58   24745637
+'''
+def test(ticker="GOOGL"):
     print(f"loading stock to `data/%s.png`" % (ticker))
     dfile = f"data/stocks/%s.parquet" % (ticker)
     try: ds = pd.read_pickle(dfile)
     except: ds = pd.read_parquet(dfile)
-
-    imager = ImagingOHLCV(resolution=64)
-    X_img = imager.transform(ds.tail(60))
+    dat = ds.tail(5)
+    # print(">>>", dat); assert False
+    imager = ImagingOHLCV(resolution=32)
+    X_img, _ = imager.transform(dat)
     show_img(X_img, ticker)
     return X_img
 
@@ -218,17 +274,19 @@ def show_img(X_img, ticker):
     plt.imshow(img, cmap='Greys_r')
     plt.show()
 
-DATA_DIR = Path("data/data_yfinance").expanduser()
+DATA_DIR = Path("data/stocks").expanduser()
 
 '''
 from mydat import *; import random
-test("GOOGL"); test("SONY")
-imager = ImagingOHLCV(64, price_prop=0.75)
-ds = OHLCV(DATA_DIR, size=6000, frequency=60, imager=imager, seed=5, min_date='1993-01-01', max_date='2000-12-31')
-X_img, y, meta = random.choice(ds); print(meta); show_img(X_img, meta["ticker"])
+# test("GOOGL"); # test("SONY")
+imager = ImagingOHLCV(32, price_prop=0.75)
+ds = OHLCV(DATA_DIR, size=600, frequency=5, imager=imager, seed=5, min_date='1993-01-01', max_date='2000-12-31')
+m, y, meta = random.choice(ds); print(meta); show_img(ds.m_to_img(m), meta["ticker"])
 
-X_img, y, meta = ds[1]; print(meta); show_img(X_img, meta["ticker"])
+m, y, meta = ds[1]; print(meta); show_img(ds.m_to_img(m), meta["ticker"])
 >>> ds[1] -> (X, y, meta)
+
+# data/AXP.png
 # Ảnh thực tế sẽ quay 90 độ ngược chiều kim đồng hồ
 # Rows are values, Cols are Time (one day = 3 cols)
 array([[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0],
@@ -246,7 +304,7 @@ day-4  [1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1],
        [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0],
 day-5  [1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 0 0],
        [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0]]), 
-    0.17513274929999945, # <= label / profitability
+    0.17513274929999945, # <= profitability
     {'ticker': 'AXP', 'index': 89791, 'date': Timestamp('1995-06-08 00:00:00+0000', tz='UTC')}
 
 img = X_img.T # cần transpose để chuyển hàng thành cột và ngược lại

@@ -58,6 +58,8 @@ def print_cuda_timespents(ops):
         print(f"{k:14s} {cu_cn[k]:5d}  {v/cu_cn[k]:.5f}  {v:3.4f}    {round(v*100/total):2d}")
     print(f"- - - - - - - - - - - - - - - - - - - - - -\nTOTAL                          {total:3.4f}  100%\n\n")
 
+    return
+    
     stats = {}
     for k, v in sorted(cu_cn.items(), key=lambda x: x[0]):
         print(f"\n{k:15s} {cu_cn[k]:15d}\n- - - - - - - - - - - - - - - -")

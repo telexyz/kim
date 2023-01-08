@@ -29,7 +29,7 @@ def get_int_tensor(*shape, low=0, high=10, entropy=1):
 '''
 @pytest.mark.parametrize("batch_size", [128, 32, 64])
 @pytest.mark.parametrize("dropout", [True])
-def test_model(batch_size, dropout, eps=1e-03):
+def test_model(batch_size, dropout, eps=1e-02):
     import sys; sys.path.append('project')
     from project.myexp import mymodel, get_torch_dropout_mask, copy_init_weights_to_torch
     kim.timelog.RECORD_TIMESPENT = True

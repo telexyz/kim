@@ -756,15 +756,33 @@ class LeakyReLU(TensorOp):
         self.slope = slope
 
     def compute(self, a: NDArray) -> NDArray:
-        return array_api.maximum(a, 0) + \
-            self.slope * (-1) * array_api.maximum(-a, 0)
+        # compute()     CALL  x   AVG = TIME %
+        # LeakyReLU        6  0.02108  0.1265     5
+        # LeakyReLU        6  0.01655  0.0993     4
+        device = a.device
+        if device.name == "cuda":
+            a = a.compact()
+            out = kim.NDArray.make(a.shape, device=device)
+            device.leaky_relu(a._handle, out._handle, self.slope)
+            return out
+        else:
+            return array_api.maximum(a, 0) - self.slope * array_api.maximum(-a, 0)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        Xd = node.inputs[0].realize_cached_data()
+        # gradient()    CALL  x   AVG  = TIME     %
+        # LeakyReLU        6  0.01000  0.0600     2
+        # LeakyReLU        6  0.00246  0.0148     1
+        Xd = node.inputs[0].realize_cached_data().compact()
         device = out_grad.device
-        out_pos = out_grad * Tensor(Xd > 0, device=device)
-        out_neg = out_grad * Tensor(Xd < 0, device=device)
-        return out_pos + self.slope * out_neg,
+        if device.name == "cuda":
+            out_grad = out_grad.realize_cached_data().compact()
+            out = kim.NDArray.make(out_grad.shape, device=device)
+            device.leaky_relu_gradient(Xd._handle, out_grad._handle, out._handle, self.slope)
+            return Tensor(out, device=device), 
+        else:
+            out_pos = out_grad * Tensor(Xd > 0, device=device)
+            out_neg = out_grad * Tensor(Xd < 0, device=device)
+            return out_pos + self.slope * out_neg,
 
 def leaky_relu(a, slope):
     return LeakyReLU(slope)(a)

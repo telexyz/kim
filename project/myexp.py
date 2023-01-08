@@ -146,9 +146,9 @@ def epoch(dl, model, loss_fn, optimizer, n):
     kimmy = isinstance(loss_fn, kim.nn.Module)
     if kimmy: 
         model.train() if training else model.eval()
-        dl.gen_img = False
-        # dl.gen_img = True
-    print(">>> images gen by numpy", dl.gen_img)
+        # dl.gen_img = False
+        dl.gen_img = True
+    print(">>> images gen by" + "numpy" if dl.gen_img else "cuda")
     for i, (input, target_) in enumerate(dl):
         if kimmy:
             if not dl.gen_img:
@@ -269,11 +269,11 @@ def train(dl_train, dl_valid, epoches=50, lib=kim):
 if __name__ == "__main__":
     # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
     # train(dl_train, dl_valid, lib=torch)
-    # kim.timelog.RECORD_TIMESPENT = True
-    # kim.timelog.RECORD_CUDA_TIMESPENT = True
-    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
-    # train(dl_train, dl_valid, lib=kim, epoches=1)
+    kim.timelog.RECORD_TIMESPENT = True
+    kim.timelog.RECORD_CUDA_TIMESPENT = True
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
+    train(dl_train, dl_valid, lib=kim, epoches=1)
     # compare_losses(5)
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1, 0, 100*1028, 256+128)
-    test(dl_test, lib=kim)
-    # kim.timelog.print_timespents()
+    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1, 0, 100*1028, 256+128)
+    # test(dl_test, lib=kim)
+    kim.timelog.print_timespents()

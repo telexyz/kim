@@ -321,12 +321,44 @@ __global__ void GenImgKernel(const scalar_t *in, scalar_t *out,
     }
   }
 }
-
-void GenImg(const CudaArray &in, CudaArray *out, uint32_t batch, uint32_t days, uint32_t resolution)
-{
+// 
+void GenImg(const CudaArray &in, CudaArray *out, uint32_t batch, uint32_t days, uint32_t resolution) {
   CudaDims dim = CudaOneDim(batch);
-  // cout << "\GenImg: days " << days;
   GenImgKernel<<<dim.grid, dim.block>>>(in.ptr, out->ptr, batch, days, resolution);
+}
+
+__global__ void LeakyReluKernel(const scalar_t *in, scalar_t *out, size_t size, scalar_t slope) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size)
+  {
+    scalar_t a = in[gid];
+    out[gid] = fmaxf(a, 0) - slope * fmaxf(-a, 0);
+  }
+}
+// return array_api.maximum(a, 0) - self.slope * array_api.maximum(-a, 0)
+void LeakyRelu(const CudaArray &in, CudaArray *out, const scalar_t slope)
+{
+  CudaDims dim = CudaOneDim(in.size);
+  LeakyReluKernel<<<dim.grid, dim.block>>>(in.ptr, out->ptr, in.size, slope);
+}
+
+__global__ void LeakyReluGradientKernel(const scalar_t *in, const scalar_t *out_grad, 
+                                              scalar_t *out, size_t size, scalar_t slope) {
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < size) {
+    scalar_t Xd = in[gid];
+    scalar_t og = out_grad[gid];
+    scalar_t out_pos = Xd > 0 ? og : 0;
+    scalar_t out_neg = Xd < 0 ? og : 0;
+    out[gid] = out_pos + slope * out_neg;
+  }
+}
+// out_pos = out_grad * Tensor(Xd > 0, device=device)
+// out_neg = out_grad * Tensor(Xd < 0, device=device)
+// return out_pos + self.slope * out_neg,
+void LeakyReluGradient(const CudaArray &in, const CudaArray &out_grad, CudaArray *out, const scalar_t slope){
+  CudaDims dim = CudaOneDim(in.size);
+  LeakyReluGradientKernel<<<dim.grid, dim.block>>>(in.ptr, out_grad.ptr, out->ptr, in.size, slope);
 }
 
 /// BEGIN YOUR SOLUTION
@@ -760,6 +792,8 @@ PYBIND11_MODULE(ndarray_backend_cuda, m) {
   });
 
   m.def("gen_img", GenImg);
+  m.def("leaky_relu", LeakyRelu);
+  m.def("leaky_relu_gradient", LeakyReluGradient);
 
   m.def("_fill", Fill);
   m.def("_compact", Compact);

@@ -7,10 +7,11 @@ import kim
 import numpy as np
 
 class DataLoader:
-    def __init__(self, dataset, batch_size=1, shuffle=False):
+    def __init__(self, dataset, batch_size=1, shuffle=False, gen_img=True):
         self.dataset = dataset
         self.shuffle = shuffle
         self.bs = batch_size
+        self.gen_img = gen_img
         if not shuffle:
             self.ordering = np.array_split(
                 np.arange(len(dataset)), range(self.bs, len(dataset), self.bs))
@@ -34,9 +35,11 @@ class DataLoader:
         self.n += 1
         bx, by = [], []
         for i in order:
-            di = self.dataset[i]
-            bx.append(di[0])
-            by.append(di[1])
+            d = self.dataset[i]
+            m, y = d[0], d[1]
+            if self.gen_img: bx.append(self.dataset.m_to_img(m))
+            else: bx.append(m)
+            by.append(y)
         return np.array(bx), np.array(by)
 
 
@@ -139,19 +142,37 @@ def epoch(dl, model, loss_fn, optimizer, n):
     accuracy, losses = 0, 0
     training = (optimizer is not None)
     msg_header = ("[ train ]" if training else "[ valid ]") + f" Epoch: {n}"
+
     kimmy = isinstance(loss_fn, kim.nn.Module)
-    if kimmy: model.train() if training else model.eval()
+    if kimmy: 
+        model.train() if training else model.eval()
+        dl.gen_img = False
+        # dl.gen_img = True
+    print(">>> images gen by numpy", dl.gen_img)
     for i, (input, target_) in enumerate(dl):
-        B,W,H = input.shape
-        input = input.swapaxes(1, 2).reshape((B,1,H,W))
-        # print(input.shape) # (B, 1, 32, 15), 1-channel, 32x15 image
         if kimmy:
-            input = kim.Tensor(input)
+            if not dl.gen_img:
+                resolution = dl.dataset.imager.resolution
+                batch, days, _ = input.shape  # (256, 5, 6) (Batch, Days, data)
+                x = kim.NDArray(input); device = x.device
+                y = kim.NDArray.make((batch, 1, resolution, 3*days), device=device)
+                device.gen_img(x._handle, y._handle, batch, days, resolution)
+                # img = y.numpy()[0,0]
+                # print(x.numpy()[0], x.shape)
+                # print(">>>\n", img, y.shape); assert False
+                input = kim.Tensor(y)
+            else:
+                B, W, H = input.shape
+                input = input.swapaxes(1, 2).reshape((B, 1, H, W))
+                input = kim.Tensor(input)
             target = kim.Tensor(target_)
             output = model(input)
             loss = loss_fn(output, target)
             ouput_, loss_ = output, loss
         else:
+            B, W, H = input.shape
+            input = input.swapaxes(1, 2).reshape((B, 1, H, W))
+            # print(input.shape) # (B, 1, 32, 15), 1-channel, 32x15 image
             input = torch.Tensor(input).cuda()
             target = torch.Tensor(target_).long().cuda()
             output = model(input)
@@ -248,10 +269,11 @@ def train(dl_train, dl_valid, epoches=50, lib=kim):
 if __name__ == "__main__":
     # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 600_000, 100_000, 300_000, 256)
     # train(dl_train, dl_valid, lib=torch)
-    kim.timelog.RECORD_TIMESPENT = True
-    kim.timelog.RECORD_CUDA_TIMESPENT = True
-    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
-    train(dl_train, dl_valid, lib=kim, epoches=1)
+    # kim.timelog.RECORD_TIMESPENT = True
+    # kim.timelog.RECORD_CUDA_TIMESPENT = True
+    # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
+    # train(dl_train, dl_valid, lib=kim, epoches=1)
     # compare_losses(5)
-    # test(dl_test, lib=kim)
-    kim.timelog.print_timespents()
+    dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1, 0, 100*1028, 256+128)
+    test(dl_test, lib=kim)
+    # kim.timelog.print_timespents()

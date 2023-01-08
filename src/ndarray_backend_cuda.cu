@@ -284,6 +284,51 @@ void ScalarAdd(const CudaArray& a, scalar_t val, CudaArray* out) {
 
 // https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE
 
+__global__ void GenImgKernel(const scalar_t *in, scalar_t *out, 
+                                uint32_t batch, uint32_t days, uint32_t resolution)
+{
+  size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (gid < batch) {
+    // image size is (resolution, days * 3)
+    size_t height = resolution;
+    size_t width = days * 3;
+    size_t offset = gid * batch;
+    size_t n = height * width;
+
+    // set all out to 0 first (cleanup data)
+    for (size_t i = 0; i < n; i++) out[offset + i] = 0;
+
+    // `in` matrix is (days, 6)
+    for (size_t i = 0; i < days; i++) {
+      // set volume cols to 1, vol is at (days, 0)
+      size_t col = 3 * i + 1;
+      size_t ix6 = i*6;
+      size_t max = in[ix6];
+      for (size_t k = 0; k < max; k++) out[k*width + col] = 1;
+
+      // O,H,L,C,X = in[i, 1 to 5]
+      size_t O = in[ix6 + 1]; out[O*width + col - 1] = 1;
+      size_t C = in[ix6 + 4]; out[C*width + col + 1] = 1;
+
+      size_t H = in[ix6 + 2];
+      size_t L = in[ix6 + 3];
+      for (size_t k = L; k <= H; k++) out[k*width + col] = 1;
+
+      size_t X = in[ix6 + 5] * width;
+      out[X + col - 1] = 1;
+      out[X + col] = 1;
+      out[X + col + 1] = 1;
+    }
+  }
+}
+
+void GenImg(const CudaArray &in, CudaArray *out, uint32_t batch, uint32_t days, uint32_t resolution)
+{
+  CudaDims dim = CudaOneDim(batch);
+  // cout << "\GenImg: days " << days;
+  GenImgKernel<<<dim.grid, dim.block>>>(in.ptr, out->ptr, batch, days, resolution);
+}
+
 /// BEGIN YOUR SOLUTION
 __global__ void EwiseExpKernel(const scalar_t* a, scalar_t* out, size_t size) {
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -547,8 +592,9 @@ __global__ void MatmulSharedMemKernel(const scalar_t* a, const scalar_t* b,
       out[(yblock + ythread + i)*P + (xblock + xthread + j)] = c_t[i][j];
 }
 
-void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out,
-  uint32_t M, uint32_t N, uint32_t P) {
+void Matmul(const CudaArray &a, const CudaArray &b, CudaArray *out,
+                uint32_t M, uint32_t N, uint32_t P)
+{
   /**
    * Multiply two (compact) matrices into an output (also compact) matrix.
    * You will want to look at the lecture and notes on GPU-based linear algebra
@@ -713,6 +759,7 @@ PYBIND11_MODULE(ndarray_backend_cuda, m) {
     if (err != cudaSuccess) throw std::runtime_error(cudaGetErrorString(err));
   });
 
+  m.def("gen_img", GenImg);
 
   m.def("_fill", Fill);
   m.def("_compact", Compact);

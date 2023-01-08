@@ -98,11 +98,11 @@ class OHLCV:
         _, m = self.imager.transform(price_data=price_ohlc, volumn_data=volume, ma_close=ma_close, gen_img=False)
         if m is None: return None
 
+        ## Verify new m_to_img() function works correctly
         # img, m = self.imager.transform(price_data=price_ohlc, volumn_data=volume, ma_close=ma_close)
         # if m is not None:
         #     img_ = self.m_to_img(m)
         #     np.testing.assert_allclose(img, img_, rtol=0, atol=0)
-        # if img is None: return None
 
         # future (label)
         X2 = md_roi.iloc[2*self.frequency : 3*self.frequency, :5].values
@@ -112,11 +112,10 @@ class OHLCV:
         return m, profitable, meta
 
     def m_to_img(self, m):
-        price_data = m["prices"]
-        n = price_data.shape[0]
-        X_img = np.zeros((n * 3, m["resolution"])) # resolution tương ứng với số cột
+        n = m.shape[0]
+        X_img = np.zeros((n * 3, self.imager.resolution)) # resolution tương ứng với số cột
 
-        X_loc = price_data
+        X_loc = m[:,1:]
         for i in range(n):
             # low-high bar in the middle
             loc_x = (i * 3) + 1
@@ -135,12 +134,12 @@ class OHLCV:
             X_img[loc_x, loc_y] = 1
 
         # for additional pricing data - flat line for each day.
-        for j in range(4, price_data.shape[1]):
+        for j in range(4, X_loc.shape[1]):
             X_loc_additional = X_loc[:, j]
             for i in range(n):
                 X_img[i*3:(i+1)*3, X_loc_additional[i]] = 1
 
-        X2 = m["volumes"]
+        X2 = m[:,0]
         for i in range(n):
             loc_x = (i * 3) + 1
             loc_y = X2[i]
@@ -240,8 +239,9 @@ class ImagingOHLCV(object):
                 loc_y = X2[i]
                 X_img[loc_x, 0:(loc_y+1)] = 1
 
-        m = {"volumes": X2, "prices": X_loc, "resolution": self.resolution}
-        # print(">>>", m, price_data.shape[1]); assert False
+        # m = {"volumes": X2, "prices": X_loc}
+        m = np.append(X2.reshape((5, 1)), X_loc, axis=1)
+        # print(">>>", m, m.shape, X2, X_loc.shape, X_loc); assert False
         return X_img, m
 
 '''
@@ -254,6 +254,7 @@ date
 2022-12-20 00:00:00+00:00   88.110   89.175  87.4401     89.02   23453836
 2022-12-21 00:00:00+00:00   89.080   90.220  88.3200     89.58   24745637
 '''
+
 def test(ticker="GOOGL"):
     print(f"loading stock to `data/%s.png`" % (ticker))
     dfile = f"data/stocks/%s.parquet" % (ticker)
@@ -274,7 +275,8 @@ def show_img(X_img, ticker):
     plt.imshow(img, cmap='Greys_r')
     plt.show()
 
-DATA_DIR = Path("data/stocks").expanduser()
+# DATA_DIR = Path("data/stock").expanduser()
+DATA_DIR = Path("data/data_yfinance").expanduser()
 
 '''
 from mydat import *; import random

@@ -138,7 +138,6 @@ def mymodel(nn, dropout=True):
 
 def epoch(dl, model, loss_fn, optimizer, n):
     if len(dl.dataset) == 0: return
-    pbar = tqdm(total=len(dl.dataset) // dl.batch_size)
     accuracy, losses = 0, 0
     training = (optimizer is not None)
     msg_header = ("[ train ]" if training else "[ valid ]") + f" Epoch: {n}"
@@ -149,6 +148,7 @@ def epoch(dl, model, loss_fn, optimizer, n):
         dl.gen_img = False
         dl.gen_img = True
     print(">>> images gen by" + ("numpy" if dl.gen_img else "cuda"))
+    pbar = tqdm(total=len(dl.dataset) // dl.batch_size)
     for i, (input, target_) in enumerate(dl):
         if kimmy:
             if not dl.gen_img:

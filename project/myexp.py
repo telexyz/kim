@@ -255,7 +255,7 @@ def train(dl_train, dl_valid, epoches=50, lib=kim):
     optimizer = lib.optim.Adam(model.parameters(), lr=1e-5)
 
     if lib == torch:
-        model = torch.compile(model)
+        # model = torch.compile(model)
         torch.set_float32_matmul_precision('medium')
 
     for i in range(done, epoches):
@@ -272,8 +272,8 @@ if __name__ == "__main__":
     kim.timelog.RECORD_TIMESPENT = True
     kim.timelog.RECORD_CUDA_TIMESPENT = True
     dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 10280, 0, 0, 256)
-    train(dl_train, dl_valid, lib=kim, epoches=1)
+    train(dl_train, dl_valid, lib=torch, epoches=3)
     # compare_losses(5)
     # dl_train, dl_valid, dl_test = get_train_val_test_dataset(5, 32, 0.75, 1, 0, 100*1028, 256+128)
     # test(dl_test, lib=kim)
-    kim.timelog.print_timespents()
+    # kim.timelog.print_timespents()

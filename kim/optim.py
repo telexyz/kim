@@ -5,6 +5,7 @@ import numpy as np
 
 class Optimizer:
     def __init__(self, params):
+        # Ghi nhớ lại những params cần được update
         self.params = [x for x in params if x.update_params]
         print(">>> optim params", len(self.params))
 
@@ -25,6 +26,7 @@ class SGD(Optimizer):
         self.weight_decay = weight_decay
         self.u = {}
         for w in self.params:
+            # Với mỗi param (weight w) cần khởi tạo chỉ số phụ u bằng chính kích thước của w => x2 vram
             self.u[w] = device.zeros(*w.shape)
 
     def step(self):
@@ -32,7 +34,7 @@ class SGD(Optimizer):
             grad = w.grad.cached_data + w.cached_data * self.weight_decay
             self.u[w] = self.momentum*self.u[w] + (1 - self.momentum)*grad
             w.cached_data -= self.lr * self.u[w]
-
+            # u của w được update sau mỗi step, và cần được lưu lại, nếu offload thì phải offload cả u
 
 class Adam(Optimizer):
     def __init__(

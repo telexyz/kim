@@ -108,7 +108,7 @@ _Từ định nghĩa trên ta có thể tìm ra cách để tối ưu hóa hàm 
 ![](files/lec02-01.png)
 Lưu ý: tốc độ học ảnh hưởng nhiều tới tiến trình học (ảnh trên) !!! Vậy nên việc chọn tốc độ học là quan trọng !!!
 
-## Stochasitc gradient descent
+## Stochastic gradient descent
 
 !!! CHIA ĐỂ TRỊ !!! thay vì tính gradient cho toàn bộ tập huấn luyện, ta tính gradient cho một tập nhỏ gọi là mini-batch và update theta dựa trên mini-batch.
 

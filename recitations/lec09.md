@@ -79,7 +79,7 @@ Hành vi tôi muốn nhấn mạnh ở đây là, hay hiệu ứng bạn có khi
 
 Norm https://machinelearningcoban.com/math/#-norms-chuan
 
-![](files/lec09-01.pn g)
+![](files/lec09-01.png)
 - Điều kiện 1 dễ dàng hiểu vì khoảng cách không thể là số âm.
 - Điều kiện 2 giải thích việc nếu có 3 điểm y, v, và z thẳng hàng, và `v - y = (v - z) alpha` thì khoảng cách giữa v và y sẽ gấp |alpha| lần khoảng cách giữa v và z.
 - Điều kiện 3 chính là bất đẳng thức tâm giác. Với 3 điểm trong không gian y, v, và z. Nếu ta coi x_1 = v - y, x_2 = z - v 
